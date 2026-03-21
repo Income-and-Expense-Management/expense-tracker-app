@@ -13,3 +13,24 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Tệp tin nén và tạm thời của hệ thống
+*.zip
+*.tar
+*.gz
+*.log
+
+# Thư mục lưu cấu hình thiết bị/máy ảo (Rất quan trọng)
+.idea/deploymentTargetSelector.xml
+.idea/deviceManager.xml
+.idea/appInsightsSettings.xml
+
+# Các file cấu hình của plugin hỗ trợ (như AI Assistant/Copilot)
+.idea/copilot.data.migration.*
+.idea/studiobot.xml
+
+# Thư mục build của các module (đôi khi /build ở gốc là chưa đủ)
+**/build/
+
+# Kotlin/Java compiled files
+*.class
