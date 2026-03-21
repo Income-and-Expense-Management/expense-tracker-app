@@ -8,8 +8,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.ptithcm.quanlichitieu.R;
-import com.ptithcm.quanlichitieu.data.db.BudgetDatabaseHelper;
-import com.ptithcm.quanlichitieu.data.models.Wallet;
+import com.ptithcm.quanlichitieu.data.local.BudgetDatabaseHelper;
+import com.ptithcm.quanlichitieu.data.model.Wallet;
 
 public class AddWalletActivity extends AppCompatActivity {
 

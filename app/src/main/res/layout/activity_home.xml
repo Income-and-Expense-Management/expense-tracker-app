@@ -299,7 +299,7 @@
                         app:layout_constraintTop_toTopOf="@+id/progressBar" />
 
                     <!-- Chart -->
-                    <com.ptithcm.quanlichitieu.ui.views.SimpleLineChart
+                    <com.ptithcm.quanlichitieu.ui.common.SimpleLineChart
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_marginTop="20dp"
@@ -385,8 +385,9 @@
     <com.google.android.material.bottomappbar.BottomAppBar
         android:id="@+id/bottomAppBar"
         android:layout_width="match_parent"
-        android:layout_height="85dp"
+        android:layout_height="wrap_content"
         android:layout_gravity="bottom"
+        android:minHeight="60dp"
         app:backgroundTint="@color/home_nav_bg_dark"
         app:fabCradleMargin="10dp"
         app:fabCradleRoundedCornerRadius="24dp"
@@ -398,7 +399,7 @@
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:background="@android:color/transparent"
         app:backgroundTint="@android:color/transparent"
         app:itemIconTint="@color/nav_item_color_state"

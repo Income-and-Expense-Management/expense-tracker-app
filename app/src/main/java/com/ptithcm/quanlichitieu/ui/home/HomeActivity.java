@@ -12,8 +12,8 @@ import com.google.android.material.bottomappbar.BottomAppBar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.ptithcm.quanlichitieu.R;
-import com.ptithcm.quanlichitieu.data.db.BudgetDatabaseHelper;
-import com.ptithcm.quanlichitieu.data.models.Wallet;
+import com.ptithcm.quanlichitieu.data.local.BudgetDatabaseHelper;
+import com.ptithcm.quanlichitieu.data.model.Wallet;
 import com.ptithcm.quanlichitieu.ui.wallet.AddWalletActivity;
 
 import java.util.Locale;

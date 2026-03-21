@@ -13,8 +13,8 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.ptithcm.quanlichitieu.R;
-import com.ptithcm.quanlichitieu.data.source.AuthService;
-import com.ptithcm.quanlichitieu.data.source.MockAuthService;
+import com.ptithcm.quanlichitieu.data.repository.AuthService;
+import com.ptithcm.quanlichitieu.data.repository.MockAuthService;
 import com.ptithcm.quanlichitieu.ui.home.HomeActivity;
 
 /**
