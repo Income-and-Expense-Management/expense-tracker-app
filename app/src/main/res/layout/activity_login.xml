@@ -34,19 +34,19 @@
                 android:id="@+id/logoCircle"
                 android:layout_width="56dp"
                 android:layout_height="56dp"
-                android:background="@drawable/bg_circle_green"
+                android:background="@drawable/logo"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/logoIcon"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:src="@drawable/ic_lightning_bolt"
-                app:layout_constraintBottom_toBottomOf="@id/logoCircle"
-                app:layout_constraintEnd_toEndOf="@id/logoCircle"
-                app:layout_constraintStart_toStartOf="@id/logoCircle"
-                app:layout_constraintTop_toTopOf="@id/logoCircle" />
+<!--            <androidx.appcompat.widget.AppCompatImageView-->
+<!--                android:id="@+id/logoIcon"-->
+<!--                android:layout_width="28dp"-->
+<!--                android:layout_height="28dp"-->
+<!--                android:src="@drawable/ic_lightning_bolt"-->
+<!--                app:layout_constraintBottom_toBottomOf="@id/logoCircle"-->
+<!--                app:layout_constraintEnd_toEndOf="@id/logoCircle"-->
+<!--                app:layout_constraintStart_toStartOf="@id/logoCircle"-->
+<!--                app:layout_constraintTop_toTopOf="@id/logoCircle" />-->
 
             <!-- ============================== -->
             <!-- Section 2: Titles              -->
@@ -159,7 +159,6 @@
                 android:text="Remember me"
                 android:textColor="@color/white"
                 android:textSize="14sp"
-                android:buttonTint="@color/login_accent_green"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/etPassword" />
 
@@ -246,7 +245,7 @@
                 android:textSize="15sp"
                 android:textAllCaps="false"
                 app:backgroundTint="@null"
-                app:icon="@drawable/ic_google_logo"
+                app:icon="@drawable/ic_google"
                 app:iconGravity="textStart"
                 app:iconPadding="12dp"
                 app:iconTint="@null"
