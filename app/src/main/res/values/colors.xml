@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Login Screen Colors -->
+    <color name="login_bg_dark_green">#0D2F11</color>
+    <color name="login_accent_green">#27C15C</color>
+    <color name="login_btn_blue">#3A82EE</color>
+    <color name="login_link_blue_green">#1A8A6E</color>
+    <color name="login_label_grey">#B0B0B0</color>
+    <color name="login_hint_grey">#9E9E9E</color>
+    <color name="login_divider_grey">#4A4A4A</color>
+    <color name="login_edittext_bg">#FFFFFFFF</color>
+    <color name="login_google_border">#DADCE0</color>
+    <color name="login_google_text">#1F1F1F</color>
+    <color name="login_overlay_line">#14FFFFFF</color>
+
+    <!-- Home Screen Colors -->
+    <color name="home_background_dark">#000000</color> <!-- Dark background -->
+    <color name="home_header_green_start">#2C5E3D</color> <!-- Gradient Start -->
+    <color name="home_header_green_end">#1B3A28</color> <!-- Gradient End -->
+    <color name="home_card_bg_dark">#1C1C1E</color> <!-- Dark Card Background -->
+    <color name="home_text_primary">#0B0B0B</color>
+    <color name="home_text_secondary">#AAAAAA</color>
+    <color name="home_accent_green">#4CAF50</color> <!-- See All / Add Button -->
+    <color name="home_nav_bg_dark">#191F38</color> <!-- Navbar background -->
+    <color name="home_expense_red">#FF4D4D</color> <!-- Red text for expenses -->
+    <color name="home_income_white">#000000</color> <!-- White text for income -->
+    <color name="home_wallet_orange">#FF8C42</color> <!-- Orange wallet icon -->
+    <color name="home_chart_line">#E57373</color> <!-- Chart line color -->
+</resources>

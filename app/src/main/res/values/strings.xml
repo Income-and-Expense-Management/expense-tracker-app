@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">QuanLiChiTieu</string>
+    <string name="welcome_message">Hello, %1$s!</string>
+    <string name="login_success">Login Successful!</string>
+    <string name="login_failed">Login Failed: %1$s</string>
+    <string name="logging_in">Logging in...</string>
+    <string name="enter_email_password">Please enter email and password</string>
+    <string name="welcome_user">Duy</string>
+    <string name="home_title">Trang chủ</string>
+    <string name="total_balance_label">Tổng số dư</string>
+    <string name="total_balance_value">500,000 đ</string>
+    <string name="my_wallet">Ví của tôi</string>
+    <string name="see_all">Xem tất cả</string>
+    <string name="wallet_name_a">Ví A</string>
+    <string name="wallet_amount_value">500,000 đ</string>
+    <string name="this_month_report">Báo cáo tháng này</string>
+    <string name="see_details">Xem chi tiết</string>
+    <string name="total_spent_label">Tổng đã chi</string>
+    <string name="total_spent_value">1,000,000 đ</string>
+    <string name="total_income_label">Tổng thu</string>
+    <string name="total_income_value">500,000 đ</string>
+
+    <!-- Bottom Nav -->
+    <string name="nav_overview">Tổng quan</string>
+    <string name="nav_transaction">Giao dịch</string>
+    <string name="nav_add">Thêm giao dịch</string>
+    <string name="nav_budget">Ngân sách</string>
+    <string name="nav_account">Tài khoản</string>
+</resources>

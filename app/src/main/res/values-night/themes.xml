@@ -1,0 +1,4 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Base.Theme.QuanLiChiTieu" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    </style>
+</resources>

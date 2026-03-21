@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/nav_home"
+        android:title="Home"
+        android:icon="@drawable/ic_home"
+        app:showAsAction="never"
+         />
+
+    <item
+        android:id="@+id/nav_transaction"
+        android:icon="@drawable/ic_transaction"
+        android:title="Transaction" />
+
+    <!-- Invisible disabled placeholder: creates the gap for the FAB cradle -->
+    <item
+        android:id="@+id/nav_placeholder"
+        android:enabled="false"
+        android:icon="@android:color/transparent"
+        android:title="" />
+
+    <item
+        android:id="@+id/nav_wallet"
+        android:icon="@drawable/ic_wallet"
+        android:title="Wallet" />
+
+    <item
+        android:id="@+id/nav_account"
+        android:icon="@drawable/ic_account"
+        android:title="Account" />
+
+</menu>

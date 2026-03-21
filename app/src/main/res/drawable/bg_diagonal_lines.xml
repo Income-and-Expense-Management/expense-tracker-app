@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Subtle diagonal overlay pattern for background texture -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Base dark green background -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/login_bg_dark_green" />
+        </shape>
+    </item>
+    <!-- Diagonal lines overlay via rotated repeating stripes -->
+    <item>
+        <rotate
+            android:fromDegrees="45"
+            android:pivotX="50%"
+            android:pivotY="50%">
+            <shape android:shape="rectangle">
+                <gradient
+                    android:angle="0"
+                    android:centerColor="@color/login_overlay_line"
+                    android:endColor="@android:color/transparent"
+                    android:startColor="@android:color/transparent"
+                    android:type="linear" />
+            </shape>
+        </rotate>
+    </item>
+    <item>
+        <rotate
+            android:fromDegrees="45"
+            android:pivotX="30%"
+            android:pivotY="30%">
+            <shape android:shape="rectangle">
+                <gradient
+                    android:angle="0"
+                    android:centerColor="@color/login_overlay_line"
+                    android:endColor="@android:color/transparent"
+                    android:startColor="@android:color/transparent"
+                    android:type="linear" />
+            </shape>
+        </rotate>
+    </item>
+    <item>
+        <rotate
+            android:fromDegrees="45"
+            android:pivotX="70%"
+            android:pivotY="70%">
+            <shape android:shape="rectangle">
+                <gradient
+                    android:angle="0"
+                    android:centerColor="@color/login_overlay_line"
+                    android:endColor="@android:color/transparent"
+                    android:startColor="@android:color/transparent"
+                    android:type="linear" />
+            </shape>
+        </rotate>
+    </item>
+</layer-list>

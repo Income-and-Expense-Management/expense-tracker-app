@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Login Screen - Dark-themed modern Material Design layout -->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/loginRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_diagonal_lines"
+    tools:context=".ui.login.LoginActivity">
+
+    <!-- Scrollable content wrapper for small screens -->
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:scrollbars="none"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="24dp"
+            android:paddingTop="48dp"
+            android:paddingBottom="32dp">
+
+            <!-- ============================== -->
+            <!-- Section 1: Logo                -->
+            <!-- ============================== -->
+            <View
+                android:id="@+id/logoCircle"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="@drawable/bg_circle_green"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/logoIcon"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/ic_lightning_bolt"
+                app:layout_constraintBottom_toBottomOf="@id/logoCircle"
+                app:layout_constraintEnd_toEndOf="@id/logoCircle"
+                app:layout_constraintStart_toStartOf="@id/logoCircle"
+                app:layout_constraintTop_toTopOf="@id/logoCircle" />
+
+            <!-- ============================== -->
+            <!-- Section 2: Titles              -->
+            <!-- ============================== -->
+            <TextView
+                android:id="@+id/tvTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Sign in to your\nAccount"
+                android:textColor="@color/white"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:lineSpacingExtra="4dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/logoCircle" />
+
+            <TextView
+                android:id="@+id/tvSignUpPrompt"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textSize="14sp"
+                android:textColor="@color/login_label_grey"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvTitle"
+                tools:text="Don't have an account? Sign Up" />
+            <!-- Note: Set spannable text in code for "Sign Up" colored link -->
+
+            <!-- ============================== -->
+            <!-- Section 3: Email Input         -->
+            <!-- ============================== -->
+            <TextView
+                android:id="@+id/tvEmailLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:text="Email"
+                android:textColor="@color/login_label_grey"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvSignUpPrompt" />
+
+            <EditText
+                android:id="@+id/etEmail"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_edittext_rounded"
+                android:hint="Loisbecket@gmail.com"
+                android:textColorHint="@color/login_hint_grey"
+                android:textColor="@color/black"
+                android:textSize="15sp"
+                android:inputType="textEmailAddress"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:paddingHorizontal="16dp"
+                android:autofillHints="emailAddress"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvEmailLabel" />
+
+            <!-- ============================== -->
+            <!-- Section 4: Password Input      -->
+            <!-- ============================== -->
+            <TextView
+                android:id="@+id/tvPasswordLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Mật khẩu"
+                android:textColor="@color/login_label_grey"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/etEmail" />
+
+            <EditText
+                android:id="@+id/etPassword"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_edittext_rounded"
+                android:hint="*******"
+                android:textColorHint="@color/login_hint_grey"
+                android:textColor="@color/black"
+                android:textSize="15sp"
+                android:inputType="textPassword"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:paddingHorizontal="16dp"
+                android:drawableEnd="@drawable/ic_visibility_toggle"
+                android:drawablePadding="12dp"
+                android:autofillHints="password"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvPasswordLabel" />
+
+            <!-- ============================== -->
+            <!-- Section 5: Remember Me / Forgot -->
+            <!-- ============================== -->
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cbRememberMe"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Remember me"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:buttonTint="@color/login_accent_green"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/etPassword" />
+
+            <TextView
+                android:id="@+id/tvForgotPassword"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Forgot Password?"
+                android:textColor="@color/login_accent_green"
+                android:textSize="14sp"
+                app:layout_constraintBaseline_toBaselineOf="@id/cbRememberMe"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <!-- ============================== -->
+            <!-- Section 6: Log In Button       -->
+            <!-- ============================== -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLogin"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_marginTop="24dp"
+                android:text="Log In"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textAllCaps="false"
+                app:backgroundTint="@color/login_btn_blue"
+                app:cornerRadius="10dp"
+                app:rippleColor="#66FFFFFF"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cbRememberMe" />
+
+            <!-- ============================== -->
+            <!-- Section 7: "Or" Divider        -->
+            <!-- ============================== -->
+            <View
+                android:id="@+id/dividerLeft"
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_marginTop="24dp"
+                android:layout_marginEnd="12dp"
+                android:background="@color/login_divider_grey"
+                app:layout_constraintEnd_toStartOf="@id/tvOrDivider"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/btnLogin"
+                app:layout_constraintBottom_toBottomOf="@id/tvOrDivider"
+                app:layout_constraintHorizontal_chainStyle="spread" />
+
+            <TextView
+                android:id="@+id/tvOrDivider"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Or"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toStartOf="@id/dividerRight"
+                app:layout_constraintStart_toEndOf="@id/dividerLeft"
+                app:layout_constraintTop_toBottomOf="@id/btnLogin" />
+
+            <View
+                android:id="@+id/dividerRight"
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_marginStart="12dp"
+                android:background="@color/login_divider_grey"
+                app:layout_constraintBottom_toBottomOf="@id/tvOrDivider"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/tvOrDivider"
+                app:layout_constraintTop_toTopOf="@id/tvOrDivider" />
+
+            <!-- ============================== -->
+            <!-- Section 8: Google Sign-In      -->
+            <!-- ============================== -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnGoogleSignIn"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/bg_btn_google"
+                android:text="Continue with Google"
+                android:textColor="@color/login_google_text"
+                android:textSize="15sp"
+                android:textAllCaps="false"
+                app:backgroundTint="@null"
+                app:icon="@drawable/ic_google_logo"
+                app:iconGravity="textStart"
+                app:iconPadding="12dp"
+                app:iconTint="@null"
+                app:cornerRadius="10dp"
+                app:strokeColor="@color/login_google_border"
+                app:strokeWidth="1dp"
+                app:rippleColor="#22000000"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvOrDivider" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
