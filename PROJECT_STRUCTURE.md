@@ -6,29 +6,32 @@ This document describes the package/folder organization for the **QuanLiChiTieu*
 
 ```
 app/src/main/java/com/ptithcm/quanlichitieu/
-├── data/                          # Data Layer
-│   ├── local/                     # Local data sources (SQLite, Room, SharedPreferences)
+├── data/                              # Data Layer
+│   ├── local/                         # Local data sources (SQLite, Room, SharedPreferences)
 │   │   └── BudgetDatabaseHelper.java
-│   ├── model/                     # Data models / entities
-│   │   └── Wallet.java
-│   └── repository/                # Repository pattern implementations
-│       ├── AuthService.java       # Authentication interface
-│       └── MockAuthService.java   # Mock implementation for testing
+│   ├── model/                         # Data models / entities
+│   │   ├── Expense.java               # Expense transaction model
+│   │   └── Wallet.java                # Wallet model
+│   └── repository/                    # Repository pattern implementations
+│       ├── AuthService.java           # Authentication interface
+│       ├── ExpenseRepository.java     # Expense data interface (SOLID - Interface Segregation)
+│       ├── MockAuthService.java       # Mock auth implementation
+│       └── MockExpenseRepository.java # Mock expense implementation (swap for API later)
 │
-├── ui/                            # UI Layer (Presentation)
-│   ├── common/                    # Shared/reusable UI components
-│   │   └── SimpleLineChart.java   # Custom chart view
-│   ├── home/                      # Home feature module
-│   │   └── HomeActivity.java
-│   ├── login/                     # Login feature module
+├── ui/                                # UI Layer (Presentation)
+│   ├── common/                        # Shared/reusable UI components
+│   │   └── SimpleLineChart.java       # Custom chart view
+│   ├── home/                          # Home feature module
+│   │   ├── HomeActivity.java          # Main dashboard screen
+│   │   └── adapter/                   # RecyclerView adapters for home
+│   │       └── TopExpenseAdapter.java # Adapter for top expenses list
+│   ├── login/                         # Login feature module
 │   │   └── LoginActivity.java
-│   ├── splash/                    # Splash screen module
-│   │   └── SplashActivity.java
-│   └── wallet/                    # Wallet feature module
+│   └── wallet/                        # Wallet feature module
 │       └── AddWalletActivity.java
 │
-└── utils/                         # Utility classes (helpers, extensions, constants)
-    └── .gitkeep                   # Placeholder for future utilities
+└── utils/                             # Utility classes (helpers, extensions, constants)
+    └── .gitkeep                       # Placeholder for future utilities
 ```
 
 ## Package Descriptions
@@ -48,9 +51,9 @@ Contains all UI-related classes organized by feature.
 | Package | Purpose |
 |---------|---------|
 | `ui/common/` | Shared UI components that can be reused across multiple features (custom views, base classes, dialogs) |
-| `ui/home/` | Home screen feature with its Activity, Fragment, ViewModel, and Adapter classes |
+| `ui/home/` | Home screen feature with its Activity and related components |
+| `ui/home/adapter/` | RecyclerView adapters specific to the home screen |
 | `ui/login/` | Login/authentication feature with related UI components |
-| `ui/splash/` | Splash screen shown on app startup |
 | `ui/wallet/` | Wallet management feature (add, edit, list wallets) |
 
 ### `utils/` - Utilities
@@ -75,12 +78,51 @@ Contains helper classes, extension functions, constants, and other utilities sha
 
 5. **Reusable Components**: Place shared UI components in `ui/common/` rather than duplicating code across features
 
+## How to Replace Mock Data with Real API
+
+The app uses the **Repository Pattern** to decouple data sources from UI. Here's how to swap mock data for a real API:
+
+### Step 1: Create API Service Interface (Retrofit)
+```java
+// data/remote/ExpenseApiService.java
+public interface ExpenseApiService {
+    @GET("expenses/top")
+    Call<List<ExpenseDto>> getTopExpenses(@Query("limit") int limit);
+}
+```
+
+### Step 2: Create API Repository Implementation
+```java
+// data/repository/ApiExpenseRepository.java
+public class ApiExpenseRepository implements ExpenseRepository {
+    private final ExpenseApiService apiService;
+
+    public ApiExpenseRepository(ExpenseApiService apiService) {
+        this.apiService = apiService;
+    }
+
+    @Override
+    public List<Expense> getTopExpenses(int limit) {
+        // Call API and map DTO to Expense model
+        Response<List<ExpenseDto>> response = apiService.getTopExpenses(limit).execute();
+        return mapDtoToModel(response.body());
+    }
+}
+```
+
+### Step 3: Swap Implementation in Activity
+```java
+// In HomeActivity.java, change:
+// OLD: expenseRepository = new MockExpenseRepository();
+// NEW: expenseRepository = new ApiExpenseRepository(retrofit.create(ExpenseApiService.class));
+```
+
 ## Future Expansion
 
 As the app grows, consider adding:
 
-- `data/remote/` - For API/network data sources
+- `data/remote/` - For API/network data sources and DTOs
+- `data/remote/dto/` - For Data Transfer Objects from API responses
 - `di/` - For dependency injection modules (Hilt/Dagger)
 - `domain/` - For use cases in Clean Architecture
-- `ui/[feature]/adapter/` - For RecyclerView adapters
-- `ui/[feature]/viewmodel/` - For ViewModel classes
+- `ui/[feature]/viewmodel/` - For ViewModel classes (MVVM pattern)

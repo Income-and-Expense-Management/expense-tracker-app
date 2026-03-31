@@ -1,4 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Base.Theme.QuanLiChiTieu" parent="Theme.MaterialComponents.DayNight.NoActionBar">
     </style>
+
+    <!-- Night mode splash theme inherits from day theme -->
+    <style name="Theme.QuanLiChiTieu.Splash" parent="Theme.QuanLiChiTieu">
+        <item name="android:windowBackground">@color/splash_background_green</item>
+        <item name="android:windowSplashScreenBackground" tools:targetApi="s">@color/splash_background_green</item>
+        <item name="android:statusBarColor">@color/splash_background_green</item>
+        <item name="android:navigationBarColor">@color/splash_background_green</item>
+    </style>
 </resources>

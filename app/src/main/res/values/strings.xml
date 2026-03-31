@@ -19,6 +19,9 @@
     <string name="total_spent_value">1,000,000 đ</string>
     <string name="total_income_label">Tổng thu</string>
     <string name="total_income_value">500,000 đ</string>
+    <string name="top_expenses_label">Chi tiêu nhiều nhất</string>
+    <string name="period_week">Tuần</string>
+    <string name="period_month">Tháng</string>
 
     <!-- Bottom Nav -->
     <string name="nav_overview">Tổng quan</string>

@@ -212,6 +212,7 @@
 
                 <!-- Report Card -->
                 <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/cardReport"
                     android:layout_width="match_parent"
                     android:layout_height="400dp"
                     android:layout_marginHorizontal="24dp"
@@ -372,6 +373,94 @@
                         android:textSize="10sp"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <!-- ================================== -->
+                <!-- Top 3 Highest Expenses Section     -->
+                <!-- (Chi tiêu nhiều nhất)              -->
+                <!-- ================================== -->
+                <TextView
+                    android:id="@+id/tvLabelTopExpenses"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="24dp"
+                    android:layout_marginTop="24dp"
+                    android:text="@string/top_expenses_label"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/cardReport" />
+
+                <TextView
+                    android:id="@+id/tvSeeAllExpenses"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="24dp"
+                    android:text="@string/see_all"
+                    android:textColor="@color/home_accent_green"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:layout_constraintBaseline_toBaselineOf="@+id/tvLabelTopExpenses"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+                <!-- Top Expenses List Card -->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/cardTopExpenses"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="24dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_card_dark_rounded"
+                    android:padding="16dp"
+                    android:elevation="4dp"
+                    app:layout_constraintTop_toBottomOf="@+id/tvLabelTopExpenses">
+
+                    <!-- Segmented Toggle: Tuần (Week) / Tháng (Month) -->
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/togglePeriod"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:background="@drawable/bg_segmented_toggle"
+                        android:padding="4dp"
+                        app:singleSelection="true"
+                        app:selectionRequired="true"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnWeek"
+                            style="@style/Widget.App.SegmentedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:minWidth="90dp"
+                            android:paddingHorizontal="24dp"
+                            android:text="@string/period_week" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnMonth"
+                            style="@style/Widget.App.SegmentedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:minWidth="90dp"
+                            android:paddingHorizontal="24dp"
+                            android:text="@string/period_month" />
+
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                    <!-- RecyclerView for Top Expenses -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvTopExpenses"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/togglePeriod" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 

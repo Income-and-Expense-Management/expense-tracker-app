@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Item layout for displaying a single expense in the "Top Expenses" RecyclerView.
+    Based on the design showing category icon, name, description, and amount.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:paddingVertical="12dp">
+
+    <!-- Category Icon with circular background -->
+    <ImageView
+        android:id="@+id/imgCategoryIcon"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_circle_dark"
+        android:padding="10dp"
+        android:src="@drawable/ic_food"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="ContentDescription" />
+
+    <!-- Category Name -->
+    <TextView
+        android:id="@+id/tvCategoryName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="8dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/white"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/tvCategoryDescription"
+        app:layout_constraintEnd_toStartOf="@+id/tvExpenseAmount"
+        app:layout_constraintStart_toEndOf="@+id/imgCategoryIcon"
+        app:layout_constraintTop_toTopOf="@+id/imgCategoryIcon"
+        app:layout_constraintVertical_chainStyle="packed"
+        tools:text="Food &amp; Drinks" />
+
+    <!-- Category Description -->
+    <TextView
+        android:id="@+id/tvCategoryDescription"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/home_text_secondary"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="@+id/imgCategoryIcon"
+        app:layout_constraintEnd_toEndOf="@+id/tvCategoryName"
+        app:layout_constraintStart_toStartOf="@+id/tvCategoryName"
+        app:layout_constraintTop_toBottomOf="@+id/tvCategoryName"
+        tools:text="Starbucks, McDonald's, etc." />
+
+    <!-- Expense Amount (negative, shown in red) -->
+    <TextView
+        android:id="@+id/tvExpenseAmount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/home_expense_red"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="-850,000 đ" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
