@@ -27,6 +27,9 @@
         <activity
             android:name=".ui.wallet.AddWalletActivity"
             android:exported="false" />
+        <activity
+            android:name=".ui.transaction.TransactionActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
