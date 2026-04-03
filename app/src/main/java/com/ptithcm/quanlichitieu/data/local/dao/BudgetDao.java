@@ -10,9 +10,8 @@ import androidx.annotation.Nullable;
 
 import com.ptithcm.quanlichitieu.data.local.BudgetDatabaseHelper;
 import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.BudgetEntry;
-import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.CategoryEntry;
 import com.ptithcm.quanlichitieu.data.local.util.CursorUtils;
-import com.ptithcm.quanlichitieu.data.local.util.IdGenerator;
+import com.ptithcm.quanlichitieu.utils.IdGenerator;
 import com.ptithcm.quanlichitieu.data.model.Budget;
 
 import java.util.ArrayList;

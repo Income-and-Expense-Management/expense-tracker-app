@@ -11,7 +11,7 @@ import androidx.annotation.Nullable;
 import com.ptithcm.quanlichitieu.data.local.BudgetDatabaseHelper;
 import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.WalletEntry;
 import com.ptithcm.quanlichitieu.data.local.util.CursorUtils;
-import com.ptithcm.quanlichitieu.data.local.util.IdGenerator;
+import com.ptithcm.quanlichitieu.utils.IdGenerator;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
 
 import java.util.ArrayList;

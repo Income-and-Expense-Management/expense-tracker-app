@@ -1,4 +1,4 @@
-package com.ptithcm.quanlichitieu.data.local.util;
+package com.ptithcm.quanlichitieu.utils;
 
 import java.util.UUID;
 

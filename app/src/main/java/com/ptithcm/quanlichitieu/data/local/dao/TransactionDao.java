@@ -13,7 +13,7 @@ import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.CategoryEn
 import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.TransactionEntry;
 import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.WalletEntry;
 import com.ptithcm.quanlichitieu.data.local.util.CursorUtils;
-import com.ptithcm.quanlichitieu.data.local.util.IdGenerator;
+import com.ptithcm.quanlichitieu.utils.IdGenerator;
 import com.ptithcm.quanlichitieu.data.model.Transaction;
 import com.ptithcm.quanlichitieu.data.model.TransactionType;
 
