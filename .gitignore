@@ -22,8 +22,6 @@ local.properties
 *.gz
 *.log
 
-/gradle/libs.versions.toml
-
 # Thư mục lưu cấu hình thiết bị/máy ảo (Rất quan trọng)
 .idea/deploymentTargetSelector.xml
 .idea/deviceManager.xml
