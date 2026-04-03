@@ -3,6 +3,7 @@ package com.ptithcm.quanlichitieu.ui.wallet;
 import android.app.Application;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -13,30 +14,47 @@ import com.ptithcm.quanlichitieu.data.model.Wallet;
 
 import java.util.List;
 
-/**
- * WalletViewModel: Manages wallet business logic and data operations.
- * 
- * SOLID Principles Applied:
- * - Single Responsibility: Only handles wallet-related business logic
- * - Dependency Inversion: Depends on WalletDao abstraction
- * 
- * This ViewModel encapsulates all database operations for wallets,
- * keeping the UI layer (Fragments) free of business logic.
- */
 public class WalletViewModel extends AndroidViewModel {
 
     private final WalletDao walletDao;
-    
+
     private final MutableLiveData<List<Wallet>> wallets = new MutableLiveData<>();
     private final MutableLiveData<Wallet> selectedWallet = new MutableLiveData<>();
     private final MutableLiveData<SaveResult> saveResult = new MutableLiveData<>();
 
-    // TODO: Lấy userId từ session/auth service
-    private String currentUserId = null;
+    /**
+     * When auth isn't implemented yet, legacy data may have user_id = NULL.
+     * We keep currentUserId nullable by default for backward compatibility.
+     */
+    @Nullable
+    private String currentUserId;
 
     public WalletViewModel(@NonNull Application application) {
         super(application);
         this.walletDao = DatabaseManager.getInstance(application).getWalletDao();
+        this.currentUserId = null;
+    }
+
+    /**
+     * Allow Activities/Fragments to set the current userId (when auth is implemented).
+     */
+    public void setCurrentUserId(@Nullable String userId) {
+        this.currentUserId = (userId == null || userId.trim().isEmpty()) ? null : userId;
+    }
+
+    @Nullable
+    private String userIdOrNull() {
+        return (currentUserId == null || currentUserId.trim().isEmpty()) ? null : currentUserId;
+    }
+
+    private List<Wallet> getWalletsForCurrentUserOrLegacyFallback() {
+        String userId = userIdOrNull();
+        List<Wallet> list = walletDao.getByUserId(userId);
+        if ((list == null || list.isEmpty()) && userId != null) {
+            // Fallback: app versions before auth stored wallets with user_id = NULL.
+            list = walletDao.getByUserId(null);
+        }
+        return list;
     }
 
     public LiveData<List<Wallet>> getWallets() {
@@ -52,97 +70,88 @@ public class WalletViewModel extends AndroidViewModel {
     }
 
     /**
-     * Loads the first wallet from database.
-     * Used for displaying primary wallet information.
+     * Tải ví đang được chọn (active) hoặc ví đầu tiên nếu chưa có ví nào active
      */
-    public void loadFirstWallet() {
-        List<Wallet> walletList = walletDao.getByUserId(currentUserId);
-        if (!walletList.isEmpty()) {
-            selectedWallet.setValue(walletList.get(0));
-        } else {
+    public void loadActiveWallet() {
+        List<Wallet> walletList = getWalletsForCurrentUserOrLegacyFallback();
+        if (walletList == null || walletList.isEmpty()) {
             selectedWallet.setValue(null);
+            return;
+        }
+
+        Wallet active = null;
+        for (Wallet w : walletList) {
+            if (w.isActive()) {
+                active = w;
+                break;
+            }
+        }
+
+        if (active == null) {
+            active = walletList.get(0);
+            selectWallet(active);
+        } else {
+            selectedWallet.setValue(active);
         }
     }
 
     /**
-     * Loads all wallets from database.
+     * Thực hiện chọn ví: Cập nhật DB và thông báo cho các Fragment đang quan sát
      */
+    public void selectWallet(Wallet wallet) {
+        if (wallet == null) return;
+
+        String userId = userIdOrNull();
+        // If wallet belongs to legacy NULL user, keep operating on NULL user group
+        if (wallet.getUserId() == null) userId = null;
+
+        walletDao.setActiveWallet(wallet.getId(), userId);
+        selectedWallet.setValue(wallet);
+        loadAllWallets();
+    }
+
     public void loadAllWallets() {
-        List<Wallet> walletList = walletDao.getByUserId(currentUserId);
+        List<Wallet> walletList = getWalletsForCurrentUserOrLegacyFallback();
         wallets.setValue(walletList);
     }
 
-    /**
-     * Validates and saves a new wallet to database.
-     * 
-     * @param name Wallet name
-     * @param balanceStr Balance as string (will be parsed)
-     */
     public void saveWallet(String name, String balanceStr) {
-        // Validation
         if (name == null || name.trim().isEmpty()) {
             saveResult.setValue(new SaveResult(false, "Vui lòng nhập tên ví"));
             return;
         }
 
-        if (balanceStr == null || balanceStr.trim().isEmpty()) {
-            saveResult.setValue(new SaveResult(false, "Vui lòng nhập số dư"));
-            return;
-        }
-
         try {
             long balance = Long.parseLong(balanceStr.trim().replace(",", "").replace(".", ""));
-            
-            if (balance < 0) {
-                saveResult.setValue(new SaveResult(false, "Số dư không thể âm"));
-                return;
-            }
 
-            // Sử dụng Builder pattern để tạo Wallet
+            String userId = userIdOrNull();
             Wallet wallet = new Wallet.Builder()
-                    .setUserId(currentUserId)
+                    .setUserId(userId)
                     .setName(name.trim())
                     .setInitialBalance(balance)
                     .setCurrency("VND")
-                    .setIsActive(true)
+                    .setIsActive(wallets.getValue() == null || wallets.getValue().isEmpty())
                     .build();
-            
+
             String walletId = walletDao.insert(wallet);
-            
+
             if (walletId != null) {
-                saveResult.setValue(new SaveResult(true, "Thêm ví thành công: " + name));
-                
-                // Reload wallet data
-                loadFirstWallet();
+                saveResult.setValue(new SaveResult(true, "Thêm ví thành công"));
                 loadAllWallets();
+                if (wallet.isActive()) selectedWallet.setValue(wallet);
             } else {
                 saveResult.setValue(new SaveResult(false, "Lỗi khi lưu ví"));
             }
-            
-        } catch (NumberFormatException e) {
-            saveResult.setValue(new SaveResult(false, "Số dư không hợp lệ"));
+        } catch (Exception e) {
+            saveResult.setValue(new SaveResult(false, "Dữ liệu không hợp lệ"));
         }
     }
 
-    /**
-     * Result class for save operations.
-     * Encapsulates success/failure state and message.
-     */
     public static class SaveResult {
         private final boolean success;
         private final String message;
-
-        public SaveResult(boolean success, String message) {
-            this.success = success;
-            this.message = message;
-        }
-
-        public boolean isSuccess() {
-            return success;
-        }
-
-        public String getMessage() {
-            return message;
-        }
+        public SaveResult(boolean success, String message) { this.success = success; this.message = message; }
+        public boolean isSuccess() { return success; }
+        public String getMessage() { return message; }
     }
 }

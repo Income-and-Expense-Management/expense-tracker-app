@@ -14,7 +14,7 @@ import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.ui.account.AccountFragment;
 import com.ptithcm.quanlichitieu.ui.home.HomeFragment;
 import com.ptithcm.quanlichitieu.ui.transaction.TransactionFragment;
-import com.ptithcm.quanlichitieu.ui.wallet.WalletFragment;
+import com.ptithcm.quanlichitieu.ui.budget.BudgetFragment;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -22,16 +22,27 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG_HOME = "frag_home";
     private static final String TAG_TRANSACTION = "frag_transaction";
-    private static final String TAG_WALLET = "frag_wallet";
     private static final String TAG_ACCOUNT = "frag_account";
+    private static final String TAG_BUDGET = "frag_budget";
 
     private Fragment activeFragment;
     private HomeFragment homeFragment;
     private TransactionFragment transactionFragment;
-    private WalletFragment walletFragment;
+    private BudgetFragment budgetFragment;
     private AccountFragment accountFragment;
 
     private BottomNavigationView bottomNav;
+
+    /**
+     * Open Wallet list as a separate screen (not a bottom tab).
+     * This keeps bottom navigation clean while still allowing Home -> "See all wallets".
+     */
+    public void openWalletList() {
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragmentContainer, new com.ptithcm.quanlichitieu.ui.wallet.WalletFragment())
+                .addToBackStack(null)
+                .commit();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,16 +68,16 @@ public class MainActivity extends AppCompatActivity {
     private void initFragments(String username) {
         homeFragment = HomeFragment.newInstance(username);
         transactionFragment = new TransactionFragment();
-        walletFragment = new com.ptithcm.quanlichitieu.ui.wallet.WalletFragment();
+        budgetFragment = new BudgetFragment();
         accountFragment = new com.ptithcm.quanlichitieu.ui.account.AccountFragment();
 
         getSupportFragmentManager().beginTransaction()
                 .add(R.id.fragmentContainer, homeFragment, TAG_HOME)
                 .add(R.id.fragmentContainer, transactionFragment, TAG_TRANSACTION)
-                .add(R.id.fragmentContainer, walletFragment, TAG_WALLET)
+                .add(R.id.fragmentContainer, budgetFragment, TAG_BUDGET)
                 .add(R.id.fragmentContainer, accountFragment, TAG_ACCOUNT)
                 .hide(transactionFragment)
-                .hide(walletFragment)
+                .hide(budgetFragment)
                 .hide(accountFragment)
                 .commit();
 
@@ -76,12 +87,12 @@ public class MainActivity extends AppCompatActivity {
     private void restoreFragments() {
         homeFragment = (HomeFragment) getSupportFragmentManager().findFragmentByTag(TAG_HOME);
         transactionFragment = (TransactionFragment) getSupportFragmentManager().findFragmentByTag(TAG_TRANSACTION);
-        walletFragment = (WalletFragment) getSupportFragmentManager().findFragmentByTag(TAG_WALLET);
+        budgetFragment = (BudgetFragment) getSupportFragmentManager().findFragmentByTag(TAG_BUDGET);
         accountFragment = (AccountFragment) getSupportFragmentManager().findFragmentByTag(TAG_ACCOUNT);
 
         if (homeFragment != null && homeFragment.isVisible()) activeFragment = homeFragment;
         else if (transactionFragment != null && transactionFragment.isVisible()) activeFragment = transactionFragment;
-        else if (walletFragment != null && walletFragment.isVisible()) activeFragment = walletFragment;
+        else if (budgetFragment != null && budgetFragment.isVisible()) activeFragment = budgetFragment;
         else if (accountFragment != null && accountFragment.isVisible()) activeFragment = accountFragment;
         else activeFragment = homeFragment;
     }
@@ -96,8 +107,8 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_transaction) {
                 switchFragment(transactionFragment);
                 return true;
-            } else if (id == R.id.nav_wallet) {
-                switchFragment(walletFragment);
+            } else if (id == R.id.nav_budget) {
+                switchFragment(budgetFragment);
                 return true;
             } else if (id == R.id.nav_account) {
                 switchFragment(accountFragment);
@@ -132,6 +143,11 @@ public class MainActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
+                if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                    getSupportFragmentManager().popBackStack();
+                    return;
+                }
+
                 if (activeFragment != homeFragment) {
                     switchFragment(homeFragment);
                     bottomNav.setSelectedItemId(R.id.nav_home);

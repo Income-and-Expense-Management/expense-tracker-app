@@ -16,8 +16,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.ptithcm.quanlichitieu.R;
-import com.ptithcm.quanlichitieu.data.model.Wallet;
 import com.ptithcm.quanlichitieu.ui.home.adapter.TopExpenseAdapter;
+import com.ptithcm.quanlichitieu.ui.main.MainActivity;
+import com.ptithcm.quanlichitieu.ui.wallet.WalletViewModel;
 
 import java.util.Locale;
 
@@ -25,7 +26,8 @@ public class HomeFragment extends Fragment {
 
     public static final String ARG_USERNAME = "arg_username";
 
-    private HomeViewModel viewModel;
+    private HomeViewModel homeViewModel;
+    private WalletViewModel walletViewModel;
     private TopExpenseAdapter topExpenseAdapter;
 
     private TextView tvHomeTitle;
@@ -56,19 +58,23 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        viewModel = new ViewModelProvider(this).get(HomeViewModel.class);
+        homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
+        // Sử dụng Activity scope để dùng chung dữ liệu ví với WalletFragment
+        walletViewModel = new ViewModelProvider(requireActivity()).get(WalletViewModel.class);
 
         initViews(view);
         setupTopExpensesList();
         setupPeriodToggle();
         setupWalletActions();
-        observeViewModel();
+        observeViewModels();
 
         String username = getArguments() != null
                 ? getArguments().getString(ARG_USERNAME, "Duy") : "Duy";
-        viewModel.setUsername(username);
-        viewModel.loadWallet();
-        viewModel.loadTopExpenses();
+        homeViewModel.setUsername(username);
+        
+        // Tải ví đang hoạt động
+        walletViewModel.loadActiveWallet();
+        homeViewModel.loadTopExpenses();
     }
 
     private void initViews(View view) {
@@ -97,33 +103,39 @@ public class HomeFragment extends Fragment {
         togglePeriod.check(R.id.btnMonth);
         togglePeriod.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
             if (isChecked) {
-                viewModel.setPeriodFilter(checkedId == R.id.btnMonth);
+                homeViewModel.setPeriodFilter(checkedId == R.id.btnMonth);
             }
         });
     }
 
     private void setupWalletActions() {
-        View.OnClickListener addWalletListener = v -> {
-            requireActivity().getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragmentContainer,
-                            new com.ptithcm.quanlichitieu.ui.wallet.AddWalletFragment())
-                    .addToBackStack(null)
-                    .commit();
-        };
+        if (tvSeeAllWallets != null) {
+            tvSeeAllWallets.setOnClickListener(v -> {
+                if (requireActivity() instanceof MainActivity) {
+                    ((MainActivity) requireActivity()).openWalletList();
+                }
+            });
+        }
 
-        if (tvSeeAllWallets != null) tvSeeAllWallets.setOnClickListener(addWalletListener);
-        if (cardWallet != null) cardWallet.setOnClickListener(addWalletListener);
+        if (cardWallet != null) {
+            cardWallet.setOnClickListener(v -> {
+                requireActivity().getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragmentContainer,
+                                new com.ptithcm.quanlichitieu.ui.wallet.AddWalletFragment())
+                        .addToBackStack(null)
+                        .commit();
+            });
+        }
     }
 
-    private void observeViewModel() {
-        viewModel.getUsername().observe(getViewLifecycleOwner(), username -> {
-            if (tvHomeTitle != null) {
-                tvHomeTitle.setText("Hello " + username + "!");
-            }
+    private void observeViewModels() {
+        homeViewModel.getUsername().observe(getViewLifecycleOwner(), username -> {
+            if (tvHomeTitle != null) tvHomeTitle.setText("Hello " + username + "!");
         });
 
-        viewModel.getWallet().observe(getViewLifecycleOwner(), wallet -> {
+        // Quan sát ví đang được chọn từ WalletViewModel (Shared)
+        walletViewModel.getSelectedWallet().observe(getViewLifecycleOwner(), wallet -> {
             if (wallet != null) {
                 String balanceStr = String.format(Locale.getDefault(), "%,d đ", wallet.getInitialBalance());
                 tvBalanceValue.setText(balanceStr);
@@ -136,13 +148,13 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        viewModel.getTopExpenses().observe(getViewLifecycleOwner(), expenses ->
+        homeViewModel.getTopExpenses().observe(getViewLifecycleOwner(), expenses ->
                 topExpenseAdapter.setExpenses(expenses));
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        viewModel.loadWallet();
+        walletViewModel.loadActiveWallet();
     }
 }
