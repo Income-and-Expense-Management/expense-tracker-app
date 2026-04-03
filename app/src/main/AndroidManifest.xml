@@ -11,7 +11,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.QuanLiChiTieu">
-        <!-- LoginActivity is now the launcher activity (no custom splash screen) -->
+        <!-- LoginActivity: Standalone authentication flow (launcher) -->
         <activity
             android:name=".ui.login.LoginActivity"
             android:exported="true"
@@ -21,15 +21,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <!-- MainActivity: Single host Activity with Fragment navigation -->
         <activity
-            android:name=".ui.home.HomeActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.wallet.AddWalletActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.transaction.TransactionActivity"
-            android:exported="false" />
+            android:name=".ui.main.MainActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

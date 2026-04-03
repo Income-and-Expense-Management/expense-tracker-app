@@ -1,100 +1,230 @@
 package com.ptithcm.quanlichitieu.data.local;
 
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
-import com.ptithcm.quanlichitieu.data.model.Wallet;
+import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract;
+import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.BudgetEntry;
+import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.CategoryEntry;
+import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.TransactionEntry;
+import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.UserEntry;
+import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.WalletEntry;
 
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * SQLiteOpenHelper chính cho ứng dụng quản lý chi tiêu.
+ * 
+ * Tính năng chính:
+ * - Bật Foreign Key constraints trong onConfigure()
+ * - Tạo tất cả các bảng theo đúng thứ tự dependency trong onCreate()
+ * - Drop bảng theo đúng thứ tự ngược để không vi phạm FK trong onUpgrade()
+ * - Singleton pattern để đảm bảo chỉ có một instance duy nhất
+ * 
+ * Thứ tự dependency của các bảng:
+ * 1. users (không phụ thuộc bảng nào)
+ * 2. wallets (phụ thuộc users)
+ * 3. categories (phụ thuộc users)
+ * 4. transactions (phụ thuộc wallets, categories)
+ * 5. budgets (phụ thuộc wallets, categories)
+ */
 public class BudgetDatabaseHelper extends SQLiteOpenHelper {
 
-    private static final String DATABASE_NAME = "budget.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final String TAG = "BudgetDatabaseHelper";
+    
+    // Singleton instance
+    private static volatile BudgetDatabaseHelper instance;
 
-    // Wallet Table
-    private static final String TABLE_WALLET = "wallet";
-    private static final String COLUMN_ID = "id";
-    private static final String COLUMN_NAME = "name";
-    private static final String COLUMN_BALANCE = "balance";
-
-    public BudgetDatabaseHelper(Context context) {
-        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    /**
+     * Lấy instance duy nhất của BudgetDatabaseHelper (Singleton pattern).
+     * Thread-safe với double-checked locking.
+     */
+    public static BudgetDatabaseHelper getInstance(Context context) {
+        if (instance == null) {
+            synchronized (BudgetDatabaseHelper.class) {
+                if (instance == null) {
+                    instance = new BudgetDatabaseHelper(context.getApplicationContext());
+                }
+            }
+        }
+        return instance;
     }
 
+    /**
+     * Private constructor cho Singleton pattern.
+     * Sử dụng Application context để tránh memory leak.
+     */
+    private BudgetDatabaseHelper(Context context) {
+        super(context, DatabaseContract.DATABASE_NAME, null, DatabaseContract.DATABASE_VERSION);
+    }
+
+    /**
+     * QUAN TRỌNG: Bật Foreign Key constraints.
+     * Phải gọi trước onCreate() và onUpgrade().
+     * Đây là điều kiện tiên quyết để các ràng buộc FK hoạt động.
+     */
+    @Override
+    public void onConfigure(SQLiteDatabase db) {
+        super.onConfigure(db);
+        db.setForeignKeyConstraintsEnabled(true);
+        Log.d(TAG, "Foreign key constraints enabled");
+    }
+
+    /**
+     * Tạo tất cả các bảng theo thứ tự dependency.
+     * Bảng cha phải được tạo trước bảng con.
+     */
     @Override
     public void onCreate(SQLiteDatabase db) {
-        String CREATE_WALLET_TABLE = "CREATE TABLE " + TABLE_WALLET + " (" +
-                COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                COLUMN_NAME + " TEXT, " +
-                COLUMN_BALANCE + " REAL)";
-        db.execSQL(CREATE_WALLET_TABLE);
+        Log.d(TAG, "Creating database tables...");
+
+        // 1. Tạo bảng users (không phụ thuộc bảng nào)
+        db.execSQL(UserEntry.SQL_CREATE_TABLE);
+        Log.d(TAG, "Created table: " + UserEntry.TABLE_NAME);
+
+        // 2. Tạo bảng wallets (phụ thuộc users)
+        db.execSQL(WalletEntry.SQL_CREATE_TABLE);
+        Log.d(TAG, "Created table: " + WalletEntry.TABLE_NAME);
+
+        // 3. Tạo bảng categories (phụ thuộc users)
+        db.execSQL(CategoryEntry.SQL_CREATE_TABLE);
+        Log.d(TAG, "Created table: " + CategoryEntry.TABLE_NAME);
+
+        // 4. Tạo bảng transactions (phụ thuộc wallets, categories)
+        db.execSQL(TransactionEntry.SQL_CREATE_TABLE);
+        Log.d(TAG, "Created table: " + TransactionEntry.TABLE_NAME);
+
+        // 5. Tạo bảng budgets (phụ thuộc wallets, categories)
+        db.execSQL(BudgetEntry.SQL_CREATE_TABLE);
+        Log.d(TAG, "Created table: " + BudgetEntry.TABLE_NAME);
+
+        // Tạo indexes để tối ưu performance
+        db.execSQL(TransactionEntry.SQL_CREATE_INDEX_WALLET);
+        db.execSQL(TransactionEntry.SQL_CREATE_INDEX_CATEGORY);
+        db.execSQL(TransactionEntry.SQL_CREATE_INDEX_DATE);
+        Log.d(TAG, "Created indexes for transactions table");
+
+        // Insert các danh mục mặc định của hệ thống
+        insertDefaultCategories(db);
+
+        Log.d(TAG, "Database created successfully");
     }
 
+    /**
+     * Xử lý nâng cấp database.
+     * Drop bảng theo thứ tự ngược (bảng con trước, bảng cha sau)
+     * để không vi phạm Foreign Key constraints.
+     * 
+     * Trong production, nên sử dụng migration scripts thay vì drop toàn bộ.
+     */
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_WALLET);
+        Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion);
+
+        // Tắt tạm FK để drop bảng không bị lỗi
+        db.execSQL("PRAGMA foreign_keys = OFF");
+
+        // Drop theo thứ tự ngược: bảng con trước, bảng cha sau
+        // 5. Drop budgets (phụ thuộc wallets, categories)
+        db.execSQL(BudgetEntry.SQL_DROP_TABLE);
+        
+        // 4. Drop transactions (phụ thuộc wallets, categories)
+        db.execSQL(TransactionEntry.SQL_DROP_TABLE);
+        
+        // 3. Drop categories (phụ thuộc users)
+        db.execSQL(CategoryEntry.SQL_DROP_TABLE);
+        
+        // 2. Drop wallets (phụ thuộc users)
+        db.execSQL(WalletEntry.SQL_DROP_TABLE);
+        
+        // 1. Drop users (không phụ thuộc bảng nào)
+        db.execSQL(UserEntry.SQL_DROP_TABLE);
+
+        // Bật lại FK
+        db.execSQL("PRAGMA foreign_keys = ON");
+
+        // Tạo lại database
         onCreate(db);
     }
 
-    // CRUD for Wallet
-
-    public long addWallet(Wallet wallet) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_NAME, wallet.getName());
-        values.put(COLUMN_BALANCE, wallet.getBalance());
-        long id = db.insert(TABLE_WALLET, null, values);
-        db.close();
-        return id;
+    /**
+     * Xử lý downgrade database (nếu cần).
+     * Mặc định: tái tạo toàn bộ database.
+     */
+    @Override
+    public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        onUpgrade(db, oldVersion, newVersion);
     }
 
-    public void updateWallet(Wallet wallet) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_NAME, wallet.getName());
-        values.put(COLUMN_BALANCE, wallet.getBalance());
-        db.update(TABLE_WALLET, values, COLUMN_ID + " = ?", new String[]{String.valueOf(wallet.getId())});
-        db.close();
-    }
+    /**
+     * Insert các danh mục mặc định của hệ thống.
+     * user_id = null để đánh dấu là danh mục hệ thống.
+     */
+    private void insertDefaultCategories(SQLiteDatabase db) {
+        Log.d(TAG, "Inserting default categories...");
 
-    public List<Wallet> getAllWallets() {
-        List<Wallet> wallets = new ArrayList<>();
-        String selectQuery = "SELECT * FROM " + TABLE_WALLET;
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery(selectQuery, null);
+        // Danh mục chi tiêu mặc định
+        String[] expenseCategories = {
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
+                        "VALUES ('cat_expense_food', NULL, 'Ăn uống', 'EXPENSE', 'ic_food')",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
+                        "VALUES ('cat_expense_transport', NULL, 'Di chuyển', 'EXPENSE', 'ic_transport')",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
+                        "VALUES ('cat_expense_shopping', NULL, 'Mua sắm', 'EXPENSE', 'ic_shopping')",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
+                        "VALUES ('cat_expense_entertainment', NULL, 'Giải trí', 'EXPENSE', 'ic_entertainment')",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
+                        "VALUES ('cat_expense_bills', NULL, 'Hóa đơn', 'EXPENSE', 'ic_bills')",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
+                        "VALUES ('cat_expense_health', NULL, 'Sức khỏe', 'EXPENSE', 'ic_health')",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
+                        "VALUES ('cat_expense_education', NULL, 'Giáo dục', 'EXPENSE', 'ic_education')",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
+                        "VALUES ('cat_expense_other', NULL, 'Khác', 'EXPENSE', 'ic_other')"
+        };
 
-        if (cursor.moveToFirst()) {
-            do {
-                int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID));
-                String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_NAME));
-                double balance = cursor.getDouble(cursor.getColumnIndexOrThrow(COLUMN_BALANCE));
-                wallets.add(new Wallet(id, name, balance));
-            } while (cursor.moveToNext());
+        // Danh mục thu nhập mặc định
+        String[] incomeCategories = {
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
+                        "VALUES ('cat_income_salary', NULL, 'Lương', 'INCOME', 'ic_salary')",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
+                        "VALUES ('cat_income_bonus', NULL, 'Thưởng', 'INCOME', 'ic_bonus')",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
+                        "VALUES ('cat_income_investment', NULL, 'Đầu tư', 'INCOME', 'ic_investment')",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
+                        "VALUES ('cat_income_gift', NULL, 'Quà tặng', 'INCOME', 'ic_gift')",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
+                        "VALUES ('cat_income_other', NULL, 'Khác', 'INCOME', 'ic_other')"
+        };
+
+        // Execute các lệnh insert
+        for (String sql : expenseCategories) {
+            db.execSQL(sql);
         }
-        cursor.close();
-        db.close();
-        return wallets;
+        for (String sql : incomeCategories) {
+            db.execSQL(sql);
+        }
+
+        Log.d(TAG, "Default categories inserted");
     }
 
-    // New helper method: Get the first wallet or null if none
-    public Wallet getFirstWallet() {
-        Wallet wallet = null;
-        String selectQuery = "SELECT * FROM " + TABLE_WALLET + " LIMIT 1";
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery(selectQuery, null);
-        if (cursor.moveToFirst()) {
-             int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID));
-             String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_NAME));
-             double balance = cursor.getDouble(cursor.getColumnIndexOrThrow(COLUMN_BALANCE));
-             wallet = new Wallet(id, name, balance);
-        }
-        cursor.close();
-        db.close();
-        return wallet;
+    /**
+     * Lấy database có thể ghi.
+     * Override để thêm logging hoặc xử lý đặc biệt nếu cần.
+     */
+    @Override
+    public SQLiteDatabase getWritableDatabase() {
+        Log.d(TAG, "Getting writable database");
+        return super.getWritableDatabase();
+    }
+
+    /**
+     * Lấy database chỉ đọc.
+     * Override để thêm logging hoặc xử lý đặc biệt nếu cần.
+     */
+    @Override
+    public SQLiteDatabase getReadableDatabase() {
+        Log.d(TAG, "Getting readable database");
+        return super.getReadableDatabase();
     }
 }

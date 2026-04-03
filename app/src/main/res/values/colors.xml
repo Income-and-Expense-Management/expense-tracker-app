@@ -19,7 +19,9 @@
     <color name="login_google_text">#1F1F1F</color>
     <color name="login_overlay_line">#14FFFFFF</color>
 
+
     <!-- Home Screen Colors -->
+    <color name="home_bg">#000000</color>
     <color name="home_background_dark">#000000</color> <!-- Dark background -->
     <color name="home_header_green_start">#2C5E3D</color> <!-- Gradient Start -->
     <color name="home_header_green_end">#1B3A28</color> <!-- Gradient End -->
@@ -32,4 +34,7 @@
     <color name="home_income_white">#000000</color> <!-- White text for income -->
     <color name="home_wallet_orange">#FF8C42</color> <!-- Orange wallet icon -->
     <color name="home_chart_line">#E57373</color> <!-- Chart line color -->
+
+    <!-- Navigation Colors -->
+    <color name="nav_item_unselected">#808080</color>
 </resources>

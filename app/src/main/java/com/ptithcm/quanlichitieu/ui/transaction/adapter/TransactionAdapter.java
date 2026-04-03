@@ -1,5 +1,6 @@
 package com.ptithcm.quanlichitieu.ui.transaction.adapter;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -102,17 +103,33 @@ public class TransactionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         }
 
         void bind(Transaction transaction) {
-            imgIcon.setImageResource(transaction.getIconResId());
-            tvCategory.setText(transaction.getCategory());
+            Context context = itemView.getContext();
+            
+            // Lấy icon resource từ iconId (tên drawable)
+            String iconId = transaction.getIconId();
+            if (iconId != null && !iconId.isEmpty()) {
+                int resId = context.getResources().getIdentifier(
+                        iconId, "drawable", context.getPackageName());
+                if (resId != 0) {
+                    imgIcon.setImageResource(resId);
+                } else {
+                    imgIcon.setImageResource(R.drawable.ic_wallet);
+                }
+            } else {
+                imgIcon.setImageResource(R.drawable.ic_wallet);
+            }
+            
+            // Sử dụng categoryName thay vì getCategory()
+            tvCategory.setText(transaction.getCategoryName());
             tvWalletSource.setText(transaction.getWalletName());
 
             String amountStr;
             if (transaction.isExpense()) {
-                amountStr = String.format(Locale.getDefault(), "- %,.0f", transaction.getAmount());
+                amountStr = String.format(Locale.getDefault(), "- %,d", transaction.getAmount());
                 tvAmount.setTextColor(itemView.getContext().getResources().getColor(R.color.home_expense_red, null));
                 imgTrend.setImageResource(R.drawable.ic_trend_down);
             } else {
-                amountStr = String.format(Locale.getDefault(), "+ %,.0f", transaction.getAmount());
+                amountStr = String.format(Locale.getDefault(), "+ %,d", transaction.getAmount());
                 tvAmount.setTextColor(itemView.getContext().getResources().getColor(R.color.home_accent_green, null));
                 imgTrend.setImageResource(R.drawable.ic_trend_up);
             }
