@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/home_bg"
+    android:background="#161618"
     android:fillViewport="true"
     tools:context=".ui.account.AccountFragment">
 
@@ -15,20 +16,26 @@
         <!-- Top bar: Title + Support -->
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingHorizontal="16dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="8dp">
+            android:layout_height="60dp"
+            android:paddingHorizontal="16dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
-                android:text="Tai khoan"
+                android:text="Tài khoản"
                 android:textColor="@android:color/white"
-                android:textSize="20sp"
+                android:textSize="22sp"
                 android:textStyle="bold" />
+
+            <!-- Underline for Title -->
+            <View
+                android:layout_width="80dp"
+                android:layout_height="3dp"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentBottom="true"
+                android:background="#3A82EE" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -41,18 +48,26 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Ho tro"
+                    android:text="Hỗ trợ"
+                    android:textStyle="bold"
                     android:textColor="@android:color/white"
                     android:textSize="14sp" />
 
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:layout_marginStart="4dp"
+                    android:layout_marginStart="8dp"
                     android:src="@drawable/ic_help_outline"
+                    app:tint="@android:color/white"
                     android:contentDescription="Help" />
             </LinearLayout>
         </RelativeLayout>
+
+        <!-- Divider line -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="#000000" />
 
         <!-- Avatar -->
         <LinearLayout
@@ -60,36 +75,43 @@
             android:layout_height="wrap_content"
             android:gravity="center_horizontal"
             android:orientation="vertical"
-            android:paddingTop="24dp"
-            android:paddingBottom="24dp">
+            android:paddingTop="32dp"
+            android:paddingBottom="40dp">
 
-            <ImageView
-                android:id="@+id/imgAvatar"
-                android:layout_width="96dp"
-                android:layout_height="96dp"
-                android:background="@drawable/bg_avatar_circle"
-                android:src="@drawable/ic_account"
-                android:padding="24dp"
-                android:contentDescription="Avatar" />
+            <androidx.cardview.widget.CardView
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                app:cardCornerRadius="50dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="#333333">
+                <ImageView
+                    android:id="@+id/imgAvatar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_account"
+                    android:contentDescription="Avatar" />
+            </androidx.cardview.widget.CardView>
 
             <TextView
                 android:id="@+id/tvFullName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="16dp"
                 android:textColor="@android:color/white"
-                android:textSize="18sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
-                tools:text="Nguyen Van A" />
+                tools:text="Duyfucknboy" />
 
             <TextView
                 android:id="@+id/tvEmail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="@color/login_accent_green"
+                android:layout_marginTop="8dp"
+                android:textColor="#52D18F"
                 android:textSize="14sp"
-                tools:text="email@gmail.com" />
+                android:textStyle="bold"
+                tools:text="Duyfucknboy@gmail.com" />
         </LinearLayout>
 
         <!-- Menu items -->
@@ -103,16 +125,16 @@
             <LinearLayout
                 android:id="@+id/menuMyWallet"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="64dp"
                 android:background="?android:attr/selectableItemBackground"
                 android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="8dp">
+                android:orientation="horizontal">
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_wallet"
+                    app:tint="@android:color/white"
                     android:contentDescription="Wallet" />
 
                 <TextView
@@ -120,15 +142,16 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
                     android:layout_weight="1"
-                    android:text="Vi cua toi"
+                    android:text="Ví của tôi"
                     android:textColor="@android:color/white"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_chevron_right"
+                    app:tint="@android:color/white"
                     android:contentDescription="Navigate" />
             </LinearLayout>
 
@@ -136,16 +159,17 @@
             <LinearLayout
                 android:id="@+id/menuGroup"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="64dp"
                 android:background="?android:attr/selectableItemBackground"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="8dp">
+                android:layout_marginTop="8dp">
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_group"
+                    app:tint="@android:color/white"
                     android:contentDescription="Group" />
 
                 <TextView
@@ -153,15 +177,16 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
                     android:layout_weight="1"
-                    android:text="Nhom"
+                    android:text="Nhóm"
                     android:textColor="@android:color/white"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_chevron_right"
+                    app:tint="@android:color/white"
                     android:contentDescription="Navigate" />
             </LinearLayout>
         </LinearLayout>
@@ -177,17 +202,19 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:paddingBottom="32dp"
-            android:paddingTop="24dp">
+            android:paddingBottom="48dp"
+            android:paddingTop="32dp">
 
             <Button
                 android:id="@+id/btnLogout"
-                android:layout_width="200dp"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_btn_logout"
-                android:text="Dang xuat"
+                android:layout_width="240dp"
+                android:layout_height="52dp"
+                android:backgroundTint="#D65A6B"
+                app:cornerRadius="26dp"
+                android:text="Đăng xuất"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
+                android:textStyle="bold"
                 android:textAllCaps="false" />
         </LinearLayout>
 

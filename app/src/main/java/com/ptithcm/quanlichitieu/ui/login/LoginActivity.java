@@ -24,6 +24,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.ui.main.MainActivity;
+import com.ptithcm.quanlichitieu.utils.ValidationUtils;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -64,8 +65,8 @@ public class LoginActivity extends AppCompatActivity {
 
 
         // Make "Sign Up" part clickable and open RegisterActivity
-        String full = "Don't have an account? Sign Up";
-        int start = full.indexOf("Sign Up");
+        String full = "Không có tải khoản? Đăng kí";
+        int start = full.indexOf("Đăng kí");
         SpannableString ss = new SpannableString(full);
         ClickableSpan clickableSpan = new ClickableSpan() {
             @Override
@@ -73,7 +74,7 @@ public class LoginActivity extends AppCompatActivity {
                 startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
             }
         };
-        ss.setSpan(clickableSpan, start, start + "Sign Up".length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        ss.setSpan(clickableSpan, start, start + "Đăng kí".length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         tvSignUpPrompt.setText(ss);
         tvSignUpPrompt.setMovementMethod(LinkMovementMethod.getInstance());
 
@@ -81,11 +82,16 @@ public class LoginActivity extends AppCompatActivity {
         setupPasswordToggle(etPassword);
 
         btnLogin.setOnClickListener(v -> {
-            String email = etEmail.getText().toString();
+            String email = etEmail.getText().toString().trim();
             String password = etPassword.getText().toString();
 
             if (email.isEmpty() || password.isEmpty()) {
                 Toast.makeText(this, R.string.enter_email_password, Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!ValidationUtils.isValidEmail(email)) {
+                Toast.makeText(this, "Vui lòng nhập định dạng email hợp lệ", Toast.LENGTH_SHORT).show();
                 return;
             }
 

@@ -57,9 +57,9 @@ public class RegisterActivity extends AppCompatActivity {
         TextView tvLoginPrompt = findViewById(R.id.tvLoginPrompt);
 
         // Make "Log In" part clickable and go back to LoginActivity
-        String fullText = "Already have an account? Log In";
+        String fullText = "Đã có tài khoản? Đăng nhập";
         SpannableString ss = new SpannableString(fullText);
-        int start = fullText.indexOf("Log In");
+        int start = fullText.indexOf("Đăng nhập");
         if (start != -1) {
             ClickableSpan clickableSpan = new ClickableSpan() {
                 @Override
@@ -67,7 +67,7 @@ public class RegisterActivity extends AppCompatActivity {
                     finish();
                 }
             };
-            ss.setSpan(clickableSpan, start, start + "Log In".length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            ss.setSpan(clickableSpan, start, start + "Đăng nhập".length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         tvLoginPrompt.setText(ss);
         tvLoginPrompt.setMovementMethod(LinkMovementMethod.getInstance());
