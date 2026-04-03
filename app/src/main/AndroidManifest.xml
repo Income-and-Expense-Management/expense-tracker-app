@@ -22,6 +22,12 @@
             </intent-filter>
         </activity>
         
+        <!-- RegisterActivity: simple registration screen -->
+        <activity
+            android:name=".ui.login.RegisterActivity"
+            android:exported="false"
+            android:label="@string/register_title" />
+
         <!-- MainActivity: Single host Activity with Fragment navigation -->
         <activity
             android:name=".ui.main.MainActivity"

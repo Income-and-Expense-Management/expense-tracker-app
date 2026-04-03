@@ -2,8 +2,14 @@ package com.ptithcm.quanlichitieu.ui.login;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -42,8 +48,23 @@ public class LoginActivity extends AppCompatActivity {
         EditText etEmail = findViewById(R.id.etEmail);
         EditText etPassword = findViewById(R.id.etPassword);
         btnLogin = findViewById(R.id.btnLogin);
+        TextView tvSignUpPrompt = findViewById(R.id.tvSignUpPrompt);
 
-        etEmail.setText("admin@test.com");
+        etEmail.setText(getString(R.string.default_email));
+
+        // Make "Sign Up" part clickable and open RegisterActivity
+        String full = "Don't have an account? Sign Up";
+        int start = full.indexOf("Sign Up");
+        SpannableString ss = new SpannableString(full);
+        ClickableSpan clickableSpan = new ClickableSpan() {
+            @Override
+            public void onClick(View widget) {
+                startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
+            }
+        };
+        ss.setSpan(clickableSpan, start, start + "Sign Up".length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        tvSignUpPrompt.setText(ss);
+        tvSignUpPrompt.setMovementMethod(LinkMovementMethod.getInstance());
 
         btnLogin.setOnClickListener(v -> {
             String email = etEmail.getText().toString();

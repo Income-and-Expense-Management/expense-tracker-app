@@ -10,5 +10,11 @@ public interface AuthService {
         void onError(String message);
     }
 
+    interface RegisterCallback {
+        void onSuccess(String username);
+        void onError(String message);
+    }
+
     void login(String email, String password, LoginCallback callback);
+    void register(String name, String email, String password, RegisterCallback callback);
 }

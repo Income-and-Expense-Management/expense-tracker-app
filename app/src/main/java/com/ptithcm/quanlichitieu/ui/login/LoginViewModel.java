@@ -33,7 +33,7 @@ public class LoginViewModel extends ViewModel {
     private final MutableLiveData<LoginState> loginState = new MutableLiveData<>(LoginState.idle());
 
     public LoginViewModel() {
-        this.authService = new MockAuthService();
+        this.authService = MockAuthService.getInstance();
     }
 
     public LiveData<LoginState> getLoginState() {

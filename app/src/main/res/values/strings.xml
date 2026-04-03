@@ -3,8 +3,9 @@
     <string name="welcome_message">Hello, %1$s!</string>
     <string name="login_success">Login Successful!</string>
     <string name="login_failed">Login Failed: %1$s</string>
-    <string name="logging_in">Logging in...</string>
+    <string name="logging_in">Logging in…</string>
     <string name="enter_email_password">Please enter email and password</string>
+    <string name="default_email">admin@test.com</string>
     <string name="welcome_user">Duy</string>
     <string name="home_title">Trang chủ</string>
     <string name="total_balance_label">Tổng số dư</string>
@@ -29,4 +30,11 @@
     <string name="nav_add">Thêm giao dịch</string>
     <string name="nav_budget">Ngân sách</string>
     <string name="nav_account">Tài khoản</string>
+
+    <!-- Register -->
+    <string name="register_title">Đăng ký</string>
+    <string name="enter_name">Vui lòng nhập tên của bạn</string>
+    <string name="passwords_not_match">Mật khẩu không khớp</string>
+    <string name="register_success">Đăng ký thành công</string>
+    <string name="registering">Đang đăng ký…</string>
 </resources>
