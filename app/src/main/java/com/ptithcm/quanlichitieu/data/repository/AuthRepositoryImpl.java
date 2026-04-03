@@ -88,21 +88,22 @@ public class AuthRepositoryImpl implements AuthRepository {
     }
 
     @Override
-    public void register(@NonNull String name, @NonNull String email,
+    public void register(@NonNull String full_name, @NonNull String email,
                          @NonNull String password, @NonNull AuthCallback<String> callback) {
         Log.d(TAG, "register: Sending request to " + ApiConfig.REGISTER_URL + " for email=" + email);
         try {
             JSONObject body = new JSONObject();
-            body.put("name", name);
+            body.put("full_name", full_name);
             body.put("email", email);
             body.put("password", password);
+            body.put("avatar_url", null);
 
             AuthJsonObjectRequest request = new AuthJsonObjectRequest(
                     Request.Method.POST,
                     ApiConfig.REGISTER_URL,
                     body,
                     response -> {
-                        Log.d(TAG, "register: Success response received");
+                        Log.d(TAG, "[REGISTER]: Success response received");
                         handleAuthSuccess(response, callback);
                     },
                     error -> {
@@ -172,8 +173,12 @@ public class AuthRepositoryImpl implements AuthRepository {
             tokenStorage.saveToken(token);
 
             JSONObject user = data.getJSONObject("user");
-            String fullName = user.getString("full_name");
-            String email = user.getString("email");
+
+            String fullName = user.isNull("full_name") ? null : user.optString("full_name", null);
+            if (fullName == null || fullName.isEmpty()) {
+                fullName = user.isNull("name") ? null : user.optString("name", null);
+            }
+            String email = user.isNull("email") ? null : user.optString("email", null);
             Log.d(TAG, "handleAuthSuccess: User fullName=" + fullName + ", email=" + email);
             tokenStorage.saveUserInfo(fullName, email);
 

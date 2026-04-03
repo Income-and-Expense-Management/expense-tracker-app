@@ -6,6 +6,8 @@ import android.text.SpannableString;
 import android.util.Log;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
+import android.text.method.PasswordTransformationMethod;
+import android.text.method.HideReturnsTransformationMethod;
 import android.text.style.ClickableSpan;
 import android.view.View;
 import android.widget.Button;
@@ -60,7 +62,6 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
         TextView tvSignUpPrompt = findViewById(R.id.tvSignUpPrompt);
 
-        etEmail.setText(getString(R.string.default_email));
 
         // Make "Sign Up" part clickable and open RegisterActivity
         String full = "Don't have an account? Sign Up";
@@ -76,6 +77,9 @@ public class LoginActivity extends AppCompatActivity {
         tvSignUpPrompt.setText(ss);
         tvSignUpPrompt.setMovementMethod(LinkMovementMethod.getInstance());
 
+        // Setup password visibility toggle
+        setupPasswordToggle(etPassword);
+
         btnLogin.setOnClickListener(v -> {
             String email = etEmail.getText().toString();
             String password = etPassword.getText().toString();
@@ -86,6 +90,31 @@ public class LoginActivity extends AppCompatActivity {
             }
 
             authViewModel.login(email, password);
+        });
+    }
+
+    private void setupPasswordToggle(EditText etPassword) {
+        etPassword.setOnTouchListener((v, event) -> {
+            final int DRAWABLE_END = 2;
+
+            if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+                if (etPassword.getCompoundDrawables()[DRAWABLE_END] != null) {
+                    if (event.getRawX() >= (etPassword.getRight() - etPassword.getCompoundDrawables()[DRAWABLE_END].getBounds().width())) {
+                        // Toggle password visibility
+                        if (etPassword.getTransformationMethod() instanceof PasswordTransformationMethod) {
+                            // Show password
+                            etPassword.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
+                        } else {
+                            // Hide password
+                            etPassword.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                        }
+                        // Keep cursor at the end
+                        etPassword.setSelection(etPassword.getText().length());
+                        return true;
+                    }
+                }
+            }
+            return false;
         });
     }
 

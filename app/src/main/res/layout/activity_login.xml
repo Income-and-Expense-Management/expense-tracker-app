@@ -7,6 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_diagonal_lines"
+    android:importantForAutofill="noExcludeDescendants"
     tools:context=".ui.login.LoginActivity">
 
     <!-- Scrollable content wrapper for small screens -->
@@ -149,28 +150,18 @@
                 app:layout_constraintTop_toBottomOf="@id/tvPasswordLabel" />
 
             <!-- ============================== -->
-            <!-- Section 5: Remember Me / Forgot -->
+            <!-- Section 5: Forgot Password      -->
             <!-- ============================== -->
-            <com.google.android.material.checkbox.MaterialCheckBox
-                android:id="@+id/cbRememberMe"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Remember me"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/etPassword" />
-
             <TextView
                 android:id="@+id/tvForgotPassword"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 android:text="Forgot Password?"
                 android:textColor="@color/login_accent_green"
                 android:textSize="14sp"
-                app:layout_constraintBaseline_toBaselineOf="@id/cbRememberMe"
-                app:layout_constraintEnd_toEndOf="parent" />
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/etPassword" />
 
             <!-- ============================== -->
             <!-- Section 6: Log In Button       -->
@@ -190,7 +181,7 @@
                 app:rippleColor="#66FFFFFF"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/cbRememberMe" />
+                app:layout_constraintTop_toBottomOf="@id/tvForgotPassword" />
 
             <!-- ============================== -->
             <!-- Section 7: "Or" Divider        -->
