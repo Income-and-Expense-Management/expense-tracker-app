@@ -3,6 +3,7 @@ package com.ptithcm.quanlichitieu.ui.login;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.SpannableString;
+import android.util.Log;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
@@ -24,12 +25,14 @@ import com.ptithcm.quanlichitieu.ui.main.MainActivity;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private LoginViewModel loginViewModel;
+    private static final String TAG = "LoginActivity";
+    private AuthViewModel authViewModel;
     private Button btnLogin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "onCreate");
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_login);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.loginRoot), (v, insets) -> {
@@ -38,7 +41,14 @@ public class LoginActivity extends AppCompatActivity {
             return insets;
         });
 
-        loginViewModel = new ViewModelProvider(this).get(LoginViewModel.class);
+        authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
+
+        // Skip login screen if a valid token already exists
+        if (authViewModel.isLoggedIn()) {
+            Log.d(TAG, "Token exists — auto-navigating to MainActivity");
+            navigateToMain(null);
+            return;
+        }
 
         setupUI();
         observeLoginState();
@@ -75,13 +85,15 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            loginViewModel.login(email, password);
+            authViewModel.login(email, password);
         });
     }
 
     private void observeLoginState() {
-        loginViewModel.getLoginState().observe(this, loginState -> {
-            switch (loginState.getState()) {
+        authViewModel.getLoginState().observe(this, authState -> {
+            Log.d(TAG, "observeLoginState: status=" + authState.getStatus()
+                    + ", data=" + authState.getData());
+            switch (authState.getStatus()) {
                 case LOADING:
                     btnLogin.setEnabled(false);
                     Toast.makeText(this, R.string.logging_in, Toast.LENGTH_SHORT).show();
@@ -89,12 +101,12 @@ public class LoginActivity extends AppCompatActivity {
                 case SUCCESS:
                     btnLogin.setEnabled(true);
                     Toast.makeText(this, R.string.login_success, Toast.LENGTH_SHORT).show();
-                    navigateToMain(loginState.getData());
+                    navigateToMain(authState.getData());
                     break;
                 case ERROR:
                     btnLogin.setEnabled(true);
                     Toast.makeText(this,
-                            getString(R.string.login_failed, loginState.getData()),
+                            getString(R.string.login_failed, authState.getData()),
                             Toast.LENGTH_SHORT).show();
                     break;
                 case IDLE:
@@ -105,6 +117,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void navigateToMain(String username) {
+        Log.d(TAG, "navigateToMain: username=" + username);
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra(MainActivity.EXTRA_USERNAME, username);
         startActivity(intent);
