@@ -30,6 +30,8 @@ public interface AuthRepository {
 
     boolean isLoggedIn();
 
+    String getUserId();
+
     String getUserFullName();
 
     String getUserEmail();

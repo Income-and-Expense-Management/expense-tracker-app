@@ -86,6 +86,7 @@ public class AuthViewModel extends AndroidViewModel {
     public LiveData<Boolean>   getSessionExpired() { return sessionExpired; }
 
     public boolean isLoggedIn()      { return authRepository.isLoggedIn(); }
+    public String getUserId()        { return authRepository.getUserId(); }
     public String getUserFullName()  { return authRepository.getUserFullName(); }
     public String getUserEmail()     { return authRepository.getUserEmail(); }
 

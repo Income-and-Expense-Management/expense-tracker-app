@@ -123,11 +123,18 @@ public class CategoryDao {
         List<Category> categories = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        // Lấy cả danh mục hệ thống và danh mục của user
-        String selection = CategoryEntry.COLUMN_TYPE + " = ? AND (" +
-                CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
-                CategoryEntry.COLUMN_USER_ID + " = ?)";
-        String[] selectionArgs = {type.getValue(), userId};
+        String selection;
+        String[] selectionArgs;
+
+        if (userId == null) {
+            selection = CategoryEntry.COLUMN_TYPE + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NULL";
+            selectionArgs = new String[]{ type.getValue() };
+        } else {
+            selection = CategoryEntry.COLUMN_TYPE + " = ? AND (" +
+                    CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
+                    CategoryEntry.COLUMN_USER_ID + " = ?)";
+            selectionArgs = new String[]{ type.getValue(), userId };
+        }
 
         Cursor cursor = null;
         try {
@@ -198,6 +205,10 @@ public class CategoryDao {
         List<Category> categories = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
+        if (userId == null) {
+            return categories; // Nếu userId null, trả về danh sách rỗng để tránh crash binding
+        }
+
         Cursor cursor = null;
         try {
             cursor = db.query(
@@ -233,9 +244,17 @@ public class CategoryDao {
         List<Category> categories = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        String selection = CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
-                CategoryEntry.COLUMN_USER_ID + " = ?";
-        String[] selectionArgs = {userId};
+        String selection;
+        String[] selectionArgs;
+
+        if (userId == null) {
+            selection = CategoryEntry.COLUMN_USER_ID + " IS NULL";
+            selectionArgs = null;
+        } else {
+            selection = CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
+                    CategoryEntry.COLUMN_USER_ID + " = ?";
+            selectionArgs = new String[]{ userId };
+        }
 
         Cursor cursor = null;
         try {
@@ -333,4 +352,5 @@ public class CategoryDao {
                 .setIconName(CursorUtils.getString(cursor, CategoryEntry.COLUMN_ICON_NAME))
                 .build();
     }
+
 }

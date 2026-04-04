@@ -153,6 +153,11 @@ public class AuthRepositoryImpl implements AuthRepository {
     }
 
     @Override
+    public String getUserId() {
+        return tokenStorage.getUserId();
+    }
+
+    @Override
     public String getUserFullName() {
         return tokenStorage.getUserFullName();
     }
@@ -172,6 +177,8 @@ public class AuthRepositoryImpl implements AuthRepository {
             Log.d(TAG, "handleAuthSuccess: Token received (length=" + token.length() + ")");
             tokenStorage.saveToken(token);
 
+            Log.d(TAG, "handleAuthSuccess: Token received (length=" + token.length() + ")");
+
             JSONObject user = data.getJSONObject("user");
 
             String fullName = user.isNull("full_name") ? null : user.optString("full_name", null);
@@ -179,8 +186,9 @@ public class AuthRepositoryImpl implements AuthRepository {
                 fullName = user.isNull("name") ? null : user.optString("name", null);
             }
             String email = user.isNull("email") ? null : user.optString("email", null);
+            String userId = user.isNull("id") ? null : user.optString("id", null);
             Log.d(TAG, "handleAuthSuccess: User fullName=" + fullName + ", email=" + email);
-            tokenStorage.saveUserInfo(fullName, email);
+            tokenStorage.saveUserInfo(userId, fullName, email);
 
             callback.onSuccess(fullName);
         } catch (JSONException e) {

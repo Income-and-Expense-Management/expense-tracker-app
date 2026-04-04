@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.ui.login.AuthViewModel;
 import com.ptithcm.quanlichitieu.ui.login.LoginActivity;
+import com.ptithcm.quanlichitieu.ui.category.CategoryFragment;
 
 /**
  * AccountFragment: User account screen with profile info, menu items, and logout.
@@ -70,8 +71,12 @@ public class AccountFragment extends Fragment {
         view.findViewById(R.id.menuMyWallet).setOnClickListener(v ->
                 Toast.makeText(requireContext(), "Vi cua toi - Coming soon", Toast.LENGTH_SHORT).show());
 
-        view.findViewById(R.id.menuGroup).setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Nhom - Coming soon", Toast.LENGTH_SHORT).show());
+        view.findViewById(R.id.menuGroup).setOnClickListener(v -> {
+            requireActivity().getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragmentContainer, new CategoryFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
     }
 
     private void setupLogoutButton(View view) {
