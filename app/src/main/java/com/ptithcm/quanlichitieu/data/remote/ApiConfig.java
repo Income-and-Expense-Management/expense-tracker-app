@@ -11,7 +11,7 @@ public final class ApiConfig {
         // Prevent instantiation
     }
 
-    public static final String BASE_URL = "http://10.251.3.122:3000";
+    public static final String BASE_URL = "http://10.0.2.2:3000";
 
     // Auth endpoints
     public static final String LOGIN_URL = BASE_URL + "/api/auth/login";

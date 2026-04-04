@@ -5,17 +5,20 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.ptithcm.quanlichitieu.R;
+import com.ptithcm.quanlichitieu.data.model.Wallet;
 
 public class WalletFragment extends Fragment {
 
@@ -56,13 +59,32 @@ public class WalletFragment extends Fragment {
 
     private void setupRecyclerView() {
         adapter = new WalletAdapter();
-        adapter.setOnWalletClickListener(wallet -> {
-            Toast.makeText(requireContext(), "Chọn ví: " + wallet.getName(), Toast.LENGTH_SHORT).show();
-            viewModel.selectWallet(wallet);
-        });
+        adapter.setOnWalletClickListener(this::showSelectionDialog);
 
         rvWallets.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvWallets.setAdapter(adapter);
+    }
+
+    /**
+     * Hiển thị dialog xác nhận khi chọn ví bằng MaterialAlertDialogBuilder.
+     */
+    private void showSelectionDialog(Wallet wallet) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Xác nhận chọn ví")
+                .setMessage("Bạn có muốn chọn ví \"" + wallet.getName() + "\" để quản lý chi tiêu không?")
+                .setPositiveButton("Xác nhận", (dialog, which) -> {
+                    viewModel.selectWallet(wallet);
+                    navigateToHome();
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void navigateToHome() {
+        BottomNavigationView nav = requireActivity().findViewById(R.id.bottomNav);
+        if (nav != null) {
+            nav.setSelectedItemId(R.id.nav_home);
+        }
     }
 
     private void observeViewModel() {

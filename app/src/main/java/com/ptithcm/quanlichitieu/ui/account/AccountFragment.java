@@ -18,17 +18,11 @@ import androidx.lifecycle.ViewModelProvider;
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.ui.login.AuthViewModel;
 import com.ptithcm.quanlichitieu.ui.login.LoginActivity;
+import com.ptithcm.quanlichitieu.ui.main.MainActivity;
 import com.ptithcm.quanlichitieu.ui.category.CategoryFragment;
 
 /**
  * AccountFragment: User account screen with profile info, menu items, and logout.
- *
- * The AuthViewModel is scoped to the host Activity (MainActivity) so that
- * session-expired events are shared across all fragments.
- *
- * SOLID Principles:
- * - Single Responsibility: Only handles account/settings UI
- * - Open/Closed: Can be extended with new settings without modification
  */
 public class AccountFragment extends Fragment {
 
@@ -61,15 +55,18 @@ public class AccountFragment extends Fragment {
 
         String fullName = authViewModel.getUserFullName();
         String email = authViewModel.getUserEmail();
-        Log.d(TAG, "setupUserInfo: fullName=" + fullName + ", email=" + email);
 
         tvFullName.setText(fullName != null ? fullName : "");
         tvEmail.setText(email != null ? email : "");
     }
 
     private void setupMenuItems(View view) {
-        view.findViewById(R.id.menuMyWallet).setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Vi cua toi - Coming soon", Toast.LENGTH_SHORT).show());
+        // Chức năng "Ví của tôi" trong Account có hành vi giống với "Xem tất cả" ở Home
+        view.findViewById(R.id.menuMyWallet).setOnClickListener(v -> {
+            if (requireActivity() instanceof MainActivity) {
+                ((MainActivity) requireActivity()).openWalletList();
+            }
+        });
 
         view.findViewById(R.id.menuGroup).setOnClickListener(v -> {
             requireActivity().getSupportFragmentManager().beginTransaction()
@@ -81,15 +78,11 @@ public class AccountFragment extends Fragment {
 
     private void setupLogoutButton(View view) {
         Button btnLogout = view.findViewById(R.id.btnLogout);
-        btnLogout.setOnClickListener(v -> {
-            Log.d(TAG, "Logout button tapped");
-            authViewModel.logout();
-        });
+        btnLogout.setOnClickListener(v -> authViewModel.logout());
     }
 
     private void observeLogoutState() {
         authViewModel.getLogoutState().observe(getViewLifecycleOwner(), authState -> {
-            Log.d(TAG, "observeLogoutState: status=" + authState.getStatus());
             switch (authState.getStatus()) {
                 case LOADING:
                     Toast.makeText(requireContext(), "Logging out...", Toast.LENGTH_SHORT).show();
@@ -108,7 +101,6 @@ public class AccountFragment extends Fragment {
 
     private void observeSessionExpired() {
         authViewModel.getSessionExpired().observe(getViewLifecycleOwner(), expired -> {
-            Log.d(TAG, "observeSessionExpired: expired=" + expired);
             if (Boolean.TRUE.equals(expired)) {
                 Toast.makeText(requireContext(), "Session expired. Please log in again.",
                         Toast.LENGTH_LONG).show();
@@ -118,7 +110,6 @@ public class AccountFragment extends Fragment {
     }
 
     private void navigateToLogin() {
-        Log.d(TAG, "navigateToLogin: Clearing back stack and redirecting");
         Intent intent = new Intent(requireContext(), LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
