@@ -11,11 +11,12 @@ public final class ApiConfig {
         // Prevent instantiation
     }
 
-    public static final String BASE_URL = "http://10.0.2.2:3000";
+    public static final String BASE_URL = "http://10.251.3.122:3000";
 
     // Auth endpoints
     public static final String LOGIN_URL = BASE_URL + "/api/auth/login";
     public static final String REGISTER_URL = BASE_URL + "/api/auth/register";
+    public static final String GOOGLE_LOGIN_URL = BASE_URL + "/api/auth/google";
     public static final String LOGOUT_URL = BASE_URL + "/api/auth/logout";
 
     // HTTP header constants

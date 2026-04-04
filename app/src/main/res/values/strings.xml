@@ -37,4 +37,10 @@
     <string name="passwords_not_match">Mật khẩu không khớp</string>
     <string name="register_success">Đăng ký thành công</string>
     <string name="registering">Đang đăng ký…</string>
+
+    <!-- Google Sign-In -->
+    <!-- TODO: Replace with your actual Web Client ID from Google Cloud Console -->
+    <string name="google_web_client_id">402871162576-obh15hfbofdhvas9cresv5r6m76qn9og.apps.googleusercontent.com</string>
+    <string name="google_signing_in">Đang đăng nhập bằng Google…</string>
+    <string name="google_sign_in_failed">Đăng nhập Google thất bại: %1$s</string>
 </resources>

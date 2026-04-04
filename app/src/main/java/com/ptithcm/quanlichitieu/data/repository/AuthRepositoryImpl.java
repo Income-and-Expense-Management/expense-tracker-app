@@ -122,6 +122,39 @@ public class AuthRepositoryImpl implements AuthRepository {
     }
 
     @Override
+    public void loginWithGoogle(@NonNull String idToken, @NonNull String displayName,
+                                @NonNull String email, @NonNull AuthCallback<String> callback) {
+        Log.d(TAG, "loginWithGoogle: Sending Google ID token to " + ApiConfig.GOOGLE_LOGIN_URL);
+        try {
+            JSONObject body = new JSONObject();
+            body.put("id_token", idToken);
+            body.put("full_name", displayName);
+            body.put("email", email);
+
+            AuthJsonObjectRequest request = new AuthJsonObjectRequest(
+                    Request.Method.POST,
+                    ApiConfig.GOOGLE_LOGIN_URL,
+                    body,
+                    response -> {
+                        Log.d(TAG, "loginWithGoogle: Success response received");
+                        handleAuthSuccess(response, callback);
+                    },
+                    error -> {
+                        Log.e(TAG, "loginWithGoogle: Error response received", error);
+                        handleError(error, callback);
+                    },
+                    tokenStorage,
+                    sessionExpiredListener
+            );
+
+            volleySingleton.addToRequestQueue(request);
+        } catch (JSONException e) {
+            Log.e(TAG, "loginWithGoogle: Failed to build JSON body", e);
+            callback.onError("Failed to create Google login request");
+        }
+    }
+
+    @Override
     public void logout(@NonNull AuthCallback<Void> callback) {
         Log.d(TAG, "logout: Sending request to " + ApiConfig.LOGOUT_URL);
         AuthJsonObjectRequest request = new AuthJsonObjectRequest(

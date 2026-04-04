@@ -1,5 +1,6 @@
 package com.ptithcm.quanlichitieu.ui.login;
 
+import android.app.Activity;
 import android.app.Application;
 import android.util.Log;
 
@@ -8,10 +9,12 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
 import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
 import com.ptithcm.quanlichitieu.data.repository.AuthRepository;
 import com.ptithcm.quanlichitieu.data.repository.AuthRepositoryImpl;
+import com.ptithcm.quanlichitieu.data.repository.GoogleSignInHelper;
 
 /**
  * ViewModel managing all authentication state (Login, Register, Logout).
@@ -55,10 +58,11 @@ public class AuthViewModel extends AndroidViewModel {
 
     private final AuthRepository authRepository;
 
-    private final MutableLiveData<AuthState> loginState    = new MutableLiveData<>(AuthState.idle());
-    private final MutableLiveData<AuthState> registerState = new MutableLiveData<>(AuthState.idle());
-    private final MutableLiveData<AuthState> logoutState   = new MutableLiveData<>(AuthState.idle());
-    private final MutableLiveData<Boolean>   sessionExpired = new MutableLiveData<>(false);
+    private final MutableLiveData<AuthState> loginState       = new MutableLiveData<>(AuthState.idle());
+    private final MutableLiveData<AuthState> registerState    = new MutableLiveData<>(AuthState.idle());
+    private final MutableLiveData<AuthState> googleAuthState  = new MutableLiveData<>(AuthState.idle());
+    private final MutableLiveData<AuthState> logoutState      = new MutableLiveData<>(AuthState.idle());
+    private final MutableLiveData<Boolean>   sessionExpired   = new MutableLiveData<>(false);
 
     // ---- Constructor ----------------------------------------------------------
 
@@ -80,9 +84,10 @@ public class AuthViewModel extends AndroidViewModel {
 
     // ---- Public LiveData accessors --------------------------------------------
 
-    public LiveData<AuthState> getLoginState()    { return loginState; }
-    public LiveData<AuthState> getRegisterState() { return registerState; }
-    public LiveData<AuthState> getLogoutState()   { return logoutState; }
+    public LiveData<AuthState> getLoginState()      { return loginState; }
+    public LiveData<AuthState> getRegisterState()  { return registerState; }
+    public LiveData<AuthState> getGoogleAuthState() { return googleAuthState; }
+    public LiveData<AuthState> getLogoutState()    { return logoutState; }
     public LiveData<Boolean>   getSessionExpired() { return sessionExpired; }
 
     public boolean isLoggedIn()      { return authRepository.isLoggedIn(); }
@@ -125,6 +130,50 @@ public class AuthViewModel extends AndroidViewModel {
             public void onError(String message) {
                 Log.e(TAG, "register: ERROR — " + message);
                 registerState.postValue(AuthState.error(message));
+            }
+        });
+    }
+
+    /**
+     * Initiates the Google Sign-In flow using Credential Manager API.
+     * Step 1: Retrieves Google ID token from Credential Manager.
+     * Step 2: Sends the ID token to the backend for verification and JWT exchange.
+     *
+     * @param activity The host Activity (required by Credential Manager for UI prompts).
+     */
+    public void signInWithGoogle(@NonNull Activity activity) {
+        Log.d(TAG, "signInWithGoogle: initiated");
+        googleAuthState.setValue(AuthState.loading());
+
+        String webClientId = activity.getString(R.string.google_web_client_id);
+        Log.d(TAG, "signInWithGoogle: initiated" + webClientId);
+        GoogleSignInHelper helper = new GoogleSignInHelper(activity, webClientId);
+
+        helper.signIn(activity, new GoogleSignInHelper.GoogleSignInCallback() {
+            @Override
+            public void onSuccess(@NonNull String idToken, @NonNull String displayName,
+                                  @NonNull String email) {
+                Log.d(TAG, "signInWithGoogle: Got ID token, sending to backend");
+                authRepository.loginWithGoogle(idToken, displayName, email,
+                        new AuthRepository.AuthCallback<String>() {
+                            @Override
+                            public void onSuccess(String fullName) {
+                                Log.d(TAG, "signInWithGoogle: SUCCESS — fullName=" + fullName);
+                                googleAuthState.postValue(AuthState.success(fullName));
+                            }
+
+                            @Override
+                            public void onError(String message) {
+                                Log.e(TAG, "signInWithGoogle: Backend ERROR — " + message);
+                                googleAuthState.postValue(AuthState.error(message));
+                            }
+                        });
+            }
+
+            @Override
+            public void onError(@NonNull String message) {
+                Log.e(TAG, "signInWithGoogle: Credential Manager ERROR — " + message);
+                googleAuthState.postValue(AuthState.error(message));
             }
         });
     }

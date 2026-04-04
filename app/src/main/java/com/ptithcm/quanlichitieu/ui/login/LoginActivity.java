@@ -55,12 +55,14 @@ public class LoginActivity extends AppCompatActivity {
 
         setupUI();
         observeLoginState();
+        observeGoogleAuthState();
     }
 
     private void setupUI() {
         EditText etEmail = findViewById(R.id.etEmail);
         EditText etPassword = findViewById(R.id.etPassword);
         btnLogin = findViewById(R.id.btnLogin);
+        Button btnGoogleSignIn = findViewById(R.id.btnGoogleSignIn);
         TextView tvSignUpPrompt = findViewById(R.id.tvSignUpPrompt);
 
 
@@ -97,6 +99,8 @@ public class LoginActivity extends AppCompatActivity {
 
             authViewModel.login(email, password);
         });
+
+        btnGoogleSignIn.setOnClickListener(v -> authViewModel.signInWithGoogle(this));
     }
 
     private void setupPasswordToggle(EditText etPassword) {
@@ -142,6 +146,33 @@ public class LoginActivity extends AppCompatActivity {
                     btnLogin.setEnabled(true);
                     Toast.makeText(this,
                             getString(R.string.login_failed, authState.getData()),
+                            Toast.LENGTH_SHORT).show();
+                    break;
+                case IDLE:
+                    btnLogin.setEnabled(true);
+                    break;
+            }
+        });
+    }
+
+    private void observeGoogleAuthState() {
+        authViewModel.getGoogleAuthState().observe(this, authState -> {
+            Log.d(TAG, "observeGoogleAuthState: status=" + authState.getStatus()
+                    + ", data=" + authState.getData());
+            switch (authState.getStatus()) {
+                case LOADING:
+                    btnLogin.setEnabled(false);
+                    Toast.makeText(this, R.string.google_signing_in, Toast.LENGTH_SHORT).show();
+                    break;
+                case SUCCESS:
+                    btnLogin.setEnabled(true);
+                    Toast.makeText(this, R.string.login_success, Toast.LENGTH_SHORT).show();
+                    navigateToMain(authState.getData());
+                    break;
+                case ERROR:
+                    btnLogin.setEnabled(true);
+                    Toast.makeText(this,
+                            getString(R.string.google_sign_in_failed, authState.getData()),
                             Toast.LENGTH_SHORT).show();
                     break;
                 case IDLE:

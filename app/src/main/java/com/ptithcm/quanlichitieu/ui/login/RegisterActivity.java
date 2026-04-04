@@ -46,6 +46,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         setupUI();
         observeRegisterState();
+        observeGoogleAuthState();
     }
 
     private void setupUI() {
@@ -96,9 +97,8 @@ public class RegisterActivity extends AppCompatActivity {
             authViewModel.register(name, email, password);
         });
 
-        findViewById(R.id.btnGoogleSignUp).setOnClickListener(v -> {
-            Toast.makeText(this, "Google Sign Up not implemented yet", Toast.LENGTH_SHORT).show();
-        });
+        findViewById(R.id.btnGoogleSignUp).setOnClickListener(v ->
+                authViewModel.signInWithGoogle(this));
     }
 
     private void observeRegisterState() {
@@ -113,6 +113,30 @@ public class RegisterActivity extends AppCompatActivity {
                 case SUCCESS:
                     btnRegister.setEnabled(true);
                     Toast.makeText(this, R.string.register_success, Toast.LENGTH_SHORT).show();
+                    navigateToMain(authState.getData());
+                    break;
+                case ERROR:
+                    btnRegister.setEnabled(true);
+                    Toast.makeText(this, authState.getData(), Toast.LENGTH_SHORT).show();
+                    break;
+                case IDLE:
+                    btnRegister.setEnabled(true);
+                    break;
+            }
+        });
+    }
+
+    private void observeGoogleAuthState() {
+        authViewModel.getGoogleAuthState().observe(this, authState -> {
+            Log.d(TAG, "observeGoogleAuthState: status=" + authState.getStatus()
+                    + ", data=" + authState.getData());
+            switch (authState.getStatus()) {
+                case LOADING:
+                    btnRegister.setEnabled(false);
+                    break;
+                case SUCCESS:
+                    btnRegister.setEnabled(true);
+                    Toast.makeText(this, R.string.login_success, Toast.LENGTH_SHORT).show();
                     navigateToMain(authState.getData());
                     break;
                 case ERROR:

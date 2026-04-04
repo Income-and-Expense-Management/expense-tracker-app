@@ -26,6 +26,9 @@ public interface AuthRepository {
     void register(@NonNull String name, @NonNull String email, @NonNull String password,
                   @NonNull AuthCallback<String> callback);
 
+    void loginWithGoogle(@NonNull String idToken, @NonNull String displayName,
+                         @NonNull String email, @NonNull AuthCallback<String> callback);
+
     void logout(@NonNull AuthCallback<Void> callback);
 
     boolean isLoggedIn();
