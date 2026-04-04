@@ -32,6 +32,10 @@ public class CategoryViewModel extends AndroidViewModel {
         return addResult;
     }
 
+    public void resetAddResult() {
+        addResult.setValue(null);
+    }
+
     public void loadCategories(String userId) {
         // Run on background thread if needed, currently DAO might be sync
         new Thread(() -> {
@@ -62,4 +66,3 @@ public class CategoryViewModel extends AndroidViewModel {
         }).start();
     }
 }
-

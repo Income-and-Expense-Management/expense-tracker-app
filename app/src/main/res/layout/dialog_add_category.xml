@@ -29,19 +29,26 @@
         android:layout_marginTop="16dp">
 
         <RadioButton
-            android:id="@+id/rbIncome"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Thu nhập" />
-
-        <RadioButton
             android:id="@+id/rbExpense"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Chi tiêu"
+            android:text="Khoản chi"
             android:checked="true" />
+
+        <RadioButton
+            android:id="@+id/rbIncome"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Khoản thu" />
+
+        <RadioButton
+            android:id="@+id/rbLoan"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Vay/Cho vay" />
     </RadioGroup>
 
     <LinearLayout
@@ -67,4 +74,3 @@
     </LinearLayout>
 
 </LinearLayout>
-

@@ -19,8 +19,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ptithcm.quanlichitieu.R;
+import com.ptithcm.quanlichitieu.data.model.Category;
 import com.ptithcm.quanlichitieu.data.model.TransactionType;
 import com.ptithcm.quanlichitieu.ui.login.AuthViewModel;
+import com.google.android.material.tabs.TabLayout;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * CategoryFragment: Quản lý danh mục (Categories).
@@ -31,6 +36,8 @@ public class CategoryFragment extends Fragment {
     private AuthViewModel authViewModel;
     private CategoryViewModel categoryViewModel;
     private CategoryAdapter adapter;
+    private List<Category> allCategories = new ArrayList<>();
+    private TransactionType currentType = TransactionType.EXPENSE;
 
     @Nullable
     @Override
@@ -58,10 +65,12 @@ public class CategoryFragment extends Fragment {
 
     private void observeViewModel() {
         categoryViewModel.getCategories().observe(getViewLifecycleOwner(), categories -> {
-            adapter.updateData(categories);
+            allCategories = categories;
+            filterCategories();
         });
 
         categoryViewModel.getAddResult().observe(getViewLifecycleOwner(), success -> {
+            if (success == null) return;
             if (getContext() != null) {
                 if (success) {
                     Toast.makeText(getContext(), "Thêm danh mục thành công", Toast.LENGTH_SHORT).show();
@@ -69,6 +78,7 @@ public class CategoryFragment extends Fragment {
                     Toast.makeText(getContext(), "Thêm danh mục thất bại", Toast.LENGTH_SHORT).show();
                 }
             }
+            categoryViewModel.resetAddResult();
         });
     }
 
@@ -77,6 +87,33 @@ public class CategoryFragment extends Fragment {
         View btnBack = view.findViewById(R.id.btnBack);
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> requireActivity().getOnBackPressedDispatcher().onBackPressed());
+        }
+
+        TabLayout tabLayout = view.findViewById(R.id.tabLayout);
+        if (tabLayout != null) {
+            tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+                @Override
+                public void onTabSelected(TabLayout.Tab tab) {
+                    switch (tab.getPosition()) {
+                        case 0:
+                            currentType = TransactionType.EXPENSE;
+                            break;
+                        case 1:
+                            currentType = TransactionType.INCOME;
+                            break;
+                        case 2:
+                            currentType = TransactionType.LOAN;
+                            break;
+                    }
+                    filterCategories();
+                }
+
+                @Override
+                public void onTabUnselected(TabLayout.Tab tab) {}
+
+                @Override
+                public void onTabReselected(TabLayout.Tab tab) {}
+            });
         }
 
         // Khởi tạo danh sách Category
@@ -91,6 +128,18 @@ public class CategoryFragment extends Fragment {
         View btnAddNewCategory = view.findViewById(R.id.btnAddNewCategory);
         if (btnAddNewCategory != null) {
             btnAddNewCategory.setOnClickListener(v -> showAddCategoryDialog());
+        }
+    }
+
+    private void filterCategories() {
+        if (adapter != null) {
+            List<Category> filteredList = new ArrayList<>();
+            for (Category cat : allCategories) {
+                if (cat.getType() == currentType) {
+                    filteredList.add(cat);
+                }
+            }
+            adapter.updateData(filteredList);
         }
     }
 
@@ -114,8 +163,13 @@ public class CategoryFragment extends Fragment {
                 return;
             }
 
-            TransactionType type = rgType.getCheckedRadioButtonId() == R.id.rbIncome
-                    ? TransactionType.INCOME : TransactionType.EXPENSE;
+            TransactionType type = TransactionType.EXPENSE;
+            int checkedId = rgType.getCheckedRadioButtonId();
+            if (checkedId == R.id.rbIncome) {
+                type = TransactionType.INCOME;
+            } else if (checkedId == R.id.rbLoan) {
+                type = TransactionType.LOAN;
+            }
 
             categoryViewModel.addCategory(authViewModel.getUserId(), name, type);
             dialog.dismiss();

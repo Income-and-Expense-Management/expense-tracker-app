@@ -6,7 +6,8 @@ package com.ptithcm.quanlichitieu.data.model;
  */
 public enum TransactionType {
     INCOME("INCOME"),
-    EXPENSE("EXPENSE");
+    EXPENSE("EXPENSE"),
+    LOAN("LOAN");
 
     private final String value;
 

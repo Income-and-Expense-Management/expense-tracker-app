@@ -47,7 +47,6 @@ public class CategoryDao {
      * @param category Category object cần thêm
      * @return ID của category mới, hoặc null nếu thất bại
      */
-    @Nullable
     public String insert(@NonNull Category category) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
@@ -65,15 +64,14 @@ public class CategoryDao {
         }
         values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
 
-        long result = db.insert(CategoryEntry.TABLE_NAME, null, values);
-
-        if (result == -1) {
-            Log.e(TAG, "Failed to insert category");
+        try {
+            long result = db.insertOrThrow(CategoryEntry.TABLE_NAME, null, values);
+            Log.d(TAG, "Inserted category with ID: " + category.getId());
+            return category.getId();
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to insert category", e);
             return null;
         }
-
-        Log.d(TAG, "Inserted category with ID: " + category.getId());
-        return category.getId();
     }
 
     // ==================== READ ====================
