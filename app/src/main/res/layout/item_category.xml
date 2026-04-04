@@ -4,44 +4,54 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="16dp"
+    android:padding="12dp"
     android:gravity="center_vertical"
-    android:background="?android:attr/selectableItemBackground">
+    android:background="#1E1E1E"
+    android:layout_marginBottom="1dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground">
 
-    <ImageView
-        android:id="@+id/ivIcon"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:src="@drawable/ic_food"
-        app:tint="@android:color/white"
+    <!-- Icon hình tròn chứa biểu tượng -->
+    <FrameLayout
+        android:layout_width="45dp"
+        android:layout_height="45dp"
         android:background="@drawable/bg_circle_dark"
-        android:backgroundTint="@color/home_accent_green"
-        android:padding="8dp" />
+        android:backgroundTint="#2C2C2C"> <!-- Màu nền vòng tròn tối -->
 
-    <LinearLayout
+        <ImageView
+            android:id="@+id/ivIcon"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_food"
+            app:tint="@null" /> <!-- Để @null nếu icon của bạn đã có màu sẵn như trong hình -->
+    </FrameLayout>
+
+    <!-- Tên danh mục -->
+    <TextView
+        android:id="@+id/tvName"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="vertical"
-        android:layout_marginStart="16dp">
+        android:layout_marginStart="16dp"
+        android:text="Tên hạng mục"
+        android:textColor="@android:color/white"
+        android:textSize="17sp"
+        android:textStyle="normal" />
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/switchCategory"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        app:thumbTint="@color/white"
+        app:trackTint="#4CAF50" />
 
-        <TextView
-            android:id="@+id/tvName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Category Name"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tvType"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="EXPENSE"
-            android:textColor="@color/white"
-            android:textSize="14sp" />
-    </LinearLayout>
+<!--    &lt;!&ndash; Bạn có thể thêm một icon mũi tên đi tiếp ở đây nếu muốn (tùy chọn) &ndash;&gt;-->
+<!--        <ImageView-->
+<!--        android:layout_width="20dp"-->
+<!--        android:layout_height="20dp"-->
+<!--        android:src="@drawable/ic_chevron_right"-->
+<!--        app:tint="#444444" />-->
 
 </LinearLayout>
-

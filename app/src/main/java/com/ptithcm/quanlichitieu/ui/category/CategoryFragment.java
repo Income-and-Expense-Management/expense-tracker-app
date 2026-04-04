@@ -88,9 +88,9 @@ public class CategoryFragment extends Fragment {
         }
 
         // Nút thêm danh mục mới
-        View fabAddCategory = view.findViewById(R.id.fabAddCategory);
-        if (fabAddCategory != null) {
-            fabAddCategory.setOnClickListener(v -> showAddCategoryDialog());
+        View btnAddNewCategory = view.findViewById(R.id.btnAddNewCategory);
+        if (btnAddNewCategory != null) {
+            btnAddNewCategory.setOnClickListener(v -> showAddCategoryDialog());
         }
     }
 

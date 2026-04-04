@@ -49,19 +49,16 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
     static class ViewHolder extends RecyclerView.ViewHolder {
 
         private final TextView tvName;
-        private final TextView tvType;
         private final ImageView ivIcon;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvName);
-            tvType = itemView.findViewById(R.id.tvType);
             ivIcon = itemView.findViewById(R.id.ivIcon);
         }
 
         public void bind(Category category) {
             tvName.setText(category.getName());
-            tvType.setText(category.getType().getValue());
             // TODO: set icon name dynamically if we have resource mapper
             // Example map string to resource ID if we had one
         }
