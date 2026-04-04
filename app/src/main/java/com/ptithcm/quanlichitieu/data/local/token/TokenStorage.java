@@ -11,7 +11,9 @@ public interface TokenStorage {
 
     String getToken();
 
-    void saveUserInfo(String fullName, String email);
+    void saveUserInfo(String userId, String fullName, String email);
+
+    String getUserId();
 
     String getUserFullName();
 

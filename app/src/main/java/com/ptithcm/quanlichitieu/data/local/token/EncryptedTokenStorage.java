@@ -22,6 +22,7 @@ public class EncryptedTokenStorage implements TokenStorage {
     private static final String TAG = "EncryptedTokenStorage";
     private static final String PREFS_FILE_NAME = "secure_auth_prefs";
     private static final String KEY_ACCESS_TOKEN = "access_token";
+    private static final String KEY_USERID = "user_id";
     private static final String KEY_USER_FULL_NAME = "user_full_name";
     private static final String KEY_USER_EMAIL = "user_email";
 
@@ -71,12 +72,16 @@ public class EncryptedTokenStorage implements TokenStorage {
     }
 
     @Override
-    public void saveUserInfo(String fullName, String email) {
-        Log.d(TAG, "Saving user info: fullName=" + fullName + ", email=" + email);
+    public void saveUserInfo(String userID, String fullName, String email) {
+        Log.d(TAG, "Saving user info: userID= " + userID + " fullName=" + fullName + ", email=" + email);
         sharedPreferences.edit()
+                .putString(KEY_USERID, userID)
                 .putString(KEY_USER_FULL_NAME, fullName)
                 .putString(KEY_USER_EMAIL, email)
                 .apply();
+    }
+    public String getUserId() {
+        return sharedPreferences.getString(KEY_USERID, null);
     }
 
     @Override
