@@ -15,18 +15,22 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.ui.transaction.adapter.TransactionAdapter;
+import com.ptithcm.quanlichitieu.ui.wallet.WalletViewModel;
 
 import java.util.Locale;
 
 public class TransactionFragment extends Fragment {
 
     private TransactionViewModel viewModel;
+    private WalletViewModel walletViewModel;
     private TransactionAdapter transactionAdapter;
 
     private TextView tvTotalBalance;
     private TextView tvTotalExpense;
     private TextView tvTotalIncome;
     private RecyclerView rvTransactions;
+
+    private TextView tvWalletName;
 
     private TextView tabPrevMonth;
     private TextView tabCurrentMonth;
@@ -44,13 +48,16 @@ public class TransactionFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         viewModel = new ViewModelProvider(this).get(TransactionViewModel.class);
+        // Dùng chung WalletViewModel với HomeFragment
+        walletViewModel = new ViewModelProvider(requireActivity()).get(WalletViewModel.class);
 
         initViews(view);
         setupTransactionList();
         setupMonthTabs();
-        observeViewModel();
+        observeViewModels();
 
-        viewModel.loadData();
+        // Tải dữ liệu ban đầu
+        walletViewModel.loadActiveWallet();
     }
 
     private void initViews(View view) {
@@ -58,6 +65,8 @@ public class TransactionFragment extends Fragment {
         tvTotalExpense = view.findViewById(R.id.tvTotalExpense);
         tvTotalIncome = view.findViewById(R.id.tvTotalIncome);
         rvTransactions = view.findViewById(R.id.rvTransactions);
+
+        tvWalletName = view.findViewById(R.id.tvWalletName);
 
         tabPrevMonth = view.findViewById(R.id.tabPrevMonth);
         tabCurrentMonth = view.findViewById(R.id.tabCurrentMonth);
@@ -84,6 +93,7 @@ public class TransactionFragment extends Fragment {
     }
 
     private void updateTabStyles(int offset) {
+        if (!isAdded()) return;
         int activeColor = requireContext().getResources().getColor(R.color.white, null);
         int inactiveColor = requireContext().getResources().getColor(R.color.home_text_secondary, null);
 
@@ -92,7 +102,19 @@ public class TransactionFragment extends Fragment {
         tabNextMonth.setTextColor(offset == 1 ? activeColor : inactiveColor);
     }
 
-    private void observeViewModel() {
+    private void observeViewModels() {
+        // Quan sát ví từ Shared WalletViewModel
+        walletViewModel.getSelectedWallet().observe(getViewLifecycleOwner(), wallet -> {
+            if (wallet != null) {
+                if (tvWalletName != null) tvWalletName.setText(wallet.getName());
+                // Khi ví thay đổi, yêu cầu TransactionViewModel tải lại dữ liệu với ví mới
+                viewModel.loadData(wallet);
+            } else {
+                if (tvWalletName != null) tvWalletName.setText("Chưa có ví");
+                viewModel.loadData(null);
+            }
+        });
+
         viewModel.getTotalBalance().observe(getViewLifecycleOwner(), balance ->
                 tvTotalBalance.setText(String.format(Locale.getDefault(), "%,.0f đ", balance)));
 
@@ -106,5 +128,12 @@ public class TransactionFragment extends Fragment {
                 transactionAdapter.setGroups(groups));
 
         viewModel.getMonthOffset().observe(getViewLifecycleOwner(), this::updateTabStyles);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Cập nhật lại ví khi quay lại màn hình
+        walletViewModel.loadActiveWallet();
     }
 }

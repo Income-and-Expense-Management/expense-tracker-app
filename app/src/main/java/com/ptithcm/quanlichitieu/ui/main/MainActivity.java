@@ -6,6 +6,7 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -15,6 +16,7 @@ import com.ptithcm.quanlichitieu.ui.account.AccountFragment;
 import com.ptithcm.quanlichitieu.ui.home.HomeFragment;
 import com.ptithcm.quanlichitieu.ui.transaction.TransactionFragment;
 import com.ptithcm.quanlichitieu.ui.budget.BudgetFragment;
+import com.ptithcm.quanlichitieu.ui.wallet.WalletFragment;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -24,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG_TRANSACTION = "frag_transaction";
     private static final String TAG_ACCOUNT = "frag_account";
     private static final String TAG_BUDGET = "frag_budget";
+    private static final String TAG_WALLET_LIST = "frag_wallet_list";
 
     private Fragment activeFragment;
     private HomeFragment homeFragment;
@@ -33,13 +36,9 @@ public class MainActivity extends AppCompatActivity {
 
     private BottomNavigationView bottomNav;
 
-    /**
-     * Open Wallet list as a separate screen (not a bottom tab).
-     * This keeps bottom navigation clean while still allowing Home -> "See all wallets".
-     */
     public void openWalletList() {
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragmentContainer, new com.ptithcm.quanlichitieu.ui.wallet.WalletFragment())
+                .add(R.id.fragmentContainer, new WalletFragment(), TAG_WALLET_LIST)
                 .addToBackStack(null)
                 .commit();
     }
@@ -69,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
         homeFragment = HomeFragment.newInstance(username);
         transactionFragment = new TransactionFragment();
         budgetFragment = new BudgetFragment();
-        accountFragment = new com.ptithcm.quanlichitieu.ui.account.AccountFragment();
+        accountFragment = new AccountFragment();
 
         getSupportFragmentManager().beginTransaction()
                 .add(R.id.fragmentContainer, homeFragment, TAG_HOME)
@@ -85,10 +84,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void restoreFragments() {
-        homeFragment = (HomeFragment) getSupportFragmentManager().findFragmentByTag(TAG_HOME);
-        transactionFragment = (TransactionFragment) getSupportFragmentManager().findFragmentByTag(TAG_TRANSACTION);
-        budgetFragment = (BudgetFragment) getSupportFragmentManager().findFragmentByTag(TAG_BUDGET);
-        accountFragment = (AccountFragment) getSupportFragmentManager().findFragmentByTag(TAG_ACCOUNT);
+        FragmentManager fm = getSupportFragmentManager();
+        homeFragment = (HomeFragment) fm.findFragmentByTag(TAG_HOME);
+        transactionFragment = (TransactionFragment) fm.findFragmentByTag(TAG_TRANSACTION);
+        budgetFragment = (BudgetFragment) fm.findFragmentByTag(TAG_BUDGET);
+        accountFragment = (AccountFragment) fm.findFragmentByTag(TAG_ACCOUNT);
 
         if (homeFragment != null && homeFragment.isVisible()) activeFragment = homeFragment;
         else if (transactionFragment != null && transactionFragment.isVisible()) activeFragment = transactionFragment;
@@ -100,22 +100,38 @@ public class MainActivity extends AppCompatActivity {
     private void setupBottomNav() {
         bottomNav = findViewById(R.id.bottomNav);
         bottomNav.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.nav_home) {
-                switchFragment(homeFragment);
-                return true;
-            } else if (id == R.id.nav_transaction) {
-                switchFragment(transactionFragment);
-                return true;
-            } else if (id == R.id.nav_budget) {
-                switchFragment(budgetFragment);
-                return true;
-            } else if (id == R.id.nav_account) {
-                switchFragment(accountFragment);
-                return true;
-            }
-            return false;
+            switchToBottomTab(item.getItemId());
+            return true;
         });
+    }
+
+    private void switchToBottomTab(int id) {
+        Fragment target;
+        if (id == R.id.nav_home) target = homeFragment;
+        else if (id == R.id.nav_transaction) target = transactionFragment;
+        else if (id == R.id.nav_budget) target = budgetFragment;
+        else if (id == R.id.nav_account) target = accountFragment;
+        else return;
+
+        FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+
+        // 1. Tìm và xóa màn hình phụ ngay trong transaction này để tránh bị nháy trang cũ
+        Fragment walletFrag = fm.findFragmentByTag(TAG_WALLET_LIST);
+        if (walletFrag != null) {
+            ft.remove(walletFrag);
+            // Dọn dẹp BackStack mà không làm gián đoạn UI
+            fm.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        }
+
+        // 2. Chuyển sang tab được chọn
+        if (target != activeFragment) {
+            ft.hide(activeFragment);
+            ft.show(target);
+            activeFragment = target;
+        }
+
+        ft.commit();
     }
 
     private void setupFab() {
@@ -126,30 +142,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void switchFragment(Fragment target) {
-        if (target == null || target == activeFragment) return;
-
-        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        ft.hide(activeFragment);
-        ft.show(target);
-        ft.commit();
-
-        activeFragment = target;
-    }
-
-
-
     private void setupBackNavigation() {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
-                    getSupportFragmentManager().popBackStack();
+                FragmentManager fm = getSupportFragmentManager();
+                if (fm.getBackStackEntryCount() > 0) {
+                    fm.popBackStack();
                     return;
                 }
 
                 if (activeFragment != homeFragment) {
-                    switchFragment(homeFragment);
+                    switchToBottomTab(R.id.nav_home);
                     bottomNav.setSelectedItemId(R.id.nav_home);
                 } else {
                     setEnabled(false);
