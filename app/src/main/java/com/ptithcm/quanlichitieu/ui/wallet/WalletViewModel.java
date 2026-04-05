@@ -180,6 +180,35 @@ public class WalletViewModel extends AndroidViewModel {
         }
     }
 
+    public void updateWallet(Wallet wallet, String name, String balanceStr) {
+        if (wallet == null) return;
+        if (name == null || name.trim().isEmpty()) {
+            saveResult.setValue(new SaveResult(false, "Vui lòng nhập tên ví"));
+            return;
+        }
+
+        try {
+            long balance = Long.parseLong(balanceStr.trim().replace(",", "").replace(".", ""));
+
+            wallet.setName(name.trim());
+            wallet.setInitialBalance(balance);
+
+            int rows = walletDao.update(wallet);
+            if (rows > 0) {
+                saveResult.setValue(new SaveResult(true, "Cập nhật ví thành công"));
+                loadAllWallets();
+                Wallet currentActive = selectedWallet.getValue();
+                if (currentActive != null && currentActive.getId().equals(wallet.getId())) {
+                    selectedWallet.setValue(wallet);
+                }
+            } else {
+                saveResult.setValue(new SaveResult(false, "Lỗi khi cập nhật ví"));
+            }
+        } catch (Exception e) {
+            saveResult.setValue(new SaveResult(false, "Dữ liệu không hợp lệ"));
+        }
+    }
+
     public static class SaveResult {
         private final boolean success;
         private final String message;

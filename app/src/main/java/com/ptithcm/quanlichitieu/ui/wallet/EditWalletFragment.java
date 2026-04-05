@@ -118,7 +118,10 @@ public class EditWalletFragment extends Fragment {
             return;
         }
 
-        // Logic to update wallet in DB would go here
+        if (currentWallet != null) {
+            viewModel.updateWallet(currentWallet, name, balanceStr);
+        }
+
         Toast.makeText(requireContext(), "Đã lưu thay đổi", Toast.LENGTH_SHORT).show();
         requireActivity().getSupportFragmentManager().popBackStack();
     }
