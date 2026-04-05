@@ -27,12 +27,6 @@ import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Locale;
 
-/**
- * BudgetFragment
- *
- * Displays budget overview with circular progress chart and budget list.
- * Integrated with BudgetViewModel for data management.
- */
 public class BudgetFragment extends Fragment {
 
     private TextView tvWalletName;
@@ -54,7 +48,6 @@ public class BudgetFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_budget, container, false);
-
         initViews(view);
         return view;
     }
@@ -69,7 +62,6 @@ public class BudgetFragment extends Fragment {
         setupListeners();
         observeViewModel();
 
-        // Load initial data
         viewModel.loadWallets();
         viewModel.loadCategories();
     }
@@ -89,11 +81,11 @@ public class BudgetFragment extends Fragment {
 
     private void setupRecyclerView() {
         budgetAdapter = new BudgetAdapter(new ArrayList<>());
-        
-        budgetAdapter.setOnItemClickListener(item -> {
-            showEditBudgetDialog(item);
-        });
 
+        // Item click -> mở màn hình xem chi tiết ngân sách
+        budgetAdapter.setOnItemClickListener(item -> showViewBudgetDialog(item));
+
+        // Menu click -> edit hoặc delete trực tiếp
         budgetAdapter.setOnMenuClickListener(new BudgetAdapter.OnBudgetMenuClickListener() {
             @Override
             public void onEditClick(BudgetItem item) {
@@ -112,41 +104,31 @@ public class BudgetFragment extends Fragment {
 
     private void setupListeners() {
         btnCreateBudget.setOnClickListener(v -> showAddBudgetDialog());
-
         llWalletSelector.setOnClickListener(v -> showWalletSelector());
-
         ivMenu.setOnClickListener(v -> showMainMenu(v));
     }
 
     private void observeViewModel() {
-        // Observe budget items
         viewModel.getBudgetItems().observe(getViewLifecycleOwner(), items -> {
             if (items != null) {
                 budgetAdapter.updateData(items);
             }
         });
 
-        // Observe selected wallet
         viewModel.getSelectedWallet().observe(getViewLifecycleOwner(), wallet -> {
             if (wallet != null) {
                 tvWalletName.setText(wallet.getName());
             }
         });
 
-        // Observe budget summary
         viewModel.getBudgetSummary().observe(getViewLifecycleOwner(), summary -> {
             if (summary != null) {
                 updateSummaryUI(summary);
             }
         });
-
-        // ❌ KHÔNG observe operationResult ở đây
-        // Toast và dismiss đã được xử lý trong Dialog
-        // Fragment chỉ cần refresh data qua listener callback
     }
 
     private void updateSummaryUI(BudgetViewModel.BudgetSummary summary) {
-        // Update remaining amount
         long remaining = summary.getRemaining();
         String remainingText = formatMoney(Math.abs(remaining));
         if (remaining >= 0) {
@@ -157,33 +139,42 @@ public class BudgetFragment extends Fragment {
             tvRemainingAmount.setTextColor(getResources().getColor(android.R.color.holo_red_light));
         }
 
-        // Update total budget
         tvTotalBudget.setText(summary.getFormattedTotalBudget());
-
-        // Update total spent
         tvTotalSpent.setText(summary.getFormattedTotalSpent());
 
-        // Update days remaining
         int days = summary.getDaysRemaining();
         tvPeriodDays.setText(days + " ngày");
 
-        // Update progress circle
         progressCircle.setProgress(summary.getProgress());
     }
 
+    /** Mở màn hình XEM chi tiết ngân sách (bấm vào item) */
+    private void showViewBudgetDialog(BudgetItem item) {
+        ViewBudgetDialogFragment dialog = ViewBudgetDialogFragment.newInstance(item);
+        dialog.setOnBudgetActionListener(new ViewBudgetDialogFragment.OnBudgetActionListener() {
+            @Override
+            public void onEditClicked(BudgetItem budgetItem) {
+                showEditBudgetDialog(budgetItem);
+            }
+
+            @Override
+            public void onDeleteClicked(BudgetItem budgetItem) {
+                showDeleteConfirmation(budgetItem);
+            }
+        });
+        dialog.show(getChildFragmentManager(), ViewBudgetDialogFragment.TAG);
+    }
+
+    /** Mở màn hình CHỈNH SỬA ngân sách */
     private void showAddBudgetDialog() {
         AddBudgetDialogFragment dialog = AddBudgetDialogFragment.newInstance();
-        dialog.setOnBudgetSavedListener(() -> {
-            viewModel.refresh();
-        });
+        dialog.setOnBudgetSavedListener(() -> viewModel.refresh());
         dialog.show(getChildFragmentManager(), AddBudgetDialogFragment.TAG);
     }
 
     private void showEditBudgetDialog(BudgetItem item) {
         EditBudgetDialogFragment dialog = EditBudgetDialogFragment.newInstance(item);
-        dialog.setOnBudgetEditedListener(() -> {
-            viewModel.refresh();
-        });
+        dialog.setOnBudgetEditedListener(() -> viewModel.refresh());
         dialog.show(getChildFragmentManager(), EditBudgetDialogFragment.TAG);
     }
 
@@ -193,6 +184,7 @@ public class BudgetFragment extends Fragment {
                 .setMessage("Bạn có chắc muốn xóa ngân sách \"" + item.getCategoryName() + "\"?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
                     viewModel.deleteBudget(item.getId());
+                    viewModel.refresh();
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
@@ -200,9 +192,7 @@ public class BudgetFragment extends Fragment {
 
     private void showWalletSelector() {
         SelectWalletBottomSheet bottomSheet = SelectWalletBottomSheet.newInstance();
-        bottomSheet.setOnWalletSelectedListener(wallet -> {
-            viewModel.selectWallet(wallet);
-        });
+        bottomSheet.setOnWalletSelectedListener(wallet -> viewModel.selectWallet(wallet));
         bottomSheet.show(getChildFragmentManager(), SelectWalletBottomSheet.TAG);
     }
 
@@ -210,7 +200,7 @@ public class BudgetFragment extends Fragment {
         PopupMenu popup = new PopupMenu(requireContext(), anchor);
         popup.getMenu().add(0, 1, 0, "Làm mới");
         popup.getMenu().add(0, 2, 1, "Xem tất cả ngân sách");
-        
+
         popup.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == 1) {
                 viewModel.refresh();
@@ -221,7 +211,7 @@ public class BudgetFragment extends Fragment {
             }
             return false;
         });
-        
+
         popup.show();
     }
 
