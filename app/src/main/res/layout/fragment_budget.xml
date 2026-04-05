@@ -118,7 +118,7 @@
                     <!-- 2. Vòng cung Progress (Nằm đè lên Glow) -->
                     <RelativeLayout
                         android:layout_width="match_parent"
-                        android:layout_height="140dp"
+                        android:layout_height="150dp"
                         android:clipChildren="false">
 
                         <com.ptithcm.quanlichitieu.ui.common.ArcProgressBar
@@ -127,7 +127,7 @@
                             android:layout_height="280dp"
                             android:layout_centerHorizontal="true"
                             android:layout_alignParentBottom="true"
-                            android:layout_marginBottom="-140dp"
+                            android:layout_marginBottom="-120dp"
                             android:rotation="0" />
 
                         <LinearLayout

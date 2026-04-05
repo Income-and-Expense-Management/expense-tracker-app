@@ -297,7 +297,7 @@
                 android:paddingTop="16dp">
 
                 <!-- Chart view -->
-                <com.ptithcm.quanlichitieu.ui.budget.BudgetChartView
+                <com.ptithcm.quanlichitieu.ui.budget.view.BudgetChartView
                     android:id="@+id/budgetChart"
                     android:layout_width="match_parent"
                     android:layout_height="200dp" />

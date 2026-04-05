@@ -14,7 +14,7 @@ import com.ptithcm.quanlichitieu.data.model.Budget;
 import com.ptithcm.quanlichitieu.data.model.Category;
 import com.ptithcm.quanlichitieu.data.model.TransactionType;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
-import com.ptithcm.quanlichitieu.ui.budget.BudgetItem;
+import com.ptithcm.quanlichitieu.ui.budget.model.BudgetItem;
 
 import java.util.ArrayList;
 import java.util.List;
