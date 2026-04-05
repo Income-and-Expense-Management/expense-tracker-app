@@ -33,8 +33,7 @@
             app:layout_constraintBottom_toBottomOf="@id/iconBg"
             app:layout_constraintEnd_toEndOf="@id/iconBg"
             app:layout_constraintStart_toStartOf="@id/iconBg"
-            app:layout_constraintTop_toTopOf="@id/iconBg"
-            app:tint="@color/home_wallet_orange" />
+            app:layout_constraintTop_toTopOf="@id/iconBg" />
 
         <TextView
             android:id="@+id/tvWalletName"

@@ -34,6 +34,7 @@ public class HomeFragment extends Fragment {
     private TextView tvBalanceValue;
     private TextView tvWalletDetailName;
     private TextView tvWalletDetailValue;
+    private android.widget.ImageView imgWalletIcon;
     private View cardWallet;
     private TextView tvSeeAllWallets;
     private RecyclerView rvTopExpenses;
@@ -82,6 +83,7 @@ public class HomeFragment extends Fragment {
         tvBalanceValue = view.findViewById(R.id.tvBalanceValue);
         tvWalletDetailName = view.findViewById(R.id.tvWalletDetailName);
         tvWalletDetailValue = view.findViewById(R.id.tvWalletDetailValue);
+        imgWalletIcon = view.findViewById(R.id.imgWalletIcon);
         cardWallet = view.findViewById(R.id.cardWallet);
         tvSeeAllWallets = view.findViewById(R.id.tvSeeAllWallets);
         rvTopExpenses = view.findViewById(R.id.rvTopExpenses);
@@ -141,10 +143,27 @@ public class HomeFragment extends Fragment {
                 tvBalanceValue.setText(balanceStr);
                 if (tvWalletDetailName != null) tvWalletDetailName.setText(wallet.getName());
                 if (tvWalletDetailValue != null) tvWalletDetailValue.setText(balanceStr);
+
+                if (imgWalletIcon != null) {
+                    if (wallet.getIconId() != null && !wallet.getIconId().isEmpty()) {
+                        int resId = requireContext().getResources().getIdentifier(
+                                wallet.getIconId(), "drawable", requireContext().getPackageName());
+                        if (resId != 0) {
+                            imgWalletIcon.setImageResource(resId);
+                        } else {
+                            imgWalletIcon.setImageResource(R.drawable.ic_payment_method);
+                        }
+                    } else {
+                        imgWalletIcon.setImageResource(R.drawable.ic_payment_method);
+                    }
+                }
             } else {
                 tvBalanceValue.setText("0 đ");
                 if (tvWalletDetailName != null) tvWalletDetailName.setText("Chưa có ví");
                 if (tvWalletDetailValue != null) tvWalletDetailValue.setText("Nhấn để tạo");
+                if (imgWalletIcon != null) {
+                    imgWalletIcon.setImageResource(R.drawable.ic_payment_method);
+                }
             }
         });
 
