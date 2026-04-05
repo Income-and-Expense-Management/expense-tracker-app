@@ -14,6 +14,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.ui.account.AccountFragment;
 import com.ptithcm.quanlichitieu.ui.home.HomeFragment;
+import com.ptithcm.quanlichitieu.ui.transaction.AddTransactionFragment;
 import com.ptithcm.quanlichitieu.ui.transaction.TransactionFragment;
 import com.ptithcm.quanlichitieu.ui.budget.BudgetFragment;
 import com.ptithcm.quanlichitieu.ui.wallet.WalletFragment;
@@ -27,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG_ACCOUNT = "frag_account";
     private static final String TAG_BUDGET = "frag_budget";
     private static final String TAG_WALLET_LIST = "frag_wallet_list";
+    private static final String TAG_ADD_TRANSACTION = "frag_add_transaction";
 
     private Fragment activeFragment;
     private HomeFragment homeFragment;
@@ -137,9 +139,15 @@ public class MainActivity extends AppCompatActivity {
     private void setupFab() {
         FloatingActionButton fab = findViewById(R.id.fabAdd);
         if (fab != null) {
-            fab.setOnClickListener(v ->
-                    Toast.makeText(this, "Add New Transaction", Toast.LENGTH_SHORT).show());
+            fab.setOnClickListener(v -> openAddTransaction());
         }
+    }
+
+    private void openAddTransaction() {
+        getSupportFragmentManager().beginTransaction()
+                .add(R.id.fragmentContainer, new AddTransactionFragment(), TAG_ADD_TRANSACTION)
+                .addToBackStack(null)
+                .commit();
     }
 
     private void setupBackNavigation() {
