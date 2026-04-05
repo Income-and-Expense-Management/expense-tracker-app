@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,10 +24,12 @@ public class EditWalletFragment extends Fragment {
     private WalletViewModel viewModel;
     private Wallet currentWallet;
     private String walletId;
+    private String selectedIconId = "ic_wallet"; // default icon
 
     private EditText etName;
     private EditText etBalance;
     private TextView tvCurrency;
+    private ImageView ivWalletIcon;
 
     public static EditWalletFragment newInstance(String walletId) {
         EditWalletFragment fragment = new EditWalletFragment();
@@ -60,6 +63,26 @@ public class EditWalletFragment extends Fragment {
         initViews(view);
         loadWalletData();
         observeViewModel();
+
+        getParentFragmentManager().setFragmentResultListener(
+                IconSelectionFragment.REQUEST_KEY_ICON,
+                getViewLifecycleOwner(),
+                (requestKey, result) -> {
+                    String newIcon = result.getString(IconSelectionFragment.RESULT_ICON_ID);
+                    if (newIcon != null) {
+                        selectedIconId = newIcon;
+                        updateWalletIcon(newIcon);
+                    }
+                });
+    }
+
+    private void updateWalletIcon(String iconName) {
+        if (ivWalletIcon != null && getContext() != null) {
+            int resId = getResources().getIdentifier(iconName, "drawable", getContext().getPackageName());
+            if (resId != 0) {
+                ivWalletIcon.setImageResource(resId);
+            }
+        }
     }
 
     private void observeViewModel() {
@@ -79,8 +102,11 @@ public class EditWalletFragment extends Fragment {
         etName = view.findViewById(R.id.etName);
         etBalance = view.findViewById(R.id.etBalance);
         tvCurrency = view.findViewById(R.id.tvCurrency);
-        
-        view.findViewById(R.id.btnClose).setOnClickListener(v -> 
+        ivWalletIcon = view.findViewById(R.id.ivWalletIcon);
+
+        ivWalletIcon.setOnClickListener(v -> openIconSelection());
+
+        view.findViewById(R.id.btnClose).setOnClickListener(v ->
                 requireActivity().getSupportFragmentManager().popBackStack());
         
         view.findViewById(R.id.tvSave).setOnClickListener(v -> saveChanges());
@@ -118,7 +144,20 @@ public class EditWalletFragment extends Fragment {
             etName.setText(currentWallet.getName());
             etBalance.setText(String.valueOf(currentWallet.getInitialBalance()));
             tvCurrency.setText(currentWallet.getCurrency().equals("VND") ? "Việt Nam Đồng" : currentWallet.getCurrency());
+
+            if (currentWallet.getIconId() != null && !currentWallet.getIconId().isEmpty()) {
+                selectedIconId = currentWallet.getIconId();
+                updateWalletIcon(selectedIconId);
+            }
         }
+    }
+
+    private void openIconSelection() {
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .add(R.id.fragmentContainer, new IconSelectionFragment())
+                .addToBackStack(null)
+                .commit();
     }
 
     private void saveChanges() {
@@ -131,6 +170,7 @@ public class EditWalletFragment extends Fragment {
         }
 
         if (currentWallet != null) {
+            currentWallet.setIconId(selectedIconId);
             viewModel.updateWallet(currentWallet, name, balanceStr);
         }
     }

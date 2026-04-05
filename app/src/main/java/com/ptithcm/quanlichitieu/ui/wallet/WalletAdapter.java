@@ -67,18 +67,32 @@ public class WalletAdapter extends RecyclerView.Adapter<WalletAdapter.WalletView
         private final TextView tvName;
         private final TextView tvBalance;
         private final ImageView ivMore;
+        private final ImageView ivIcon;
 
         public WalletViewHolder(@NonNull View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvWalletName);
             tvBalance = itemView.findViewById(R.id.tvWalletBalance);
             ivMore = itemView.findViewById(R.id.ivMore);
+            ivIcon = itemView.findViewById(R.id.ivWalletIcon);
         }
 
         public void bind(Wallet wallet, OnWalletClickListener clickListener, OnWalletMenuListener menuListener) {
             tvName.setText(wallet.getName());
             tvBalance.setText(String.format(Locale.getDefault(), "%,d đ", wallet.getInitialBalance()));
             
+            if (wallet.getIconId() != null && !wallet.getIconId().isEmpty()) {
+                int resId = itemView.getContext().getResources().getIdentifier(
+                        wallet.getIconId(), "drawable", itemView.getContext().getPackageName());
+                if (resId != 0) {
+                    ivIcon.setImageResource(resId);
+                } else {
+                    ivIcon.setImageResource(R.drawable.ic_wallet);
+                }
+            } else {
+                ivIcon.setImageResource(R.drawable.ic_wallet);
+            }
+
             // Click vào thẻ để chọn ví
             itemView.setOnClickListener(v -> {
                 if (clickListener != null) clickListener.onWalletClick(wallet);

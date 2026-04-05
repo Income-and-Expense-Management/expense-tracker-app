@@ -18,8 +18,7 @@
         android:layout_height="40dp"
         android:padding="8dp"
         android:src="@drawable/ic_wallet"
-        android:background="@drawable/bg_circle_dark"
-        app:tint="@android:color/white" />
+        android:background="@drawable/bg_circle_dark" />
 
     <!-- Wallet Info -->
     <LinearLayout
