@@ -1,11 +1,14 @@
 package com.ptithcm.quanlichitieu.ui.wallet;
 
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ptithcm.quanlichitieu.R;
@@ -18,14 +21,24 @@ import java.util.Locale;
 public class WalletAdapter extends RecyclerView.Adapter<WalletAdapter.WalletViewHolder> {
 
     private List<Wallet> wallets = new ArrayList<>();
-    private OnWalletClickListener listener;
+    private OnWalletClickListener clickListener;
+    private OnWalletMenuListener menuListener;
 
     public interface OnWalletClickListener {
         void onWalletClick(Wallet wallet);
     }
 
+    public interface OnWalletMenuListener {
+        void onEdit(Wallet wallet);
+        void onDelete(Wallet wallet);
+    }
+
     public void setOnWalletClickListener(OnWalletClickListener listener) {
-        this.listener = listener;
+        this.clickListener = listener;
+    }
+
+    public void setOnWalletMenuListener(OnWalletMenuListener listener) {
+        this.menuListener = listener;
     }
 
     public void setWallets(List<Wallet> wallets) {
@@ -42,7 +55,7 @@ public class WalletAdapter extends RecyclerView.Adapter<WalletAdapter.WalletView
 
     @Override
     public void onBindViewHolder(@NonNull WalletViewHolder holder, int position) {
-        holder.bind(wallets.get(position), listener);
+        holder.bind(wallets.get(position), clickListener, menuListener);
     }
 
     @Override
@@ -50,22 +63,48 @@ public class WalletAdapter extends RecyclerView.Adapter<WalletAdapter.WalletView
         return wallets.size();
     }
 
-    static class WalletViewHolder extends RecyclerView.ViewHolder {
+    public static class WalletViewHolder extends RecyclerView.ViewHolder {
         private final TextView tvName;
         private final TextView tvBalance;
+        private final ImageView ivMore;
 
         public WalletViewHolder(@NonNull View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvWalletName);
             tvBalance = itemView.findViewById(R.id.tvWalletBalance);
+            ivMore = itemView.findViewById(R.id.ivMore);
         }
 
-        public void bind(Wallet wallet, OnWalletClickListener listener) {
+        public void bind(Wallet wallet, OnWalletClickListener clickListener, OnWalletMenuListener menuListener) {
             tvName.setText(wallet.getName());
             tvBalance.setText(String.format(Locale.getDefault(), "%,d đ", wallet.getInitialBalance()));
             
+            // Click vào thẻ để chọn ví
             itemView.setOnClickListener(v -> {
-                if (listener != null) listener.onWalletClick(wallet);
+                if (clickListener != null) clickListener.onWalletClick(wallet);
+            });
+
+            // Click vào dấu 3 chấm để hiện Menu
+            ivMore.setOnClickListener(v -> {
+                PopupMenu popup = new PopupMenu(v.getContext(), v);
+                popup.getMenu().add(0, 1, 0, "Sửa");
+                popup.getMenu().add(0, 2, 1, "Xóa");
+                
+                // Sửa từ setOnMenuItemListener thành setOnMenuItemClickListener
+                popup.setOnMenuItemClickListener(item -> {
+                    if (menuListener == null) return false;
+                    
+                    int id = item.getItemId();
+                    if (id == 1) {
+                        menuListener.onEdit(wallet);
+                        return true;
+                    } else if (id == 2) {
+                        menuListener.onDelete(wallet);
+                        return true;
+                    }
+                    return false;
+                });
+                popup.show();
             });
         }
     }

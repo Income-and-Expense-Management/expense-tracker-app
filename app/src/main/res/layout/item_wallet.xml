@@ -45,19 +45,9 @@
             android:textColor="@color/white"
             android:textSize="16sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@+id/tvWalletBalance"
+            app:layout_constraintEnd_toStartOf="@+id/ivMore"
             app:layout_constraintStart_toEndOf="@id/iconBg"
             app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/tvWalletCurrency"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Việt Nam Đồng"
-            android:textColor="#8A8A8E"
-            android:textSize="12sp"
-            app:layout_constraintStart_toStartOf="@id/tvWalletName"
-            app:layout_constraintTop_toBottomOf="@id/tvWalletName" />
 
         <TextView
             android:id="@+id/tvWalletBalance"
@@ -65,11 +55,32 @@
             android:layout_height="wrap_content"
             android:text="0 đ"
             android:textColor="@color/white"
-            android:textSize="16sp"
-            android:textStyle="bold"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="@id/tvWalletName"
+            app:layout_constraintTop_toBottomOf="@id/tvWalletName" />
+
+        <TextView
+            android:id="@+id/tvWalletCurrency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Việt Nam Đồng"
+            android:textColor="#8A8A8E"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="@id/tvWalletBalance"
+            app:layout_constraintTop_toBottomOf="@id/tvWalletBalance" />
+
+        <ImageView
+            android:id="@+id/ivMore"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="4dp"
+            android:src="@drawable/ic_more_vert"
+            android:background="?attr/selectableItemBackgroundBorderless"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/white" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
