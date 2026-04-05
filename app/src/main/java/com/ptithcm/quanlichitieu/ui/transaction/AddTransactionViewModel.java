@@ -1,0 +1,175 @@
+package com.ptithcm.quanlichitieu.ui.transaction;
+
+import android.app.Application;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
+
+import com.ptithcm.quanlichitieu.data.local.DatabaseManager;
+import com.ptithcm.quanlichitieu.data.local.dao.CategoryDao;
+import com.ptithcm.quanlichitieu.data.local.dao.TransactionDao;
+import com.ptithcm.quanlichitieu.data.local.dao.WalletDao;
+import com.ptithcm.quanlichitieu.data.model.Category;
+import com.ptithcm.quanlichitieu.data.model.Transaction;
+import com.ptithcm.quanlichitieu.data.model.TransactionType;
+import com.ptithcm.quanlichitieu.data.model.Wallet;
+
+import java.util.List;
+
+public class AddTransactionViewModel extends AndroidViewModel {
+
+    private final TransactionDao transactionDao;
+    private final WalletDao walletDao;
+    private final CategoryDao categoryDao;
+
+    private final MutableLiveData<Wallet> selectedWallet = new MutableLiveData<>();
+    private final MutableLiveData<Category> selectedCategory = new MutableLiveData<>();
+    private final MutableLiveData<TransactionType> transactionType = new MutableLiveData<>(TransactionType.EXPENSE);
+    private final MutableLiveData<Long> transactionDate = new MutableLiveData<>(System.currentTimeMillis());
+    private final MutableLiveData<SaveResult> saveResult = new MutableLiveData<>();
+
+    public AddTransactionViewModel(@NonNull Application application) {
+        super(application);
+        DatabaseManager dbManager = DatabaseManager.getInstance(application);
+        this.transactionDao = dbManager.getTransactionDao();
+        this.walletDao = dbManager.getWalletDao();
+        this.categoryDao = dbManager.getCategoryDao();
+    }
+
+    public LiveData<Wallet> getSelectedWallet() {
+        return selectedWallet;
+    }
+
+    public LiveData<Category> getSelectedCategory() {
+        return selectedCategory;
+    }
+
+    public LiveData<TransactionType> getTransactionType() {
+        return transactionType;
+    }
+
+    public LiveData<Long> getTransactionDate() {
+        return transactionDate;
+    }
+
+    public LiveData<SaveResult> getSaveResult() {
+        return saveResult;
+    }
+
+    public void setSelectedWallet(Wallet wallet) {
+        selectedWallet.setValue(wallet);
+    }
+
+    public void setSelectedCategory(Category category) {
+        selectedCategory.setValue(category);
+    }
+
+    public void setTransactionType(TransactionType type) {
+        transactionType.setValue(type);
+        selectedCategory.setValue(null);
+    }
+
+    public void setTransactionDate(long date) {
+        transactionDate.setValue(date);
+    }
+
+    public void loadActiveWallet() {
+        List<Wallet> wallets = walletDao.getByUserId(null);
+        if (wallets != null && !wallets.isEmpty()) {
+            for (Wallet w : wallets) {
+                if (w.isActive()) {
+                    selectedWallet.setValue(w);
+                    return;
+                }
+            }
+            selectedWallet.setValue(wallets.get(0));
+        }
+    }
+
+    public List<Wallet> getAllWallets() {
+        return walletDao.getByUserId(null);
+    }
+
+    public List<Category> getCategoriesByType() {
+        TransactionType type = transactionType.getValue();
+        if (type == null) type = TransactionType.EXPENSE;
+        return categoryDao.getByType(null, type);
+    }
+
+    public void saveTransaction(String amountStr, String note) {
+        if (amountStr == null || amountStr.trim().isEmpty()) {
+            saveResult.setValue(new SaveResult(false, "Vui lòng nhập số tiền"));
+            return;
+        }
+
+        long amount;
+        try {
+            amount = Long.parseLong(amountStr.trim().replace(",", "").replace(".", ""));
+        } catch (NumberFormatException e) {
+            saveResult.setValue(new SaveResult(false, "Số tiền không hợp lệ"));
+            return;
+        }
+
+        if (amount <= 0) {
+            saveResult.setValue(new SaveResult(false, "Số tiền phải lớn hơn 0"));
+            return;
+        }
+
+        Wallet wallet = selectedWallet.getValue();
+        if (wallet == null) {
+            saveResult.setValue(new SaveResult(false, "Vui lòng chọn ví"));
+            return;
+        }
+
+        Category category = selectedCategory.getValue();
+        if (category == null) {
+            saveResult.setValue(new SaveResult(false, "Vui lòng chọn nhóm"));
+            return;
+        }
+
+        TransactionType type = transactionType.getValue();
+        if (type == null) type = TransactionType.EXPENSE;
+
+        Long date = transactionDate.getValue();
+        if (date == null) date = System.currentTimeMillis();
+
+        Transaction transaction = new Transaction.Builder()
+                .setWalletId(wallet.getId())
+                .setCategoryId(category.getId())
+                .setAmount(amount)
+                .setType(type)
+                .setTransactionDate(date)
+                .setIconId(category.getIconName())
+                .setNote(note != null ? note.trim() : null)
+                .build();
+
+        String id = transactionDao.insert(transaction);
+
+        if (id != null) {
+            saveResult.setValue(new SaveResult(true, "Thêm giao dịch thành công"));
+        } else {
+            saveResult.setValue(new SaveResult(false, "Lỗi khi thêm giao dịch"));
+        }
+    }
+
+    public static class SaveResult {
+        private final boolean success;
+        private final String message;
+
+        public SaveResult(boolean success, String message) {
+            this.success = success;
+            this.message = message;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+    }
+}

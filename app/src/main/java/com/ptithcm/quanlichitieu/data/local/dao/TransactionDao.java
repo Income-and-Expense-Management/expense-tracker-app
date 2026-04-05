@@ -384,6 +384,51 @@ public class TransactionDao {
     }
 
     /**
+     * Lấy tổng số tiền theo category và khoảng thời gian.
+     * Dùng để tính spent amount cho budget theo category cụ thể.
+     * 
+     * @param walletId ID của wallet
+     * @param categoryId ID của category
+     * @param startDate Ngày bắt đầu (timestamp)
+     * @param endDate Ngày kết thúc (timestamp)
+     * @return Tổng số tiền đã chi cho category
+     */
+    public long getTotalAmountByCategory(@NonNull String walletId, @NonNull String categoryId,
+                                         long startDate, long endDate) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        long total = 0;
+
+        String query = "SELECT SUM(" + TransactionEntry.COLUMN_AMOUNT + ") AS total " +
+                "FROM " + TransactionEntry.TABLE_NAME + " " +
+                "WHERE " + TransactionEntry.COLUMN_WALLET_ID + " = ? " +
+                "AND " + TransactionEntry.COLUMN_CATEGORY_ID + " = ? " +
+                "AND " + TransactionEntry.COLUMN_TYPE + " = ? " +
+                "AND " + TransactionEntry.COLUMN_TRANSACTION_DATE + " >= ? " +
+                "AND " + TransactionEntry.COLUMN_TRANSACTION_DATE + " <= ?";
+
+        Cursor cursor = null;
+        try {
+            cursor = db.rawQuery(query, new String[]{
+                    walletId,
+                    categoryId,
+                    TransactionType.EXPENSE.getValue(),
+                    String.valueOf(startDate),
+                    String.valueOf(endDate)
+            });
+
+            if (cursor != null && cursor.moveToFirst()) {
+                total = cursor.getLong(0);
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+
+        return total;
+    }
+
+    /**
      * Đếm số lượng transactions của một wallet.
      * 
      * @param walletId ID của wallet

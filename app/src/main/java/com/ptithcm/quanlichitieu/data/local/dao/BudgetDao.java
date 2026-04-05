@@ -260,16 +260,21 @@ public class BudgetDao {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
         ContentValues values = new ContentValues();
+        values.put(BudgetEntry.COLUMN_WALLET_ID, budget.getWalletId());
+        values.put(BudgetEntry.COLUMN_CATEGORY_ID, budget.getCategoryId());
         values.put(BudgetEntry.COLUMN_TARGET_AMOUNT, budget.getTargetAmount());
         values.put(BudgetEntry.COLUMN_START_DATE, budget.getStartDate());
         values.put(BudgetEntry.COLUMN_END_DATE, budget.getEndDate());
 
-        return db.update(
+        int rowsAffected = db.update(
                 BudgetEntry.TABLE_NAME,
                 values,
                 BudgetEntry.COLUMN_ID + " = ?",
                 new String[]{budget.getId()}
         );
+
+        Log.d(TAG, "Updated budget " + budget.getId() + ", rows affected: " + rowsAffected);
+        return rowsAffected;
     }
 
     // ==================== DELETE ====================
