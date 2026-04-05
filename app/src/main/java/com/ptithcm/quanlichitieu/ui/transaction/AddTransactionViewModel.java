@@ -19,6 +19,7 @@ import com.ptithcm.quanlichitieu.data.model.Wallet;
 import com.ptithcm.quanlichitieu.event.BudgetUpdateEvent;
 import com.ptithcm.quanlichitieu.event.EventBus;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AddTransactionViewModel extends AndroidViewModel {
@@ -98,7 +99,18 @@ public class AddTransactionViewModel extends AndroidViewModel {
     public List<Category> getCategoriesByType() {
         TransactionType type = transactionType.getValue();
         if (type == null) type = TransactionType.EXPENSE;
-        return categoryDao.getByType(null, type);
+
+        // Get categories by type (includes system + user). We only want active categories for selection.
+        List<Category> raw = categoryDao.getByType(null, type);
+        if (raw == null || raw.isEmpty()) return raw;
+
+        List<Category> active = new ArrayList<>();
+        for (Category c : raw) {
+            if (c != null && c.isActive()) {
+                active.add(c);
+            }
+        }
+        return active;
     }
 
     public void saveTransaction(String amountStr, String note) {

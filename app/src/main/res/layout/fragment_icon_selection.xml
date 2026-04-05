@@ -21,7 +21,7 @@
             android:layout_height="48dp"
             android:layout_marginStart="8dp"
             android:padding="12dp"
-            android:src="@drawable/ic_close"
+            android:src="@drawable/ic_arrow_back"
             android:background="?attr/selectableItemBackgroundBorderless"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -42,39 +42,7 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Tabs -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:weightSum="2">
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:text="CƠ BẢN"
-            android:textAlignment="center"
-            android:textColor="@color/white"
-            android:textStyle="bold"
-            android:paddingVertical="12dp" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:text="ĐÃ TẢI XUỐNG"
-            android:textAlignment="center"
-            android:textColor="#555555"
-            android:paddingVertical="12dp" />
-
-    </LinearLayout>
-
-    <View
-        android:layout_width="100dp"
-        android:layout_height="2dp"
-        android:layout_marginStart="50dp"
-        android:background="@color/white" />
 
     <!-- Grid -->
     <androidx.recyclerview.widget.RecyclerView

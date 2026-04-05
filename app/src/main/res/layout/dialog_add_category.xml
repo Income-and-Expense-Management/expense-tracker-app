@@ -62,14 +62,6 @@
             android:textColor="#FFFFFF"
             android:text="Khoản thu" />
 
-        <RadioButton
-            android:id="@+id/rbLoan"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:buttonTint="#4CAF50"
-            android:textColor="#FFFFFF"
-            android:text="Vay" />
     </RadioGroup>
 
 

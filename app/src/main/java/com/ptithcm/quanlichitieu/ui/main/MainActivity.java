@@ -144,8 +144,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openAddTransaction() {
-        getSupportFragmentManager().beginTransaction()
-                .add(R.id.fragmentContainer, new AddTransactionFragment(), TAG_ADD_TRANSACTION)
+        // avoid adding multiple add-transaction fragments
+        if (getSupportFragmentManager().findFragmentByTag(TAG_ADD_TRANSACTION) != null) return;
+
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        // hide current active fragment so AddTransactionFragment is displayed cleanly
+        if (activeFragment != null && activeFragment.isAdded()) {
+            ft.hide(activeFragment);
+        }
+        ft.add(R.id.fragmentContainer, new AddTransactionFragment(), TAG_ADD_TRANSACTION)
                 .addToBackStack(null)
                 .commit();
     }

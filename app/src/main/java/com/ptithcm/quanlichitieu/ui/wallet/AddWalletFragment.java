@@ -25,6 +25,8 @@ public class AddWalletFragment extends Fragment {
     private WalletViewModel viewModel;
     private EditText etName;
     private EditText etBalance;
+    private ImageView ivIcon;
+    private String selectedIconId = "ic_wallet"; // default icon
 
     @Nullable
     @Override
@@ -40,10 +42,11 @@ public class AddWalletFragment extends Fragment {
         // 1. Ẩn thanh điều hướng và FAB để màn hình tạo ví chiếm toàn diện tích
         toggleBottomNavigation(false);
 
-        viewModel = new ViewModelProvider(this).get(WalletViewModel.class);
+        viewModel = new ViewModelProvider(requireActivity()).get(WalletViewModel.class);
 
         etName = view.findViewById(R.id.etName);
         etBalance = view.findViewById(R.id.etBalance);
+        ivIcon = view.findViewById(R.id.ivIcon);
         Button btnSave = view.findViewById(R.id.btnSave);
         ImageView btnBack = view.findViewById(R.id.btnBack);
 
@@ -54,9 +57,42 @@ public class AddWalletFragment extends Fragment {
             });
         }
 
+        // Xử lý sự kiện nút Lưu
         btnSave.setOnClickListener(v -> saveWallet());
 
+        if (ivIcon != null) {
+            ivIcon.setOnClickListener(v -> openIconSelection());
+        }
+
         observeViewModel();
+
+        getParentFragmentManager().setFragmentResultListener(
+                IconSelectionFragment.REQUEST_KEY_ICON,
+                getViewLifecycleOwner(),
+                (requestKey, result) -> {
+                    String newIcon = result.getString(IconSelectionFragment.RESULT_ICON_ID);
+                    if (newIcon != null) {
+                        selectedIconId = newIcon;
+                        updateWalletIcon(newIcon);
+                    }
+                });
+    }
+
+    private void updateWalletIcon(String iconName) {
+        if (ivIcon != null && getContext() != null) {
+            int resId = getResources().getIdentifier(iconName, "drawable", getContext().getPackageName());
+            if (resId != 0) {
+                ivIcon.setImageResource(resId);
+            }
+        }
+    }
+
+    private void openIconSelection() {
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .add(R.id.fragmentContainer, new IconSelectionFragment())
+                .addToBackStack(null)
+                .commit();
     }
 
     @Override
@@ -95,11 +131,14 @@ public class AddWalletFragment extends Fragment {
 
     private void observeViewModel() {
         viewModel.getSaveResult().observe(getViewLifecycleOwner(), result -> {
-            Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
+            if (result != null) {
+                Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
 
-            if (result.isSuccess()) {
-                // Quay lại màn hình trước đó sau khi lưu thành công
-                requireActivity().getSupportFragmentManager().popBackStack();
+                if (result.isSuccess()) {
+                    // Quay lại màn hình trước đó sau khi lưu thành công
+                    requireActivity().getSupportFragmentManager().popBackStack();
+                    viewModel.clearSaveResult();
+                }
             }
         });
     }
@@ -113,6 +152,6 @@ public class AddWalletFragment extends Fragment {
             return;
         }
 
-        viewModel.saveWallet(name, balanceStr);
+        viewModel.saveWallet(name, balanceStr, selectedIconId);
     }
 }

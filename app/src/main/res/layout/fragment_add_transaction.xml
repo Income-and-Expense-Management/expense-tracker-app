@@ -23,7 +23,7 @@
             android:layout_height="40dp"
             android:layout_centerVertical="true"
             android:padding="8dp"
-            android:src="@drawable/ic_close"
+            android:src="@drawable/ic_arrow_back"
             android:background="?attr/selectableItemBackgroundBorderless"
             app:tint="@android:color/white" />
 
@@ -38,7 +38,7 @@
 
     </RelativeLayout>
 
-    <!-- Tab selector: Khoan chi / Khoan thu / Vay No -->
+    <!-- Tab selector: Khoan chi / Khoan thu -->
     <com.google.android.material.button.MaterialButtonToggleGroup
         android:id="@+id/toggleTransactionType"
         android:layout_width="match_parent"
@@ -66,14 +66,6 @@
             android:layout_height="36dp"
             android:layout_weight="1"
             android:text="@string/add_transaction_income" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnDebt"
-            style="@style/Widget.App.SegmentedButton"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:text="@string/add_transaction_debt" />
 
     </com.google.android.material.button.MaterialButtonToggleGroup>
 
@@ -169,11 +161,13 @@
         android:paddingHorizontal="16dp"
         android:paddingVertical="14dp">
 
-        <View
+        <ImageView
             android:id="@+id/viewCategoryIcon"
             android:layout_width="28dp"
             android:layout_height="28dp"
-            android:background="@drawable/bg_circle_gray" />
+            android:scaleType="centerInside"
+            android:background="@drawable/bg_circle_gray"
+            android:contentDescription="@string/icon_content_description" />
 
         <TextView
             android:id="@+id/tvCategoryName"
