@@ -69,6 +69,10 @@ public class WalletViewModel extends AndroidViewModel {
         return saveResult;
     }
 
+    public void clearSaveResult() {
+        saveResult.setValue(null);
+    }
+
     /**
      * Tải ví đang được chọn (active) hoặc ví đầu tiên nếu chưa có ví nào active
      */
@@ -188,7 +192,10 @@ public class WalletViewModel extends AndroidViewModel {
         }
 
         try {
-            long balance = Long.parseLong(balanceStr.trim().replace(",", "").replace(".", ""));
+            long balance = 0;
+            if (balanceStr != null && !balanceStr.trim().isEmpty()) {
+                balance = Long.parseLong(balanceStr.trim().replace(",", "").replace(".", ""));
+            }
 
             wallet.setName(name.trim());
             wallet.setInitialBalance(balance);
@@ -205,7 +212,7 @@ public class WalletViewModel extends AndroidViewModel {
                 saveResult.setValue(new SaveResult(false, "Lỗi khi cập nhật ví"));
             }
         } catch (Exception e) {
-            saveResult.setValue(new SaveResult(false, "Dữ liệu không hợp lệ"));
+            saveResult.setValue(new SaveResult(false, "Dữ liệu lượng tiền không hợp lệ"));
         }
     }
 

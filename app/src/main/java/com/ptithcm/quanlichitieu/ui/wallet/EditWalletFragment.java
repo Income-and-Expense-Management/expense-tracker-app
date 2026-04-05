@@ -16,8 +16,6 @@ import androidx.lifecycle.ViewModelProvider;
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
 
-import java.util.Locale;
-
 public class EditWalletFragment extends Fragment {
 
     private static final String ARG_WALLET_ID = "arg_wallet_id";
@@ -61,6 +59,20 @@ public class EditWalletFragment extends Fragment {
         
         initViews(view);
         loadWalletData();
+        observeViewModel();
+    }
+
+    private void observeViewModel() {
+        viewModel.getSaveResult().observe(getViewLifecycleOwner(), result -> {
+            if (result != null) {
+                Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
+                if (result.isSuccess()) {
+                    requireActivity().getSupportFragmentManager().popBackStack();
+                    // Reset save result so it doesn't trigger again on rotation
+                    viewModel.clearSaveResult();
+                }
+            }
+        });
     }
 
     private void initViews(View view) {
@@ -121,8 +133,5 @@ public class EditWalletFragment extends Fragment {
         if (currentWallet != null) {
             viewModel.updateWallet(currentWallet, name, balanceStr);
         }
-
-        Toast.makeText(requireContext(), "Đã lưu thay đổi", Toast.LENGTH_SHORT).show();
-        requireActivity().getSupportFragmentManager().popBackStack();
     }
 }
