@@ -20,6 +20,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ptithcm.quanlichitieu.R;
+import com.ptithcm.quanlichitieu.event.BudgetUpdateEvent;
+import com.ptithcm.quanlichitieu.event.EventBus;
 import com.ptithcm.quanlichitieu.ui.budget.bottomsheet.SelectWalletBottomSheet;
 import com.ptithcm.quanlichitieu.ui.budget.dialog.AddBudgetDialogFragment;
 import com.ptithcm.quanlichitieu.ui.budget.dialog.EditBudgetDialogFragment;
@@ -133,6 +135,16 @@ public class BudgetFragment extends Fragment {
                 updateSummaryUI(summary);
             }
         });
+        
+        // Observe budget update events từ EventBus
+        // Tuân thủ Dependency Inversion Principle: phụ thuộc vào abstraction (LiveData/EventBus)
+        // không phụ thuộc vào concrete implementation của AddTransactionFragment
+        EventBus.getInstance().getBudgetUpdateEvent().observe(getViewLifecycleOwner(), event -> {
+            if (event != null) {
+                handleBudgetUpdateEvent(event);
+                EventBus.getInstance().clearBudgetUpdateEvent();
+            }
+        });
     }
 
     private void updateSummaryUI(BudgetViewModel.BudgetSummary summary) {
@@ -153,6 +165,24 @@ public class BudgetFragment extends Fragment {
         tvPeriodDays.setText(days + " ngày");
 
         progressCircle.setProgress(summary.getProgress());
+    }
+    
+    /**
+     * Xử lý budget update event từ EventBus.
+     * 
+     * Tuân thủ Single Responsibility Principle:
+     * - Method này chỉ chịu trách nhiệm handle event và trigger refresh
+     * - Logic refresh được delegate cho ViewModel
+     * 
+     * @param event Event chứa thông tin về budget update
+     */
+    private void handleBudgetUpdateEvent(BudgetUpdateEvent event) {
+        // Chỉ refresh nếu event liên quan đến ví hiện tại
+        if (viewModel.getSelectedWallet().getValue() != null &&
+            event.getWalletId() != null &&
+            event.getWalletId().equals(viewModel.getSelectedWallet().getValue().getId())) {
+            viewModel.refresh();
+        }
     }
 
     /** Mở màn hình XEM chi tiết ngân sách (bấm vào item) */

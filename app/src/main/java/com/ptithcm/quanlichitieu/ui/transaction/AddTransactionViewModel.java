@@ -16,6 +16,8 @@ import com.ptithcm.quanlichitieu.data.model.Category;
 import com.ptithcm.quanlichitieu.data.model.Transaction;
 import com.ptithcm.quanlichitieu.data.model.TransactionType;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
+import com.ptithcm.quanlichitieu.event.BudgetUpdateEvent;
+import com.ptithcm.quanlichitieu.event.EventBus;
 
 import java.util.List;
 
@@ -149,6 +151,15 @@ public class AddTransactionViewModel extends AndroidViewModel {
         String id = transactionDao.insert(transaction);
 
         if (id != null) {
+            // Gửi event để notify BudgetFragment refresh data
+            // Tuân thủ Open/Closed Principle: BudgetFragment không cần biết về AddTransactionViewModel
+            BudgetUpdateEvent event = new BudgetUpdateEvent.Builder()
+                    .setWalletId(wallet.getId())
+                    .setCategoryId(category.getId())
+                    .setEventType(BudgetUpdateEvent.EventType.TRANSACTION_ADDED)
+                    .build();
+            EventBus.getInstance().postBudgetUpdate(event);
+            
             saveResult.setValue(new SaveResult(true, "Thêm giao dịch thành công"));
         } else {
             saveResult.setValue(new SaveResult(false, "Lỗi khi thêm giao dịch"));
