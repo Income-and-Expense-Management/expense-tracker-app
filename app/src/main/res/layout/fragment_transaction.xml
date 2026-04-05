@@ -6,7 +6,9 @@
     android:layout_height="match_parent"
     android:clipToPadding="false"
     android:fillViewport="true"
-    tools:context=".ui.transaction.TransactionFragment">
+    tools:context=".ui.transaction.TransactionFragment"
+    android:fitsSystemWindows="true"
+    >
 
     <LinearLayout
         android:layout_width="match_parent"

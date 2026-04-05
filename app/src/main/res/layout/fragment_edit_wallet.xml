@@ -6,7 +6,9 @@
     android:layout_height="match_parent"
     android:background="#121212"
     android:clickable="true"
-    android:focusable="true">
+    android:focusable="true"
+    android:fitsSystemWindows="true"
+    >
 
     <!-- Header -->
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -20,9 +22,9 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:padding="12dp"
             android:src="@drawable/ic_close"
-            android:background="?attr/selectableItemBackgroundBorderless"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"

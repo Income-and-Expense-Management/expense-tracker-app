@@ -6,7 +6,9 @@
     android:background="#121212"
     android:clickable="true"
     android:focusable="true"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:fitsSystemWindows="true"
+    >
 
     <!-- Header -->
     <androidx.constraintlayout.widget.ConstraintLayout
