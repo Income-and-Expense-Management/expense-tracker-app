@@ -119,7 +119,7 @@ public class WalletViewModel extends AndroidViewModel {
         wallets.setValue(walletList);
     }
 
-    public void saveWallet(String name, String balanceStr) {
+    public void saveWallet(String name, String balanceStr, String iconId) {
         if (name == null || name.trim().isEmpty()) {
             saveResult.setValue(new SaveResult(false, "Vui lòng nhập tên ví"));
             return;
@@ -134,6 +134,7 @@ public class WalletViewModel extends AndroidViewModel {
                     .setName(name.trim())
                     .setInitialBalance(balance)
                     .setCurrency("VND")
+                    .setIconId(iconId)
                     .setIsActive(wallets.getValue() == null || wallets.getValue().isEmpty())
                     .build();
 
