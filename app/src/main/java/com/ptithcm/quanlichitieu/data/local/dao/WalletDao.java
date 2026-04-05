@@ -117,4 +117,24 @@ public class WalletDao {
                 .setIsActive(CursorUtils.getBoolean(cursor, WalletEntry.COLUMN_IS_ACTIVE))
                 .build();
     }
+
+    public int delete(@NonNull String walletId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        return db.delete(WalletEntry.TABLE_NAME, WalletEntry.COLUMN_ID + " = ?", new String[]{walletId});
+    }
+
+    public int update(@NonNull Wallet wallet) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        wallet.setUpdatedAt(IdGenerator.getCurrentTimestamp());
+
+        ContentValues values = new ContentValues();
+        values.put(WalletEntry.COLUMN_NAME, wallet.getName());
+        values.put(WalletEntry.COLUMN_INITIAL_BALANCE, wallet.getInitialBalance());
+        values.put(WalletEntry.COLUMN_CURRENCY, wallet.getCurrency());
+        values.put(WalletEntry.COLUMN_ICON_ID, wallet.getIconId());
+        values.put(WalletEntry.COLUMN_UPDATED_AT, wallet.getUpdatedAt());
+        values.put(WalletEntry.COLUMN_IS_ACTIVE, wallet.getIsActiveAsInt());
+
+        return db.update(WalletEntry.TABLE_NAME, values, WalletEntry.COLUMN_ID + " = ?", new String[]{wallet.getId()});
+    }
 }

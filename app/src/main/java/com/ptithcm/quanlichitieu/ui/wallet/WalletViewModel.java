@@ -69,6 +69,10 @@ public class WalletViewModel extends AndroidViewModel {
         return saveResult;
     }
 
+    public void clearSaveResult() {
+        saveResult.setValue(null);
+    }
+
     /**
      * Tải ví đang được chọn (active) hoặc ví đầu tiên nếu chưa có ví nào active
      */
@@ -144,6 +148,71 @@ public class WalletViewModel extends AndroidViewModel {
             }
         } catch (Exception e) {
             saveResult.setValue(new SaveResult(false, "Dữ liệu không hợp lệ"));
+        }
+    }
+
+    public void deleteWallet(Wallet wallet) {
+        if (wallet == null) return;
+        try {
+            com.ptithcm.quanlichitieu.data.local.dao.TransactionDao transactionDao = DatabaseManager.getInstance(getApplication()).getTransactionDao();
+            com.ptithcm.quanlichitieu.data.local.dao.BudgetDao budgetDao = DatabaseManager.getInstance(getApplication()).getBudgetDao();
+            
+            // Delete related transactions and budgets
+            transactionDao.deleteByWalletId(wallet.getId());
+            budgetDao.deleteByWalletId(wallet.getId());
+            
+            // Delete the wallet
+            walletDao.delete(wallet.getId());
+            
+            saveResult.setValue(new SaveResult(true, "Xóa ví thành công"));
+            
+            // Reload all wallets
+            loadAllWallets();
+            
+            // If the deleted wallet was the active one, pick another or set to null
+            Wallet currentActive = selectedWallet.getValue();
+            if (currentActive != null && currentActive.getId().equals(wallet.getId())) {
+                List<Wallet> currentList = wallets.getValue();
+                if (currentList != null && !currentList.isEmpty()) {
+                    selectWallet(currentList.get(0));
+                } else {
+                    selectedWallet.setValue(null);
+                }
+            }
+        } catch (Exception e) {
+            saveResult.setValue(new SaveResult(false, "Lỗi khi xóa ví"));
+        }
+    }
+
+    public void updateWallet(Wallet wallet, String name, String balanceStr) {
+        if (wallet == null) return;
+        if (name == null || name.trim().isEmpty()) {
+            saveResult.setValue(new SaveResult(false, "Vui lòng nhập tên ví"));
+            return;
+        }
+
+        try {
+            long balance = 0;
+            if (balanceStr != null && !balanceStr.trim().isEmpty()) {
+                balance = Long.parseLong(balanceStr.trim().replace(",", "").replace(".", ""));
+            }
+
+            wallet.setName(name.trim());
+            wallet.setInitialBalance(balance);
+
+            int rows = walletDao.update(wallet);
+            if (rows > 0) {
+                saveResult.setValue(new SaveResult(true, "Cập nhật ví thành công"));
+                loadAllWallets();
+                Wallet currentActive = selectedWallet.getValue();
+                if (currentActive != null && currentActive.getId().equals(wallet.getId())) {
+                    selectedWallet.setValue(wallet);
+                }
+            } else {
+                saveResult.setValue(new SaveResult(false, "Lỗi khi cập nhật ví"));
+            }
+        } catch (Exception e) {
+            saveResult.setValue(new SaveResult(false, "Dữ liệu lượng tiền không hợp lệ"));
         }
     }
 
