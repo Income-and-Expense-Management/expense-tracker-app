@@ -18,6 +18,8 @@ public class CategoryViewModel extends AndroidViewModel {
     private final CategoryRepository repository;
     private final MutableLiveData<List<Category>> categories = new MutableLiveData<>();
     private final MutableLiveData<Boolean> addResult = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> updateResult = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> deleteResult = new MutableLiveData<>();
 
     public CategoryViewModel(@NonNull Application application) {
         super(application);
@@ -32,8 +34,24 @@ public class CategoryViewModel extends AndroidViewModel {
         return addResult;
     }
 
+    public LiveData<Boolean> getUpdateResult() {
+        return updateResult;
+    }
+
+    public LiveData<Boolean> getDeleteResult() {
+        return deleteResult;
+    }
+
     public void resetAddResult() {
         addResult.setValue(null);
+    }
+
+    public void resetUpdateResult() {
+        updateResult.setValue(null);
+    }
+
+    public void resetDeleteResult() {
+        deleteResult.setValue(null);
     }
 
     public void loadCategories(String userId) {
@@ -45,6 +63,10 @@ public class CategoryViewModel extends AndroidViewModel {
     }
 
     public void addCategory(String userId, String name, TransactionType type) {
+        addCategoryWithIcon(userId, name, type, "ic_item");
+    }
+
+    public void addCategoryWithIcon(String userId, String name, TransactionType type, String iconName) {
         if (name == null || name.trim().isEmpty()) {
             addResult.postValue(false);
             return;
@@ -54,12 +76,32 @@ public class CategoryViewModel extends AndroidViewModel {
                 .setUserId(userId)
                 .setName(name)
                 .setType(type)
-                .setIconName("ic_item") // default icon cho custom category
+                .setIconName(iconName)
                 .build();
 
         new Thread(() -> {
             boolean success = repository.addCategory(category);
             addResult.postValue(success);
+            if (success) {
+                loadCategories(userId); // reload
+            }
+        }).start();
+    }
+
+    public void updateCategory(String userId, Category category) {
+        new Thread(() -> {
+            boolean success = repository.updateCategory(category);
+            updateResult.postValue(success);
+            if (success) {
+                loadCategories(userId); // reload
+            }
+        }).start();
+    }
+
+    public void deleteCategory(String userId, String categoryId) {
+        new Thread(() -> {
+            boolean success = repository.deleteCategory(categoryId);
+            deleteResult.postValue(success);
             if (success) {
                 loadCategories(userId); // reload
             }

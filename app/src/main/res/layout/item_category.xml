@@ -28,17 +28,19 @@
             app:tint="@null" /> <!-- Để @null nếu icon của bạn đã có màu sẵn như trong hình -->
     </FrameLayout>
 
-    <!-- Tên danh mục -->
+    <!-- Tn danh mc -->
     <TextView
         android:id="@+id/tvName"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:layout_marginStart="16dp"
-        android:text="Tên hạng mục"
+        android:text="Tn hng mc"
         android:textColor="@android:color/white"
         android:textSize="17sp"
         android:textStyle="normal" />
+
+
     <androidx.appcompat.widget.SwitchCompat
         android:id="@+id/switchCategory"
         android:layout_width="wrap_content"

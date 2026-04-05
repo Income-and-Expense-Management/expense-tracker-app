@@ -26,4 +26,12 @@ public class CategoryRepository {
     public boolean addCategory(Category category) {
         return categoryDao.insert(category) != null;
     }
+
+    public boolean updateCategory(Category category) {
+        return categoryDao.update(category) > 0;
+    }
+
+    public boolean deleteCategory(String categoryId) {
+        return categoryDao.delete(categoryId) > 0;
+    }
 }

@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.GridLayoutManager;
 
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.data.model.Category;
@@ -26,6 +27,11 @@ import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
 import java.util.List;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.graphics.Color;
+import android.widget.GridLayout;
+import android.content.res.TypedArray;
 
 /**
  * CategoryFragment: Quản lý danh mục (Categories).
@@ -38,6 +44,7 @@ public class CategoryFragment extends Fragment {
     private CategoryAdapter adapter;
     private List<Category> allCategories = new ArrayList<>();
     private TransactionType currentType = TransactionType.EXPENSE;
+    private String selectedIcon = "ic_food";
 
     @Nullable
     @Override
@@ -65,20 +72,50 @@ public class CategoryFragment extends Fragment {
 
     private void observeViewModel() {
         categoryViewModel.getCategories().observe(getViewLifecycleOwner(), categories -> {
-            allCategories = categories;
+            allCategories.clear();
+            if (categories != null) {
+                allCategories.addAll(categories);
+            }
             filterCategories();
         });
 
         categoryViewModel.getAddResult().observe(getViewLifecycleOwner(), success -> {
-            if (success == null) return;
-            if (getContext() != null) {
-                if (success) {
-                    Toast.makeText(getContext(), "Thêm danh mục thành công", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(getContext(), "Thêm danh mục thất bại", Toast.LENGTH_SHORT).show();
+            if (success != null) {
+                if (getContext() != null) {
+                    if (success) {
+                        Toast.makeText(getContext(), "Thêm danh mục thành công", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(getContext(), "Thêm danh mục thất bại", Toast.LENGTH_SHORT).show();
+                    }
                 }
+                categoryViewModel.resetAddResult();
             }
-            categoryViewModel.resetAddResult();
+        });
+
+        categoryViewModel.getUpdateResult().observe(getViewLifecycleOwner(), success -> {
+            if (success != null) {
+                if (getContext() != null) {
+                    if (success) {
+                        Toast.makeText(getContext(), "Cập nhật danh mục thành công", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(getContext(), "Cập nhật danh mục thất bại", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                categoryViewModel.resetUpdateResult();
+            }
+        });
+
+        categoryViewModel.getDeleteResult().observe(getViewLifecycleOwner(), success -> {
+            if (success != null) {
+                if (getContext() != null) {
+                    if (success) {
+                        Toast.makeText(getContext(), "Xoá danh mục thành công", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(getContext(), "Xoá danh mục thất bại", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                categoryViewModel.resetDeleteResult();
+            }
         });
     }
 
@@ -120,7 +157,17 @@ public class CategoryFragment extends Fragment {
         RecyclerView rvCategories = view.findViewById(R.id.rvCategories);
         if (rvCategories != null) {
             rvCategories.setLayoutManager(new LinearLayoutManager(requireContext()));
-            adapter = new CategoryAdapter();
+            adapter = new CategoryAdapter(new CategoryAdapter.OnCategoryClickListener() {
+                @Override
+                public void onCategoryClick(com.ptithcm.quanlichitieu.data.model.Category category) {
+                    showEditCategoryDialog(category);
+                }
+
+                @Override
+                public void onCategoryLongClick(com.ptithcm.quanlichitieu.data.model.Category category) {
+                    showDeleteConfirmDialog(category);
+                }
+            });
             rvCategories.setAdapter(adapter);
         }
 
@@ -151,8 +198,14 @@ public class CategoryFragment extends Fragment {
 
         EditText etConfigName = dialogView.findViewById(R.id.etCategoryName);
         RadioGroup rgType = dialogView.findViewById(R.id.rgCategoryType);
+        ImageView ivSelectedIcon = dialogView.findViewById(R.id.ivSelectedIcon);
         Button btnCancel = dialogView.findViewById(R.id.btnCancel);
         Button btnSave = dialogView.findViewById(R.id.btnSave);
+
+        selectedIcon = "ic_food";
+        updateIconImageView(ivSelectedIcon, selectedIcon);
+
+        ivSelectedIcon.setOnClickListener(v -> showIconPickerDialog(ivSelectedIcon));
 
         btnCancel.setOnClickListener(v -> dialog.dismiss());
 
@@ -171,11 +224,128 @@ public class CategoryFragment extends Fragment {
                 type = TransactionType.LOAN;
             }
 
-            categoryViewModel.addCategory(authViewModel.getUserId(), name, type);
+            categoryViewModel.addCategoryWithIcon(authViewModel.getUserId(), name, type, selectedIcon);
             dialog.dismiss();
         });
 
         dialog.show();
+    }
+
+    private void showEditCategoryDialog(com.ptithcm.quanlichitieu.data.model.Category category) {
+        if (category.isSystemCategory()) {
+            Toast.makeText(getContext(), "Không thể sửa danh mục hệ thống", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_edit_category, null);
+        builder.setView(dialogView);
+
+        AlertDialog dialog = builder.create();
+
+        EditText etCategoryName = dialogView.findViewById(R.id.etCategoryName);
+        RadioGroup rgCategoryType = dialogView.findViewById(R.id.rgCategoryType);
+        RadioButton rbExpense = dialogView.findViewById(R.id.rbExpense);
+        RadioButton rbIncome = dialogView.findViewById(R.id.rbIncome);
+        RadioButton rbLoan = dialogView.findViewById(R.id.rbLoan);
+        ImageView ivSelectedIcon = dialogView.findViewById(R.id.ivSelectedIcon);
+        Button btnSave = dialogView.findViewById(R.id.btnSave);
+        Button btnCancel = dialogView.findViewById(R.id.btnCancel);
+
+        // Set current values
+        etCategoryName.setText(category.getName());
+        if (category.getType() == TransactionType.INCOME) {
+            rbIncome.setChecked(true);
+        } else if (category.getType() == TransactionType.LOAN) {
+            rbLoan.setChecked(true);
+        } else {
+            rbExpense.setChecked(true);
+        }
+
+        selectedIcon = category.getIconName() != null ? category.getIconName() : "ic_food";
+        updateIconImageView(ivSelectedIcon, selectedIcon);
+
+        ivSelectedIcon.setOnClickListener(v -> showIconPickerDialog(ivSelectedIcon));
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnSave.setOnClickListener(v -> {
+            String name = etCategoryName.getText().toString().trim();
+            if (name.isEmpty()) {
+                etCategoryName.setError("Vui lòng nhập tên danh mục");
+                return;
+            }
+
+            TransactionType type = TransactionType.EXPENSE;
+            int checkedId = rgCategoryType.getCheckedRadioButtonId();
+            if (checkedId == R.id.rbIncome) {
+                type = TransactionType.INCOME;
+            } else if (checkedId == R.id.rbLoan) {
+                type = TransactionType.LOAN;
+            }
+
+            category.setName(name);
+            category.setType(type);
+            category.setIconName(selectedIcon);
+
+            String userId = authViewModel.getUserId();
+            categoryViewModel.updateCategory(userId, category);
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private void updateIconImageView(ImageView iv, String iconName) {
+        int resId = getResources().getIdentifier(iconName, "drawable", requireContext().getPackageName());
+        if (resId != 0) {
+            iv.setImageResource(resId);
+        }
+    }
+
+    private void showIconPickerDialog(ImageView ivSelectedIcon) {
+        TypedArray icons = getResources().obtainTypedArray(R.array.icon_pack_custom);
+        List<String> iconList = new ArrayList<>();
+        for (int i = 0; i < icons.length(); i++) {
+            int resId = icons.getResourceId(i, 0);
+            if (resId != 0) {
+                iconList.add(getResources().getResourceEntryName(resId));
+            }
+        }
+        icons.recycle();
+
+        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_icon_picker, null);
+        RecyclerView recyclerView = dialogView.findViewById(R.id.rvIcons);
+        recyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 4));
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        AlertDialog dialog = builder.setView(dialogView).create();
+
+        IconPickerAdapter rvAdapter = new IconPickerAdapter(iconList, iconName -> {
+            selectedIcon = iconName;
+            updateIconImageView(ivSelectedIcon, selectedIcon);
+            dialog.dismiss();
+        });
+
+        recyclerView.setAdapter(rvAdapter);
+        dialog.show();
+    }
+
+    private void showDeleteConfirmDialog(com.ptithcm.quanlichitieu.data.model.Category category) {
+        if (category.isSystemCategory()) {
+            Toast.makeText(getContext(), "Không thể xoá danh mục hệ thống", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Xoá danh mục")
+                .setMessage("Bạn có chắc chắn muốn xoá danh mục '" + category.getName() + "' không?")
+                .setPositiveButton("Xoá", (dialog, which) -> {
+                    String userId = authViewModel.getUserId();
+                    categoryViewModel.deleteCategory(userId, category.getId());
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
     }
 
     @Override
