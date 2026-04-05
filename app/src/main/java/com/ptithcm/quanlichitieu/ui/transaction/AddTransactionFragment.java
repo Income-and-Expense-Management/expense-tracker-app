@@ -99,8 +99,7 @@ public class AddTransactionFragment extends Fragment {
 
         if (container != null && container.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
             ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) container.getLayoutParams();
-            int marginInPx = isVisible ? (int) (80 * getResources().getDisplayMetrics().density) : 0;
-            params.bottomMargin = marginInPx;
+            params.bottomMargin = isVisible ? (int) (80 * getResources().getDisplayMetrics().density) : 0;
             container.setLayoutParams(params);
         }
     }
@@ -172,17 +171,44 @@ public class AddTransactionFragment extends Fragment {
                 tvCategoryName.setText(category.getName());
                 tvCategoryName.setTextColor(Color.WHITE);
 
+                // Try to set the actual drawable icon if available; otherwise fallback to colored circle
                 try {
-                    String color = getCategoryColor(category.getIconName());
-                    GradientDrawable drawable = new GradientDrawable();
-                    drawable.setShape(GradientDrawable.OVAL);
-                    drawable.setColor(Color.parseColor(color));
-                    viewCategoryIcon.setBackground(drawable);
+                    String iconName = category.getIconName();
+                    if (iconName != null && !iconName.isEmpty()) {
+                        int resId = requireContext().getResources().getIdentifier(iconName, "drawable", requireContext().getPackageName());
+                        if (resId != 0) {
+                            if (viewCategoryIcon instanceof android.widget.ImageView) {
+                                ((android.widget.ImageView) viewCategoryIcon).setImageResource(resId);
+                            }
+                        } else {
+                            // fallback: colored circle
+                            String color = getCategoryColor(iconName);
+                            GradientDrawable drawable = new GradientDrawable();
+                            drawable.setShape(GradientDrawable.OVAL);
+                            drawable.setColor(Color.parseColor(color));
+                            viewCategoryIcon.setBackground(drawable);
+                        }
+                    } else {
+                        // no icon name
+                        String color = getCategoryColor(null);
+                        GradientDrawable drawable = new GradientDrawable();
+                        drawable.setShape(GradientDrawable.OVAL);
+                        drawable.setColor(Color.parseColor(color));
+                        viewCategoryIcon.setBackground(drawable);
+                    }
+
                 } catch (Exception ignored) {
                 }
             } else {
                 tvCategoryName.setText(R.string.add_transaction_select_category);
                 tvCategoryName.setTextColor(Color.parseColor("#AAAAAA"));
+                // clear icon
+                try {
+                    if (viewCategoryIcon instanceof android.widget.ImageView) {
+                        ((android.widget.ImageView) viewCategoryIcon).setImageDrawable(null);
+                        viewCategoryIcon.setBackgroundResource(R.drawable.bg_circle_gray);
+                    }
+                } catch (Exception ignored) {}
             }
         });
 
@@ -266,6 +292,29 @@ public class AddTransactionFragment extends Fragment {
         RecyclerView rvCategories = sheetView.findViewById(R.id.rvCategories);
         EditText etSearch = sheetView.findViewById(R.id.etSearch);
         LinearLayout layoutEmpty = sheetView.findViewById(R.id.layoutEmpty);
+        // Resolve optional title/empty views by id name at runtime to avoid lint mismatch
+        int titleId = getResources().getIdentifier("tvTitle", "id", requireContext().getPackageName());
+        int emptyId = getResources().getIdentifier("tvEmpty", "id", requireContext().getPackageName());
+        TextView tvTitle = titleId != 0 ? sheetView.findViewById(titleId) : null;
+        TextView tvEmptyMsg = emptyId != 0 ? sheetView.findViewById(emptyId) : null;
+
+        // Set title & empty message according to current transaction type
+        TransactionType current = viewModel.getTransactionType().getValue();
+        if (current == null) current = TransactionType.EXPENSE;
+        if (tvTitle != null) {
+            if (current == TransactionType.INCOME) {
+                tvTitle.setText("Chọn nhóm thu nhập");
+            } else {
+                tvTitle.setText("Chọn nhóm chi tiêu");
+            }
+        }
+        if (tvEmptyMsg != null) {
+            if (current == TransactionType.INCOME) {
+                tvEmptyMsg.setText("Không có nhóm thu nhập");
+            } else {
+                tvEmptyMsg.setText("Không có nhóm chi tiêu");
+            }
+        }
 
         CategoryPickerAdapter adapter = new CategoryPickerAdapter(categories, category -> {
             viewModel.setSelectedCategory(category);
@@ -425,12 +474,28 @@ public class AddTransactionFragment extends Fragment {
             Category category = categories.get(position);
             holder.tvName.setText(category.getName());
 
+            // Try set drawable by icon name; fallback to colored circle background
             try {
-                String color = getCategoryColor(category.getIconName());
-                GradientDrawable drawable = new GradientDrawable();
-                drawable.setShape(GradientDrawable.OVAL);
-                drawable.setColor(Color.parseColor(color));
-                holder.viewIcon.setBackground(drawable);
+                String iconName = category.getIconName();
+                int resId = 0;
+                if (iconName != null && !iconName.isEmpty()) {
+                    resId = holder.itemView.getContext().getResources().getIdentifier(iconName, "drawable", holder.itemView.getContext().getPackageName());
+                }
+                if (resId != 0) {
+                    if (holder.viewIcon instanceof android.widget.ImageView) {
+                        ((android.widget.ImageView) holder.viewIcon).setImageResource(resId);
+                        // keep circular background if present
+                    } else {
+                        holder.viewIcon.setBackgroundResource(R.drawable.bg_circle_food);
+                    }
+                } else {
+                    // fallback color circle based on iconName
+                    String color = getCategoryColor(category.getIconName());
+                    GradientDrawable drawable = new GradientDrawable();
+                    drawable.setShape(GradientDrawable.OVAL);
+                    drawable.setColor(Color.parseColor(color));
+                    holder.viewIcon.setBackground(drawable);
+                }
             } catch (Exception ignored) {
             }
 

@@ -17,12 +17,13 @@
 
     <!-- Header -->
     <TextView
+        android:id="@+id/tvTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
-        android:text="Chọn nhóm chi tiêu"
+        android:text="Chọn nhóm"
         android:textColor="@android:color/white"
         android:textSize="18sp"
         android:textStyle="bold" />
@@ -75,10 +76,11 @@
             app:tint="#888888" />
 
         <TextView
+            android:id="@+id/tvEmpty"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Không có nhóm chi tiêu"
+            android:text="Không có nhóm"
             android:textColor="#888888"
             android:textSize="14sp" />
 

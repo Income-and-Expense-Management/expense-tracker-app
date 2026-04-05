@@ -160,8 +160,8 @@ public class CategoryFragment extends Fragment {
                         case 1:
                             currentType = TransactionType.INCOME;
                             break;
-                        case 2:
-                            currentType = TransactionType.LOAN;
+                        default:
+                            currentType = TransactionType.EXPENSE;
                             break;
                     }
                     filterCategories();
@@ -259,8 +259,6 @@ public class CategoryFragment extends Fragment {
             int checkedId = rgType.getCheckedRadioButtonId();
             if (checkedId == R.id.rbIncome) {
                 type = TransactionType.INCOME;
-            } else if (checkedId == R.id.rbLoan) {
-                type = TransactionType.LOAN;
             }
 
             categoryViewModel.addCategoryWithIcon(authViewModel.getUserId(), name, type, selectedIcon);
@@ -286,7 +284,6 @@ public class CategoryFragment extends Fragment {
         RadioGroup rgCategoryType = dialogView.findViewById(R.id.rgCategoryType);
         RadioButton rbExpense = dialogView.findViewById(R.id.rbExpense);
         RadioButton rbIncome = dialogView.findViewById(R.id.rbIncome);
-        RadioButton rbLoan = dialogView.findViewById(R.id.rbLoan);
         ImageView ivSelectedIcon = dialogView.findViewById(R.id.ivSelectedIcon);
         Button btnSave = dialogView.findViewById(R.id.btnSave);
         Button btnCancel = dialogView.findViewById(R.id.btnCancel);
@@ -295,8 +292,6 @@ public class CategoryFragment extends Fragment {
         etCategoryName.setText(category.getName());
         if (category.getType() == TransactionType.INCOME) {
             rbIncome.setChecked(true);
-        } else if (category.getType() == TransactionType.LOAN) {
-            rbLoan.setChecked(true);
         } else {
             rbExpense.setChecked(true);
         }
@@ -319,8 +314,6 @@ public class CategoryFragment extends Fragment {
             int checkedId = rgCategoryType.getCheckedRadioButtonId();
             if (checkedId == R.id.rbIncome) {
                 type = TransactionType.INCOME;
-            } else if (checkedId == R.id.rbLoan) {
-                type = TransactionType.LOAN;
             }
 
             category.setName(name);
