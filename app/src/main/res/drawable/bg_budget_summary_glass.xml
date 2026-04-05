@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Lớp nền mờ (frosted glass base) -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#1AFFFFFF" /> <!-- trắng trong ~10% -->
+            <corners android:radius="20dp" />
+        </shape>
+    </item>
+
+    <!-- Lớp viền sáng mỏng (glass edge highlight) -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <stroke
+                android:width="1dp"
+                android:color="#33FFFFFF" /> <!-- viền trắng ~20% -->
+            <corners android:radius="20dp" />
+        </shape>
+    </item>
+
+</layer-list>
