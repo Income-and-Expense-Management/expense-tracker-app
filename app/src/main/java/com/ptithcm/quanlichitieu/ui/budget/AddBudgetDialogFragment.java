@@ -113,6 +113,9 @@ public class AddBudgetDialogFragment extends DialogFragment {
         super.onViewCreated(view, savedInstanceState);
 
         viewModel = new ViewModelProvider(requireActivity()).get(BudgetViewModel.class);
+        
+        // Clear old operation result to prevent showing stale toast
+        viewModel.clearOperationResult();
 
         initViews(view);
         initDefaultValues();
@@ -231,6 +234,8 @@ public class AddBudgetDialogFragment extends DialogFragment {
                         onBudgetSavedListener.onBudgetSaved();
                     }
                     dismiss();
+                    // ✅ Clear sau khi dismiss để tránh toast hiện lại
+                    viewModel.clearOperationResult();
                 }
             }
         });
@@ -275,6 +280,9 @@ public class AddBudgetDialogFragment extends DialogFragment {
                 drawable = new GradientDrawable();
                 drawable.setShape(GradientDrawable.OVAL);
                 viewCategoryIcon.setBackground(drawable);
+            } else {
+                // ✅ Tạo copy riêng để tránh ảnh hưởng đến drawable gốc
+                drawable = (GradientDrawable) drawable.mutate();
             }
             drawable.setColor(Color.parseColor(color));
         } catch (Exception e) {

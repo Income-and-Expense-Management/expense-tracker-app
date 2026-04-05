@@ -85,6 +85,14 @@ public class BudgetViewModel extends AndroidViewModel {
         this.currentUserId = userId;
     }
 
+    /**
+     * Clear operation result - gọi sau khi đã xử lý xong result.
+     * Tránh bug LiveData emit lại giá trị cũ khi observer mới đăng ký.
+     */
+    public void clearOperationResult() {
+        operationResult.setValue(null);
+    }
+
     // ==================== DATA LOADING ====================
 
     /**

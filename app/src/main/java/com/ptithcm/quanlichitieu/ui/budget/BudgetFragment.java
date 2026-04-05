@@ -140,12 +140,9 @@ public class BudgetFragment extends Fragment {
             }
         });
 
-        // Observe operation results
-        viewModel.getOperationResult().observe(getViewLifecycleOwner(), result -> {
-            if (result != null) {
-                Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        // ❌ KHÔNG observe operationResult ở đây
+        // Toast và dismiss đã được xử lý trong Dialog
+        // Fragment chỉ cần refresh data qua listener callback
     }
 
     private void updateSummaryUI(BudgetViewModel.BudgetSummary summary) {
