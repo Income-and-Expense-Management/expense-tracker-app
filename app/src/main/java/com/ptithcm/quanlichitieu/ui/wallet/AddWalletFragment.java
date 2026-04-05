@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -44,6 +45,14 @@ public class AddWalletFragment extends Fragment {
         etName = view.findViewById(R.id.etName);
         etBalance = view.findViewById(R.id.etBalance);
         Button btnSave = view.findViewById(R.id.btnSave);
+        ImageView btnBack = view.findViewById(R.id.btnBack);
+
+        // Xử lý sự kiện nhấn nút quay lại (<)
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> {
+                requireActivity().getSupportFragmentManager().popBackStack();
+            });
+        }
 
         btnSave.setOnClickListener(v -> saveWallet());
 

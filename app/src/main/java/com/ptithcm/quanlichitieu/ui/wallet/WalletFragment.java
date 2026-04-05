@@ -5,7 +5,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -14,8 +13,12 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.ptithcm.quanlichitieu.R;
+import com.ptithcm.quanlichitieu.data.model.Wallet;
 
 public class WalletFragment extends Fragment {
 
@@ -47,22 +50,67 @@ public class WalletFragment extends Fragment {
     private void initViews(View view) {
         rvWallets = view.findViewById(R.id.rvWallets);
         layoutEmpty = view.findViewById(R.id.layoutEmpty);
-        MaterialButton btnAddFirstWallet = view.findViewById(R.id.btnAddFirstWallet);
+        
+        // Nút quay lại
+        View btnBack = view.findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> {
+                if (getActivity() != null) {
+                    getActivity().getOnBackPressedDispatcher().onBackPressed();
+                }
+            });
+        }
 
+        // Nút thêm ví (Trạng thái trống)
+        MaterialButton btnAddFirstWallet = view.findViewById(R.id.btnAddFirstWallet);
         if (btnAddFirstWallet != null) {
             btnAddFirstWallet.setOnClickListener(v -> openAddWallet());
+        }
+
+        // Nút FAB thêm ví (Góc phải dưới)
+        FloatingActionButton fabAddWallet = view.findViewById(R.id.fabAddWallet);
+        if (fabAddWallet != null) {
+            fabAddWallet.setOnClickListener(v -> openAddWallet());
         }
     }
 
     private void setupRecyclerView() {
         adapter = new WalletAdapter();
-        adapter.setOnWalletClickListener(wallet -> {
-            Toast.makeText(requireContext(), "Chọn ví: " + wallet.getName(), Toast.LENGTH_SHORT).show();
-            viewModel.selectWallet(wallet);
+        adapter.setOnWalletClickListener(this::showSelectionDialog);
+        
+        adapter.setOnWalletMenuListener(new WalletAdapter.OnWalletMenuListener() {
+            @Override
+            public void onEdit(Wallet wallet) {
+                // TODO: Xử lý sửa ví
+            }
+
+            @Override
+            public void onDelete(Wallet wallet) {
+                // TODO: Xử lý xóa ví
+            }
         });
 
         rvWallets.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvWallets.setAdapter(adapter);
+    }
+
+    private void showSelectionDialog(Wallet wallet) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Xác nhận chọn ví")
+                .setMessage("Bạn có muốn chọn ví \"" + wallet.getName() + "\" để quản lý chi tiêu không?")
+                .setPositiveButton("Xác nhận", (dialog, which) -> {
+                    viewModel.selectWallet(wallet);
+                    navigateToHome();
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void navigateToHome() {
+        BottomNavigationView nav = requireActivity().findViewById(R.id.bottomNav);
+        if (nav != null) {
+            nav.setSelectedItemId(R.id.nav_home);
+        }
     }
 
     private void observeViewModel() {
