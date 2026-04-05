@@ -47,7 +47,6 @@ public class CategoryDao {
      * @param category Category object cần thêm
      * @return ID của category mới, hoặc null nếu thất bại
      */
-    @Nullable
     public String insert(@NonNull Category category) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
@@ -64,16 +63,16 @@ public class CategoryDao {
             values.put(CategoryEntry.COLUMN_TYPE, category.getType().getValue());
         }
         values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
+        values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
 
-        long result = db.insert(CategoryEntry.TABLE_NAME, null, values);
-
-        if (result == -1) {
-            Log.e(TAG, "Failed to insert category");
+        try {
+            long result = db.insertOrThrow(CategoryEntry.TABLE_NAME, null, values);
+            Log.d(TAG, "Inserted category with ID: " + category.getId());
+            return category.getId();
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to insert category", e);
             return null;
         }
-
-        Log.d(TAG, "Inserted category with ID: " + category.getId());
-        return category.getId();
     }
 
     // ==================== READ ====================
@@ -251,8 +250,56 @@ public class CategoryDao {
             selection = CategoryEntry.COLUMN_USER_ID + " IS NULL";
             selectionArgs = null;
         } else {
-            selection = CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
-                    CategoryEntry.COLUMN_USER_ID + " = ?";
+            selection = "(" + CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
+                    CategoryEntry.COLUMN_USER_ID + " = ?)";
+            selectionArgs = new String[]{ userId };
+        }
+
+        Cursor cursor = null;
+        try {
+            cursor = db.query(
+                    CategoryEntry.TABLE_NAME,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null, null,
+                    CategoryEntry.COLUMN_TYPE + ", " + CategoryEntry.COLUMN_NAME + " ASC"
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    categories.add(cursorToCategory(cursor));
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+
+        return categories;
+    }
+
+    /**
+     * Lấy tất cả Category (hệ thống + user), KHÔNG lọc trạng thái is_active.
+     * Dùng cho giao diện quản lý category (CategoryFragment).
+     *
+     * @param userId ID của user
+     * @return Danh sách tất cả Category
+     */
+    public List<Category> getAllForManagement(@Nullable String userId) {
+        List<Category> categories = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String selection;
+        String[] selectionArgs;
+
+        if (userId == null) {
+            selection = CategoryEntry.COLUMN_USER_ID + " IS NULL";
+            selectionArgs = null;
+        } else {
+            selection = "(" + CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
+                    CategoryEntry.COLUMN_USER_ID + " = ?)";
             selectionArgs = new String[]{ userId };
         }
 
@@ -285,31 +332,32 @@ public class CategoryDao {
 
     /**
      * Cập nhật thông tin Category.
-     * Chỉ cho phép cập nhật danh mục của user, không phải hệ thống.
-     * 
+     * Cho phép cập nhật trạng thái của danh mục hệ thống.
+     *
      * @param category Category object với thông tin mới
      * @return Số dòng bị ảnh hưởng
      */
     public int update(@NonNull Category category) {
-        // Không cho phép cập nhật danh mục hệ thống
-        if (category.isSystemCategory()) {
-            Log.w(TAG, "Cannot update system category");
-            return 0;
-        }
-
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(CategoryEntry.COLUMN_NAME, category.getName());
-        if (category.getType() != null) {
-            values.put(CategoryEntry.COLUMN_TYPE, category.getType().getValue());
+
+        // Nếu là hệ thống thì chỉ cho update is_active
+        if (category.isSystemCategory()) {
+            values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
+        } else {
+            values.put(CategoryEntry.COLUMN_NAME, category.getName());
+            if (category.getType() != null) {
+                values.put(CategoryEntry.COLUMN_TYPE, category.getType().getValue());
+            }
+            values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
+            values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
         }
-        values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
 
         return db.update(
                 CategoryEntry.TABLE_NAME,
                 values,
-                CategoryEntry.COLUMN_ID + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NOT NULL",
+                CategoryEntry.COLUMN_ID + " = ?",
                 new String[]{category.getId()}
         );
     }
@@ -344,12 +392,19 @@ public class CategoryDao {
         String typeString = CursorUtils.getString(cursor, CategoryEntry.COLUMN_TYPE);
         TransactionType type = TransactionType.fromValue(typeString);
 
+        int isActiveInt = 1;
+        int activeColumnIndex = cursor.getColumnIndex(CategoryEntry.COLUMN_IS_ACTIVE);
+        if (activeColumnIndex != -1) {
+            isActiveInt = cursor.getInt(activeColumnIndex);
+        }
+
         return new Category.Builder()
                 .setId(CursorUtils.getString(cursor, CategoryEntry.COLUMN_ID))
                 .setUserId(CursorUtils.getString(cursor, CategoryEntry.COLUMN_USER_ID))
                 .setName(CursorUtils.getString(cursor, CategoryEntry.COLUMN_NAME))
                 .setType(type)
                 .setIconName(CursorUtils.getString(cursor, CategoryEntry.COLUMN_ICON_NAME))
+                .setIsActive(isActiveInt == 1)
                 .build();
     }
 

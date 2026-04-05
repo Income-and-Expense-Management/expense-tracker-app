@@ -14,7 +14,7 @@ public final class DatabaseContract {
 
     // Thông tin chung về database
     public static final String DATABASE_NAME = "quanlichitieu.db";
-    public static final int DATABASE_VERSION = 1;
+    public static final int DATABASE_VERSION = 2; // Updated to 2
 
     // Private constructor để ngăn việc khởi tạo
     private DatabaseContract() {
@@ -69,9 +69,7 @@ public final class DatabaseContract {
                         COLUMN_ICON_ID + " TEXT, " +
                         COLUMN_CREATED_AT + " INTEGER NOT NULL, " +
                         COLUMN_UPDATED_AT + " INTEGER NOT NULL, " +
-                        COLUMN_IS_ACTIVE + " INTEGER DEFAULT 1, " +
-                        "FOREIGN KEY (" + COLUMN_USER_ID + ") REFERENCES " + 
-                        UserEntry.TABLE_NAME + "(" + UserEntry.COLUMN_ID + ") ON DELETE CASCADE" +
+                        COLUMN_IS_ACTIVE + " INTEGER DEFAULT 1" +
                         ")";
 
         public static final String SQL_DROP_TABLE = 
@@ -87,10 +85,12 @@ public final class DatabaseContract {
         public static final String COLUMN_NAME = "name";
         public static final String COLUMN_TYPE = "type";
         public static final String COLUMN_ICON_NAME = "icon_name";
+        public static final String COLUMN_IS_ACTIVE = "is_active";
 
         // CHECK constraint cho type
         public static final String TYPE_INCOME = "INCOME";
         public static final String TYPE_EXPENSE = "EXPENSE";
+        public static final String TYPE_LOAN = "LOAN";
 
         public static final String SQL_CREATE_TABLE =
                 "CREATE TABLE " + TABLE_NAME + " (" +
@@ -98,10 +98,9 @@ public final class DatabaseContract {
                         COLUMN_USER_ID + " TEXT, " +
                         COLUMN_NAME + " TEXT NOT NULL, " +
                         COLUMN_TYPE + " TEXT CHECK(" + COLUMN_TYPE + " IN ('" + 
-                        TYPE_INCOME + "', '" + TYPE_EXPENSE + "')), " +
+                        TYPE_INCOME + "', '" + TYPE_EXPENSE + "', '" + TYPE_LOAN + "')), " +
                         COLUMN_ICON_NAME + " TEXT, " +
-                        "FOREIGN KEY (" + COLUMN_USER_ID + ") REFERENCES " + 
-                        UserEntry.TABLE_NAME + "(" + UserEntry.COLUMN_ID + ") ON DELETE CASCADE" +
+                        COLUMN_IS_ACTIVE + " INTEGER DEFAULT 1" +
                         ")";
 
         public static final String SQL_DROP_TABLE = 
@@ -126,6 +125,7 @@ public final class DatabaseContract {
         // CHECK constraint cho type
         public static final String TYPE_INCOME = "INCOME";
         public static final String TYPE_EXPENSE = "EXPENSE";
+        public static final String TYPE_LOAN = "LOAN";
 
         public static final String SQL_CREATE_TABLE =
                 "CREATE TABLE " + TABLE_NAME + " (" +
@@ -134,16 +134,12 @@ public final class DatabaseContract {
                         COLUMN_CATEGORY_ID + " TEXT, " +
                         COLUMN_AMOUNT + " INTEGER NOT NULL, " +
                         COLUMN_TYPE + " TEXT CHECK(" + COLUMN_TYPE + " IN ('" + 
-                        TYPE_INCOME + "', '" + TYPE_EXPENSE + "')), " +
+                        TYPE_INCOME + "', '" + TYPE_EXPENSE + "', '" + TYPE_LOAN + "')), " +
                         COLUMN_TRANSACTION_DATE + " INTEGER, " +
                         COLUMN_ICON_ID + " TEXT, " +
                         COLUMN_NOTE + " TEXT, " +
                         COLUMN_CREATED_AT + " INTEGER DEFAULT (strftime('%s','now') * 1000), " +
-                        COLUMN_UPDATED_AT + " INTEGER DEFAULT (strftime('%s','now') * 1000), " +
-                        "FOREIGN KEY (" + COLUMN_WALLET_ID + ") REFERENCES " + 
-                        WalletEntry.TABLE_NAME + "(" + WalletEntry.COLUMN_ID + ") ON DELETE CASCADE, " +
-                        "FOREIGN KEY (" + COLUMN_CATEGORY_ID + ") REFERENCES " + 
-                        CategoryEntry.TABLE_NAME + "(" + CategoryEntry.COLUMN_ID + ") ON DELETE SET NULL" +
+                        COLUMN_UPDATED_AT + " INTEGER DEFAULT (strftime('%s','now') * 1000)" +
                         ")";
 
         public static final String SQL_DROP_TABLE = 
@@ -181,11 +177,7 @@ public final class DatabaseContract {
                         COLUMN_CATEGORY_ID + " TEXT NOT NULL, " +
                         COLUMN_TARGET_AMOUNT + " INTEGER NOT NULL, " +
                         COLUMN_START_DATE + " INTEGER, " +
-                        COLUMN_END_DATE + " INTEGER, " +
-                        "FOREIGN KEY (" + COLUMN_WALLET_ID + ") REFERENCES " + 
-                        WalletEntry.TABLE_NAME + "(" + WalletEntry.COLUMN_ID + ") ON DELETE CASCADE, " +
-                        "FOREIGN KEY (" + COLUMN_CATEGORY_ID + ") REFERENCES " + 
-                        CategoryEntry.TABLE_NAME + "(" + CategoryEntry.COLUMN_ID + ") ON DELETE CASCADE" +
+                        COLUMN_END_DATE + " INTEGER" +
                         ")";
 
         public static final String SQL_DROP_TABLE = 

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="icon_pack_custom">
+        <item>@drawable/ic_food</item>
+        <item>@drawable/ic_shopping</item>
+        <item>@drawable/ic_transport</item>
+        <item>@drawable/ic_payment_method</item>
+        <item>@drawable/ic_wallet</item>
+        <item>@drawable/ic_lightning_bolt</item>
+        <item>@drawable/ic_group</item>
+        <item>@drawable/ic_account</item>
+        <item>@drawable/ic_budget</item>
+        <item>@drawable/ic_google_logo</item>
+    </array>
+</resources>
+

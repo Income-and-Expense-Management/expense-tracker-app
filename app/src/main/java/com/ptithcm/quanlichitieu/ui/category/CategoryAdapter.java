@@ -17,7 +17,18 @@ import java.util.List;
 
 public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHolder> {
 
+    public interface OnCategoryClickListener {
+        void onCategoryClick(Category category);
+        void onCategoryLongClick(Category category);
+        void onCategorySwitchToggled(Category category, boolean isChecked);
+    }
+
     private final List<Category> dataList = new ArrayList<>();
+    private final OnCategoryClickListener listener;
+
+    public CategoryAdapter(OnCategoryClickListener listener) {
+        this.listener = listener;
+    }
 
     public void updateData(List<Category> newData) {
         dataList.clear();
@@ -32,13 +43,13 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_category, parent, false);
-        return new ViewHolder(view);
+        return new ViewHolder(view, listener);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Category category = dataList.get(position);
-        holder.bind(category);
+        holder.bind(category, listener);
     }
 
     @Override
@@ -50,18 +61,61 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
 
         private final TextView tvName;
         private final ImageView ivIcon;
+        private final androidx.appcompat.widget.SwitchCompat switchCategory;
 
-        public ViewHolder(@NonNull View itemView) {
+        public ViewHolder(@NonNull View itemView, OnCategoryClickListener listener) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvName);
             ivIcon = itemView.findViewById(R.id.ivIcon);
+            switchCategory = itemView.findViewById(R.id.switchCategory);
         }
 
-        public void bind(Category category) {
+        public void bind(Category category, OnCategoryClickListener listener) {
             tvName.setText(category.getName());
-            // TODO: set icon name dynamically if we have resource mapper
-            // Example map string to resource ID if we had one
+
+            // Remove listener temporarily to avoid firing events during bind
+            switchCategory.setOnCheckedChangeListener(null);
+            switchCategory.setChecked(category.isActive());
+
+            // Highlight switch: xanh khi on, xám khi off
+            if (category.isActive()) {
+                switchCategory.getThumbDrawable().setTint(itemView.getContext().getResources().getColor(R.color.switch_thumb_on, null));
+                switchCategory.getTrackDrawable().setTint(itemView.getContext().getResources().getColor(R.color.switch_track_on, null));
+            } else {
+                switchCategory.getThumbDrawable().setTint(itemView.getContext().getResources().getColor(R.color.switch_thumb_off, null));
+                switchCategory.getTrackDrawable().setTint(itemView.getContext().getResources().getColor(R.color.switch_track_off, null));
+            }
+
+            if (category.getIconName() != null && !category.getIconName().isEmpty()) {
+                int resId = itemView.getContext().getResources().getIdentifier(
+                        category.getIconName(), "drawable", itemView.getContext().getPackageName());
+                if (resId != 0) {
+                    ivIcon.setImageResource(resId);
+                } else {
+                    ivIcon.setImageResource(R.drawable.ic_food); // default fallback
+                }
+            } else {
+                ivIcon.setImageResource(R.drawable.ic_food); // default fallback
+            }
+
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onCategoryClick(category);
+                }
+            });
+
+            itemView.setOnLongClickListener(v -> {
+                if (listener != null) {
+                    listener.onCategoryLongClick(category);
+                }
+                return true;
+            });
+
+            switchCategory.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (listener != null) {
+                    listener.onCategorySwitchToggled(category, isChecked);
+                }
+            });
         }
     }
 }
-
