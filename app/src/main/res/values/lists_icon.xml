@@ -6,11 +6,15 @@
         <item>@drawable/ic_transport</item>
         <item>@drawable/ic_payment_method</item>
         <item>@drawable/ic_wallet</item>
-        <item>@drawable/ic_lightning_bolt</item>
-        <item>@drawable/ic_group</item>
-        <item>@drawable/ic_account</item>
-        <item>@drawable/ic_budget</item>
-        <item>@drawable/ic_google_logo</item>
+        <item>@drawable/ic_education</item>
+        <item>@drawable/ic_bills</item>
+        <item>@drawable/ic_bonus</item>
+        <item>@drawable/ic_entertainment</item>
+        <item>@drawable/ic_gift</item>
+        <item>@drawable/ic_health</item>
+        <item>@drawable/ic_investment</item>
+        <item>@drawable/ic_salary</item>
+        <item>@drawable/ic_other</item>
     </array>
 </resources>
 

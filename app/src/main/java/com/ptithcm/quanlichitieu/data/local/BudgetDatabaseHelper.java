@@ -199,7 +199,7 @@ public class BudgetDatabaseHelper extends SQLiteOpenHelper {
                 "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
                         "VALUES ('cat_income_gift', NULL, 'Quà tặng', 'INCOME', 'ic_gift')",
                 "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_income_other', NULL, 'Khác', 'INCOME', 'ic_other')"
+                        "VALUES ('cat_income_other', NULL, 'Khác', 'INCOME', 'ic_others')"
         };
 
         // Execute các lệnh insert
