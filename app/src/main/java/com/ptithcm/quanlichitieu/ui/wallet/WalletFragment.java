@@ -51,7 +51,6 @@ public class WalletFragment extends Fragment {
         rvWallets = view.findViewById(R.id.rvWallets);
         layoutEmpty = view.findViewById(R.id.layoutEmpty);
         
-        // Nút quay lại
         View btnBack = view.findViewById(R.id.btnBack);
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> {
@@ -61,13 +60,11 @@ public class WalletFragment extends Fragment {
             });
         }
 
-        // Nút thêm ví (Trạng thái trống)
         MaterialButton btnAddFirstWallet = view.findViewById(R.id.btnAddFirstWallet);
         if (btnAddFirstWallet != null) {
             btnAddFirstWallet.setOnClickListener(v -> openAddWallet());
         }
 
-        // Nút FAB thêm ví (Góc phải dưới)
         FloatingActionButton fabAddWallet = view.findViewById(R.id.fabAddWallet);
         if (fabAddWallet != null) {
             fabAddWallet.setOnClickListener(v -> openAddWallet());
@@ -81,12 +78,12 @@ public class WalletFragment extends Fragment {
         adapter.setOnWalletMenuListener(new WalletAdapter.OnWalletMenuListener() {
             @Override
             public void onEdit(Wallet wallet) {
-                // TODO: Xử lý sửa ví
+                openEditWallet(wallet);
             }
 
             @Override
             public void onDelete(Wallet wallet) {
-                // TODO: Xử lý xóa ví
+                showDeleteConfirmDialog(wallet);
             }
         });
 
@@ -101,6 +98,17 @@ public class WalletFragment extends Fragment {
                 .setPositiveButton("Xác nhận", (dialog, which) -> {
                     viewModel.selectWallet(wallet);
                     navigateToHome();
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void showDeleteConfirmDialog(Wallet wallet) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Xóa ví")
+                .setMessage("Bạn có chắc chắn muốn xóa ví \"" + wallet.getName() + "\" này không?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    viewModel.deleteWallet(wallet);
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
@@ -130,6 +138,14 @@ public class WalletFragment extends Fragment {
         requireActivity().getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragmentContainer, new AddWalletFragment())
+                .addToBackStack(null)
+                .commit();
+    }
+
+    private void openEditWallet(Wallet wallet) {
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragmentContainer, EditWalletFragment.newInstance(wallet.getId()))
                 .addToBackStack(null)
                 .commit();
     }
