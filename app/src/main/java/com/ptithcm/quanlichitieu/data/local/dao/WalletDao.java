@@ -117,4 +117,9 @@ public class WalletDao {
                 .setIsActive(CursorUtils.getBoolean(cursor, WalletEntry.COLUMN_IS_ACTIVE))
                 .build();
     }
+
+    public int delete(@NonNull String walletId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        return db.delete(WalletEntry.TABLE_NAME, WalletEntry.COLUMN_ID + " = ?", new String[]{walletId});
+    }
 }

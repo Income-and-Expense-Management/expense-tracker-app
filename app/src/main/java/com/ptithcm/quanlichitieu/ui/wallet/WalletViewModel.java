@@ -147,6 +147,39 @@ public class WalletViewModel extends AndroidViewModel {
         }
     }
 
+    public void deleteWallet(Wallet wallet) {
+        if (wallet == null) return;
+        try {
+            com.ptithcm.quanlichitieu.data.local.dao.TransactionDao transactionDao = DatabaseManager.getInstance(getApplication()).getTransactionDao();
+            com.ptithcm.quanlichitieu.data.local.dao.BudgetDao budgetDao = DatabaseManager.getInstance(getApplication()).getBudgetDao();
+            
+            // Delete related transactions and budgets
+            transactionDao.deleteByWalletId(wallet.getId());
+            budgetDao.deleteByWalletId(wallet.getId());
+            
+            // Delete the wallet
+            walletDao.delete(wallet.getId());
+            
+            saveResult.setValue(new SaveResult(true, "Xóa ví thành công"));
+            
+            // Reload all wallets
+            loadAllWallets();
+            
+            // If the deleted wallet was the active one, pick another or set to null
+            Wallet currentActive = selectedWallet.getValue();
+            if (currentActive != null && currentActive.getId().equals(wallet.getId())) {
+                List<Wallet> currentList = wallets.getValue();
+                if (currentList != null && !currentList.isEmpty()) {
+                    selectWallet(currentList.get(0));
+                } else {
+                    selectedWallet.setValue(null);
+                }
+            }
+        } catch (Exception e) {
+            saveResult.setValue(new SaveResult(false, "Lỗi khi xóa ví"));
+        }
+    }
+
     public static class SaveResult {
         private final boolean success;
         private final String message;
