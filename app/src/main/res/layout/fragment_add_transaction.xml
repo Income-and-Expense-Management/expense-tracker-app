@@ -21,7 +21,7 @@
             android:layout_height="40dp"
             android:layout_centerVertical="true"
             android:padding="8dp"
-            android:src="@drawable/ic_close"
+            android:src="@drawable/ic_arrow_back"
             android:background="?attr/selectableItemBackgroundBorderless"
             app:tint="@android:color/white" />
 
