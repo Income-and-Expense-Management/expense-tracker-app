@@ -39,14 +39,6 @@
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
-            <ImageView
-                android:id="@+id/btnSearch"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:src="@drawable/ic_search"
-                app:tint="@android:color/white" />
 
             <ImageView
                 android:id="@+id/btnFilter"
@@ -54,13 +46,13 @@
                 android:layout_height="24dp"
                 android:layout_centerVertical="true"
                 android:layout_marginEnd="20dp"
-                android:layout_toStartOf="@id/btnSearch"
+                android:layout_alignParentEnd="true"
                 android:src="@drawable/ic_sort"
                 app:tint="@android:color/white" />
-        </RelativeLayout>
-    </androidx.appcompat.widget.Toolbar>
+            </RelativeLayout>
+        </androidx.appcompat.widget.Toolbar>
 
-    <!-- Tab Layout -->
+        <!-- Tab Layout -->
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"

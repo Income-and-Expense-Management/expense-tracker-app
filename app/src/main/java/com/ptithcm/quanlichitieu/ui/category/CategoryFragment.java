@@ -26,6 +26,8 @@ import com.ptithcm.quanlichitieu.ui.login.AuthViewModel;
 import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -79,6 +81,21 @@ public class CategoryFragment extends Fragment {
             filterCategories();
         });
 
+        categoryViewModel.getSortOrder().observe(getViewLifecycleOwner(), order -> {
+            // Update UI tint of sort button to indicate order and re-filter
+            View root = getView();
+            if (root == null) return;
+            ImageView btnFilter = root.findViewById(R.id.btnFilter);
+            if (btnFilter != null) {
+                if (order == CategoryViewModel.SortOrder.A_TO_Z) {
+                    btnFilter.setColorFilter(getResources().getColor(R.color.home_accent_green, null));
+                } else {
+                    btnFilter.setColorFilter(getResources().getColor(android.R.color.darker_gray, null));
+                }
+            }
+            filterCategories();
+        });
+
         categoryViewModel.getAddResult().observe(getViewLifecycleOwner(), success -> {
             if (success != null) {
                 if (getContext() != null) {
@@ -124,6 +141,11 @@ public class CategoryFragment extends Fragment {
         View btnBack = view.findViewById(R.id.btnBack);
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> requireActivity().getOnBackPressedDispatcher().onBackPressed());
+        }
+
+        ImageView btnFilter = view.findViewById(R.id.btnFilter);
+        if (btnFilter != null) {
+            btnFilter.setOnClickListener(v -> categoryViewModel.toggleSortOrder());
         }
 
         TabLayout tabLayout = view.findViewById(R.id.tabLayout);
@@ -194,6 +216,15 @@ public class CategoryFragment extends Fragment {
                     filteredList.add(cat);
                 }
             }
+
+            // Apply alphabetical sort based on ViewModel's sortOrder
+            CategoryViewModel.SortOrder order = categoryViewModel.getSortOrder().getValue();
+            if (order == CategoryViewModel.SortOrder.Z_TO_A) {
+                Collections.sort(filteredList, (a, b) -> b.getName().compareToIgnoreCase(a.getName()));
+            } else {
+                Collections.sort(filteredList, (a, b) -> a.getName().compareToIgnoreCase(b.getName()));
+            }
+
             adapter.updateData(filteredList);
         }
     }

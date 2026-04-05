@@ -21,6 +21,14 @@ public class CategoryViewModel extends AndroidViewModel {
     private final MutableLiveData<Boolean> updateResult = new MutableLiveData<>();
     private final MutableLiveData<Boolean> deleteResult = new MutableLiveData<>();
 
+    // Sort order state exposed to UI
+    public enum SortOrder {
+        A_TO_Z,
+        Z_TO_A
+    }
+
+    private final MutableLiveData<SortOrder> sortOrder = new MutableLiveData<>(SortOrder.A_TO_Z);
+
     public CategoryViewModel(@NonNull Application application) {
         super(application);
         repository = new CategoryRepository(application);
@@ -40,6 +48,22 @@ public class CategoryViewModel extends AndroidViewModel {
 
     public LiveData<Boolean> getDeleteResult() {
         return deleteResult;
+    }
+
+    public LiveData<SortOrder> getSortOrder() { return sortOrder; }
+
+    public void setSortOrder(SortOrder order) {
+        if (order == null) return;
+        sortOrder.setValue(order);
+    }
+
+    public void toggleSortOrder() {
+        SortOrder current = sortOrder.getValue();
+        if (current == SortOrder.Z_TO_A) {
+            sortOrder.setValue(SortOrder.A_TO_Z);
+        } else {
+            sortOrder.setValue(SortOrder.Z_TO_A);
+        }
     }
 
     public void resetAddResult() {
