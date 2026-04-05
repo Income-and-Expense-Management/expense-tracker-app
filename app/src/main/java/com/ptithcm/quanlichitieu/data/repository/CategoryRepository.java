@@ -19,6 +19,10 @@ public class CategoryRepository {
         categoryDao = new CategoryDao(dbHelper);
     }
 
+    public List<Category> getAllCategoriesForManagement(String userId) {
+        return categoryDao.getAllForManagement(userId);
+    }
+
     public List<Category> getUserCategories(String userId) {
         return categoryDao.getAllAvailable(userId);
     }

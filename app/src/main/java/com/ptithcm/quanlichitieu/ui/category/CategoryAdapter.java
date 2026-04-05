@@ -20,6 +20,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
     public interface OnCategoryClickListener {
         void onCategoryClick(Category category);
         void onCategoryLongClick(Category category);
+        void onCategorySwitchToggled(Category category, boolean isChecked);
     }
 
     private final List<Category> dataList = new ArrayList<>();
@@ -60,15 +61,30 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
 
         private final TextView tvName;
         private final ImageView ivIcon;
+        private final androidx.appcompat.widget.SwitchCompat switchCategory;
 
         public ViewHolder(@NonNull View itemView, OnCategoryClickListener listener) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvName);
             ivIcon = itemView.findViewById(R.id.ivIcon);
+            switchCategory = itemView.findViewById(R.id.switchCategory);
         }
 
         public void bind(Category category, OnCategoryClickListener listener) {
             tvName.setText(category.getName());
+
+            // Remove listener temporarily to avoid firing events during bind
+            switchCategory.setOnCheckedChangeListener(null);
+            switchCategory.setChecked(category.isActive());
+
+            // Highlight switch: xanh khi on, xám khi off
+            if (category.isActive()) {
+                switchCategory.getThumbDrawable().setTint(itemView.getContext().getResources().getColor(R.color.switch_thumb_on, null));
+                switchCategory.getTrackDrawable().setTint(itemView.getContext().getResources().getColor(R.color.switch_track_on, null));
+            } else {
+                switchCategory.getThumbDrawable().setTint(itemView.getContext().getResources().getColor(R.color.switch_thumb_off, null));
+                switchCategory.getTrackDrawable().setTint(itemView.getContext().getResources().getColor(R.color.switch_track_off, null));
+            }
 
             if (category.getIconName() != null && !category.getIconName().isEmpty()) {
                 int resId = itemView.getContext().getResources().getIdentifier(
@@ -93,6 +109,12 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
                     listener.onCategoryLongClick(category);
                 }
                 return true;
+            });
+
+            switchCategory.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (listener != null) {
+                    listener.onCategorySwitchToggled(category, isChecked);
+                }
             });
         }
     }

@@ -1,0 +1,7 @@
+<resources>
+    <color name="switch_thumb_on">#4CAF50</color> <!-- Green -->
+    <color name="switch_track_on">#8BC34A</color> <!-- Light Green -->
+    <color name="switch_thumb_off">#BDBDBD</color> <!-- Gray -->
+    <color name="switch_track_off">#E0E0E0</color> <!-- Light gray -->
+</resources>
+

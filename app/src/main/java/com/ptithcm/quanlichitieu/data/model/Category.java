@@ -10,6 +10,7 @@ public class Category {
     private String name;
     private TransactionType type;
     private String iconName;
+    private boolean isActive = true;
 
     public Category() {
     }
@@ -20,6 +21,11 @@ public class Category {
         this.name = name;
         this.type = type;
         this.iconName = iconName;
+    }
+
+    public Category(String id, String userId, String name, TransactionType type, String iconName, boolean isActive) {
+        this(id, userId, name, type, iconName);
+        this.isActive = isActive;
     }
 
     /**
@@ -36,6 +42,7 @@ public class Category {
         private String name;
         private TransactionType type;
         private String iconName;
+        private boolean isActive = true;
 
         public Builder setId(String id) {
             this.id = id;
@@ -62,8 +69,13 @@ public class Category {
             return this;
         }
 
+        public Builder setIsActive(boolean isActive) {
+            this.isActive = isActive;
+            return this;
+        }
+
         public Category build() {
-            return new Category(id, userId, name, type, iconName);
+            return new Category(id, userId, name, type, iconName, isActive);
         }
     }
 
@@ -106,5 +118,13 @@ public class Category {
 
     public void setIconName(String iconName) {
         this.iconName = iconName;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
     }
 }

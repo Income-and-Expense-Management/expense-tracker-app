@@ -54,6 +54,13 @@ public class CategoryViewModel extends AndroidViewModel {
         deleteResult.setValue(null);
     }
 
+    public void loadCategoriesForManagement(String userId) {
+        new Thread(() -> {
+            List<Category> list = repository.getAllCategoriesForManagement(userId);
+            categories.postValue(list);
+        }).start();
+    }
+
     public void loadCategories(String userId) {
         // Run on background thread if needed, currently DAO might be sync
         new Thread(() -> {

@@ -121,6 +121,11 @@ public class BudgetDatabaseHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion);
 
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE " + CategoryEntry.TABLE_NAME + " ADD COLUMN " + CategoryEntry.COLUMN_IS_ACTIVE + " INTEGER DEFAULT 1");
+            return; // Finished upgrade for v2
+        }
+
         // Tắt tạm FK để drop bảng không bị lỗi
         db.execSQL("PRAGMA foreign_keys = OFF");
 

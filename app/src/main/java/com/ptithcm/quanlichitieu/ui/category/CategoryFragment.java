@@ -67,7 +67,7 @@ public class CategoryFragment extends Fragment {
         observeViewModel();
 
         String userId = authViewModel.getUserId();
-        categoryViewModel.loadCategories(userId);
+        categoryViewModel.loadCategoriesForManagement(userId);
     }
 
     private void observeViewModel() {
@@ -166,6 +166,14 @@ public class CategoryFragment extends Fragment {
                 @Override
                 public void onCategoryLongClick(com.ptithcm.quanlichitieu.data.model.Category category) {
                     showDeleteConfirmDialog(category);
+                }
+
+                @Override
+                public void onCategorySwitchToggled(Category category, boolean isChecked) {
+                    if (category.isActive() != isChecked) {
+                        category.setActive(isChecked);
+                        categoryViewModel.updateCategory(authViewModel.getUserId(), category);
+                    }
                 }
             });
             rvCategories.setAdapter(adapter);

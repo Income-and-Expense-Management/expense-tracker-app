@@ -14,7 +14,7 @@ public final class DatabaseContract {
 
     // Thông tin chung về database
     public static final String DATABASE_NAME = "quanlichitieu.db";
-    public static final int DATABASE_VERSION = 1;
+    public static final int DATABASE_VERSION = 2; // Updated to 2
 
     // Private constructor để ngăn việc khởi tạo
     private DatabaseContract() {
@@ -85,6 +85,7 @@ public final class DatabaseContract {
         public static final String COLUMN_NAME = "name";
         public static final String COLUMN_TYPE = "type";
         public static final String COLUMN_ICON_NAME = "icon_name";
+        public static final String COLUMN_IS_ACTIVE = "is_active";
 
         // CHECK constraint cho type
         public static final String TYPE_INCOME = "INCOME";
@@ -98,7 +99,8 @@ public final class DatabaseContract {
                         COLUMN_NAME + " TEXT NOT NULL, " +
                         COLUMN_TYPE + " TEXT CHECK(" + COLUMN_TYPE + " IN ('" + 
                         TYPE_INCOME + "', '" + TYPE_EXPENSE + "', '" + TYPE_LOAN + "')), " +
-                        COLUMN_ICON_NAME + " TEXT" +
+                        COLUMN_ICON_NAME + " TEXT, " +
+                        COLUMN_IS_ACTIVE + " INTEGER DEFAULT 1" +
                         ")";
 
         public static final String SQL_DROP_TABLE = 

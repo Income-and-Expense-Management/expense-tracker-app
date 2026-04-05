@@ -47,11 +47,11 @@ QuanLiChiTieu/
 │       │   ├── data/
 │       │   │   ├── local/
 │       │   │   │   ├── contract/
-│       │   │   │   │   └── DatabaseContract.java        # Schema & SQL constants
+│       │   │   │   │   └── DatabaseContract.java        # Schema & SQL constants (có bảng categories)
 │       │   │   │   ├── dao/
 │       │   │   │   │   ├── UserDao.java                  # CRUD cho bảng users
 │       │   │   │   │   ├── WalletDao.java                # CRUD cho bảng wallets
-│       │   │   │   │   ├── CategoryDao.java              # CRUD cho bảng categories
+│       │   │   │   │   ├── CategoryDao.java              # CRUD cho bảng categories (thêm getAllForManagement, update trạng thái)
 │       │   │   │   │   ├── TransactionDao.java           # CRUD cho bảng transactions
 │       │   │   │   │   └── BudgetDao.java                # CRUD cho bảng budgets
 │       │   │   │   ├── util/
@@ -65,7 +65,7 @@ QuanLiChiTieu/
 │       │   │   │   ├── Category.java                     # Entity: danh mục thu/chi
 │       │   │   │   ├── Transaction.java                  # Entity: giao dịch
 │       │   │   │   ├── Budget.java                       # Entity: ngân sách
-│       │   │   │   ├── TransactionType.java              # Enum: INCOME | EXPENSE
+│       │   │   │   ├── TransactionType.java              # Enum: INCOME | EXPENSE | LOAN
 │       │   │   │   ├── TransactionGroup.java             # DTO: nhóm giao dịch theo ngày
 │       │   │   │   └── Expense.java                      # Legacy model cho mock Home
 │       │   │   └── repository/
@@ -75,6 +75,7 @@ QuanLiChiTieu/
 │       │   │       ├── MockExpenseRepository.java        # Mock data cho Home
 │       │   │       ├── TransactionRepository.java        # Interface giao dịch
 │       │   │       └── MockTransactionRepository.java    # Mock data cho Transaction
+│       │   │       ├── CategoryRepository.java           # Repository cho Category (getAllCategoriesForManagement, getUserCategories)
 │       │   ├── ui/
 │       │   │   ├── login/
 │       │   │   │   ├── LoginActivity.java                # Màn hình đăng nhập (Launcher)
@@ -98,6 +99,10 @@ QuanLiChiTieu/
 │       │   │   │   └── WalletViewModel.java              # ViewModel cho Wallet
 │       │   │   ├── account/
 │       │   │   │   └── AccountFragment.java              # Placeholder: tài khoản cá nhân
+│       │   │   ├── category/
+│       │   │   │   ├── CategoryFragment.java             # Quản lý danh mục (hiện tất cả, bật/tắt)
+│       │   │   │   ├── CategoryViewModel.java            # ViewModel cho Category (loadCategoriesForManagement, loadCategories)
+│       │   │   │   ├── CategoryAdapter.java              # Adapter cho danh sách category (hiệu ứng bật/tắt)
 │       │   │   └── common/
 │       │   │       └── SimpleLineChart.java              # Custom View: biểu đồ đường
 │       │   └── utils/
@@ -133,6 +138,7 @@ QuanLiChiTieu/
 | `ui.transaction` | Danh sách giao dịch nhóm theo ngày, lọc theo tháng. |
 | `ui.wallet` | Quản lý ví: tạo ví mới (`AddWalletFragment`), danh sách ví (placeholder). |
 | `ui.account` | Tài khoản cá nhân và cài đặt (placeholder). |
+| `ui.category` | Quản lý danh mục: hiển thị, thêm, sửa, xóa, bật/tắt trạng thái. |
 | `ui.common` | Custom View dùng chung (VD: `SimpleLineChart`). |
 | `utils` | Utility classes cấp ứng dụng: `IdGenerator` tạo UUID và timestamp. |
 
