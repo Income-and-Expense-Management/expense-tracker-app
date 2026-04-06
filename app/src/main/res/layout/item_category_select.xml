@@ -11,13 +11,15 @@
     android:paddingEnd="16dp"
     android:paddingBottom="12dp">
 
-    <!-- Category Icon -->
+    <!-- Category Icon - sử dụng ImageView thay vì View để hiển thị icon thực tế -->
     <ImageView
-        android:id="@+id/viewCategoryIcon"
+        android:id="@+id/imgCategoryIcon"
         android:layout_width="40dp"
         android:layout_height="40dp"
+        android:padding="5dp"
         android:scaleType="centerInside"
         android:background="@drawable/bg_circle_dark"
+        android:src="@drawable/ic_food"
         android:contentDescription="@string/icon_content_description" />
 
     <!-- Category Name -->

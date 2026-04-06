@@ -1,7 +1,6 @@
 package com.ptithcm.quanlichitieu.ui.budget.adapter;
 
 import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +22,7 @@ import java.util.List;
  * BudgetAdapter - Adapter cho hiển thị danh sách budget items.
  * 
  * Cung cấp callback cho các action: click item, edit, delete.
+ * Đã được cập nhật để hiển thị icon thực tế từ drawable resources.
  */
 public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetViewHolder> {
 
@@ -76,7 +76,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
     }
 
     static class BudgetViewHolder extends RecyclerView.ViewHolder {
-        private final View ivCategoryIcon;
+        private final ImageView imgCategoryIcon;
         private final TextView tvBudgetCategoryName;
         private final TextView tvBudgetAmount;
         private final TextView tvBudgetTags;
@@ -85,7 +85,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
 
         public BudgetViewHolder(@NonNull View itemView) {
             super(itemView);
-            ivCategoryIcon = itemView.findViewById(R.id.ivCategoryIcon);
+            imgCategoryIcon = itemView.findViewById(R.id.imgCategoryIcon);
             tvBudgetCategoryName = itemView.findViewById(R.id.tvBudgetCategoryName);
             tvBudgetAmount = itemView.findViewById(R.id.tvBudgetAmount);
             tvBudgetTags = itemView.findViewById(R.id.tvBudgetTags);
@@ -122,17 +122,21 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
                 tvBudgetAmount.setTextColor(Color.WHITE);
             }
 
-            // Set icon background color
-            try {
-                String color = item.getColor();
-                if (color != null && !color.isEmpty()) {
-                    GradientDrawable drawable = new GradientDrawable();
-                    drawable.setShape(GradientDrawable.OVAL);
-                    drawable.setColor(Color.parseColor(color));
-                    ivCategoryIcon.setBackground(drawable);
+            // Hiển thị icon thực tế từ categoryIcon
+            // Đồng bộ với cách hiển thị trong CategoryAdapter và SelectCategoryBottomSheet
+            String iconName = item.getCategoryIcon();
+            if (iconName != null && !iconName.isEmpty()) {
+                int resId = itemView.getContext().getResources().getIdentifier(
+                        iconName, "drawable", itemView.getContext().getPackageName());
+                if (resId != 0) {
+                    imgCategoryIcon.setImageResource(resId);
+                } else {
+                    // Fallback icon
+                    imgCategoryIcon.setImageResource(R.drawable.ic_food);
                 }
-            } catch (Exception e) {
-                // Use default color on error
+            } else {
+                // Default fallback icon
+                imgCategoryIcon.setImageResource(R.drawable.ic_food);
             }
 
             // Item click

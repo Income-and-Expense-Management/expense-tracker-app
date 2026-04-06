@@ -100,7 +100,7 @@ public class BudgetRepository {
 
     /**
      * Tạo BudgetItem từ Budget model.
-     * Kết hợp thông tin từ Category và tính toán spent amount.
+     * Kết hợp thông tin từ Category, Wallet và tính toán spent amount.
      */
     @Nullable
     private BudgetItem createBudgetItem(@NonNull Budget budget) {
@@ -109,6 +109,10 @@ public class BudgetRepository {
         if (category == null) {
             return null;
         }
+
+        // Lấy thông tin wallet
+        Wallet wallet = walletDao.getWalletById(budget.getWalletId());
+        String walletName = wallet != null ? wallet.getName() : null;
 
         // Tính tổng số tiền đã chi trong khoảng thời gian budget
         long spentAmount = transactionDao.getTotalAmountByType(
@@ -136,6 +140,7 @@ public class BudgetRepository {
                 .setStartDate(budget.getStartDate())
                 .setEndDate(budget.getEndDate())
                 .setWalletId(budget.getWalletId())
+                .setWalletName(walletName)
                 .setColor(getCategoryColor(category.getIconName()))
                 .build();
     }

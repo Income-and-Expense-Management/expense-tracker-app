@@ -3,7 +3,6 @@ package com.ptithcm.quanlichitieu.ui.budget.dialog;
 import android.app.Dialog;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -59,7 +58,7 @@ public class AddBudgetDialogFragment extends DialogFragment {
     // Views
     private ImageView ivClose;
     private LinearLayout llSelectCategory;
-    private View viewCategoryIcon;
+    private ImageView imgCategoryIcon;
     private TextView tvCategoryName;
     private EditText etAmount;
     private LinearLayout llSelectPeriod;
@@ -142,7 +141,7 @@ public class AddBudgetDialogFragment extends DialogFragment {
     private void initViews(View view) {
         ivClose = view.findViewById(R.id.ivClose);
         llSelectCategory = view.findViewById(R.id.llSelectCategory);
-        viewCategoryIcon = view.findViewById(R.id.viewCategoryIcon);
+        imgCategoryIcon = view.findViewById(R.id.imgCategoryIcon);
         tvCategoryName = view.findViewById(R.id.tvCategoryName);
         etAmount = view.findViewById(R.id.etAmount);
         llSelectPeriod = view.findViewById(R.id.llSelectPeriod);
@@ -276,21 +275,25 @@ public class AddBudgetDialogFragment extends DialogFragment {
         bottomSheet.show(getChildFragmentManager(), SelectWalletBottomSheet.TAG);
     }
 
+    /**
+     * Cập nhật hiển thị icon category.
+     * Load icon thực tế từ drawable resources dựa vào iconName.
+     * Đồng bộ với CategoryAdapter và SelectCategoryBottomSheet.
+     */
     private void updateCategoryIcon(Category category) {
-        try {
-            String color = getCategoryColor(category.getIconName());
-            GradientDrawable drawable = (GradientDrawable) viewCategoryIcon.getBackground();
-            if (drawable == null) {
-                drawable = new GradientDrawable();
-                drawable.setShape(GradientDrawable.OVAL);
-                viewCategoryIcon.setBackground(drawable);
+        String iconName = category.getIconName();
+        if (iconName != null && !iconName.isEmpty()) {
+            int resId = requireContext().getResources().getIdentifier(
+                    iconName, "drawable", requireContext().getPackageName());
+            if (resId != 0) {
+                imgCategoryIcon.setImageResource(resId);
             } else {
-                // ✅ Tạo copy riêng để tránh ảnh hưởng đến drawable gốc
-                drawable = (GradientDrawable) drawable.mutate();
+                // Fallback icon
+                imgCategoryIcon.setImageResource(R.drawable.ic_food);
             }
-            drawable.setColor(Color.parseColor(color));
-        } catch (Exception e) {
-            // Use default color
+        } else {
+            // Default fallback icon
+            imgCategoryIcon.setImageResource(R.drawable.ic_food);
         }
     }
 
@@ -358,31 +361,5 @@ public class AddBudgetDialogFragment extends DialogFragment {
         symbols.setGroupingSeparator('.');
         DecimalFormat formatter = new DecimalFormat("#,###", symbols);
         return formatter.format(number);
-    }
-
-    private String getCategoryColor(String iconName) {
-        if (iconName == null) return "#4CAF50";
-
-        switch (iconName.toLowerCase()) {
-            case "food":
-            case "ic_food":
-                return "#E91E63";
-            case "shopping":
-            case "ic_shopping":
-                return "#9C27B0";
-            case "transport":
-            case "ic_transport":
-                return "#2196F3";
-            case "entertainment":
-                return "#FF9800";
-            case "health":
-                return "#00BCD4";
-            case "education":
-                return "#3F51B5";
-            case "bills":
-                return "#F44336";
-            default:
-                return "#4CAF50";
-        }
     }
 }

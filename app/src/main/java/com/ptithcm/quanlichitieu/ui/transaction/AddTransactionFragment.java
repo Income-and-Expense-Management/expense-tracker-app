@@ -2,7 +2,6 @@ package com.ptithcm.quanlichitieu.ui.transaction;
 
 import android.app.DatePickerDialog;
 import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -48,7 +47,7 @@ public class AddTransactionFragment extends Fragment {
     private EditText etAmount;
     private EditText etNote;
     private TextView tvCategoryName;
-    private View viewCategoryIcon;
+    private ImageView imgCategoryIcon;
     private TextView tvDate;
     private ImageView btnClose;
     private ImageView btnPrevDate;
@@ -113,7 +112,7 @@ public class AddTransactionFragment extends Fragment {
         etAmount = view.findViewById(R.id.etAmount);
         etNote = view.findViewById(R.id.etNote);
         tvCategoryName = view.findViewById(R.id.tvCategoryName);
-        viewCategoryIcon = view.findViewById(R.id.viewCategoryIcon);
+        imgCategoryIcon = view.findViewById(R.id.imgCategoryIcon);
         tvDate = view.findViewById(R.id.tvDate);
         btnClose = view.findViewById(R.id.btnClose);
         btnPrevDate = view.findViewById(R.id.btnPrevDate);
@@ -170,45 +169,27 @@ public class AddTransactionFragment extends Fragment {
             if (category != null) {
                 tvCategoryName.setText(category.getName());
                 tvCategoryName.setTextColor(Color.WHITE);
-
-                // Try to set the actual drawable icon if available; otherwise fallback to colored circle
-                try {
-                    String iconName = category.getIconName();
-                    if (iconName != null && !iconName.isEmpty()) {
-                        int resId = requireContext().getResources().getIdentifier(iconName, "drawable", requireContext().getPackageName());
-                        if (resId != 0) {
-                            if (viewCategoryIcon instanceof android.widget.ImageView) {
-                                ((android.widget.ImageView) viewCategoryIcon).setImageResource(resId);
-                            }
-                        } else {
-                            // fallback: colored circle
-                            String color = getCategoryColor(iconName);
-                            GradientDrawable drawable = new GradientDrawable();
-                            drawable.setShape(GradientDrawable.OVAL);
-                            drawable.setColor(Color.parseColor(color));
-                            viewCategoryIcon.setBackground(drawable);
-                        }
+                
+                // Load icon thực tế từ drawable resources
+                String iconName = category.getIconName();
+                if (iconName != null && !iconName.isEmpty()) {
+                    int resId = requireContext().getResources().getIdentifier(
+                            iconName, "drawable", requireContext().getPackageName());
+                    if (resId != 0) {
+                        imgCategoryIcon.setImageResource(resId);
                     } else {
-                        // no icon name
-                        String color = getCategoryColor(null);
-                        GradientDrawable drawable = new GradientDrawable();
-                        drawable.setShape(GradientDrawable.OVAL);
-                        drawable.setColor(Color.parseColor(color));
-                        viewCategoryIcon.setBackground(drawable);
+                        // Fallback icon
+                        imgCategoryIcon.setImageResource(R.drawable.ic_food);
                     }
-
-                } catch (Exception ignored) {
+                } else {
+                    // Default fallback icon
+                    imgCategoryIcon.setImageResource(R.drawable.ic_food);
                 }
             } else {
                 tvCategoryName.setText(R.string.add_transaction_select_category);
                 tvCategoryName.setTextColor(Color.parseColor("#AAAAAA"));
-                // clear icon
-                try {
-                    if (viewCategoryIcon instanceof android.widget.ImageView) {
-                        ((android.widget.ImageView) viewCategoryIcon).setImageDrawable(null);
-                        viewCategoryIcon.setBackgroundResource(R.drawable.bg_circle_gray);
-                    }
-                } catch (Exception ignored) {}
+                // Clear icon - set to default placeholder
+                imgCategoryIcon.setImageResource(R.drawable.ic_food);
             }
         });
 
@@ -345,31 +326,6 @@ public class AddTransactionFragment extends Fragment {
         dialog.show();
     }
 
-    private static String getCategoryColor(String iconName) {
-        if (iconName == null) return "#4CAF50";
-        switch (iconName.toLowerCase()) {
-            case "food":
-            case "ic_food":
-                return "#E91E63";
-            case "shopping":
-            case "ic_shopping":
-                return "#9C27B0";
-            case "transport":
-            case "ic_transport":
-                return "#2196F3";
-            case "entertainment":
-                return "#FF9800";
-            case "health":
-                return "#00BCD4";
-            case "education":
-                return "#3F51B5";
-            case "bills":
-                return "#F44336";
-            default:
-                return "#4CAF50";
-        }
-    }
-
     // ==================== Inner Adapters ====================
 
     private static class WalletPickerAdapter extends RecyclerView.Adapter<WalletPickerAdapter.VH> {
@@ -401,6 +357,23 @@ public class AddTransactionFragment extends Fragment {
             Wallet wallet = wallets.get(position);
             holder.tvName.setText(wallet.getName());
             holder.tvBalance.setText(formatMoney(wallet.getInitialBalance()));
+            
+            // Load wallet icon từ iconId
+            String iconId = wallet.getIconId();
+            if (iconId != null && !iconId.isEmpty()) {
+                int resId = holder.itemView.getContext().getResources().getIdentifier(
+                        iconId, "drawable", holder.itemView.getContext().getPackageName());
+                if (resId != 0) {
+                    holder.ivWalletIcon.setImageResource(resId);
+                } else {
+                    // Fallback icon
+                    holder.ivWalletIcon.setImageResource(R.drawable.ic_wallet);
+                }
+            } else {
+                // Default fallback icon
+                holder.ivWalletIcon.setImageResource(R.drawable.ic_wallet);
+            }
+            
             boolean isSelected = wallet.getId() != null && wallet.getId().equals(selectedId);
             holder.ivSelected.setVisibility(isSelected ? View.VISIBLE : View.GONE);
             holder.itemView.setOnClickListener(v -> listener.onClick(wallet));
@@ -420,12 +393,13 @@ public class AddTransactionFragment extends Fragment {
 
         static class VH extends RecyclerView.ViewHolder {
             TextView tvName, tvBalance;
-            ImageView ivSelected;
+            ImageView ivWalletIcon, ivSelected;
 
             VH(@NonNull View itemView) {
                 super(itemView);
                 tvName = itemView.findViewById(R.id.tvWalletName);
                 tvBalance = itemView.findViewById(R.id.tvWalletBalance);
+                ivWalletIcon = itemView.findViewById(R.id.ivWalletIcon);
                 ivSelected = itemView.findViewById(R.id.ivSelected);
             }
         }
@@ -474,29 +448,20 @@ public class AddTransactionFragment extends Fragment {
             Category category = categories.get(position);
             holder.tvName.setText(category.getName());
 
-            // Try set drawable by icon name; fallback to colored circle background
-            try {
-                String iconName = category.getIconName();
-                int resId = 0;
-                if (iconName != null && !iconName.isEmpty()) {
-                    resId = holder.itemView.getContext().getResources().getIdentifier(iconName, "drawable", holder.itemView.getContext().getPackageName());
-                }
+            // Load icon thực tế từ drawable resources
+            String iconName = category.getIconName();
+            if (iconName != null && !iconName.isEmpty()) {
+                int resId = holder.itemView.getContext().getResources().getIdentifier(
+                        iconName, "drawable", holder.itemView.getContext().getPackageName());
                 if (resId != 0) {
-                    if (holder.viewIcon instanceof android.widget.ImageView) {
-                        ((android.widget.ImageView) holder.viewIcon).setImageResource(resId);
-                        // keep circular background if present
-                    } else {
-                        holder.viewIcon.setBackgroundResource(R.drawable.bg_circle_food);
-                    }
+                    holder.imgIcon.setImageResource(resId);
                 } else {
-                    // fallback color circle based on iconName
-                    String color = getCategoryColor(category.getIconName());
-                    GradientDrawable drawable = new GradientDrawable();
-                    drawable.setShape(GradientDrawable.OVAL);
-                    drawable.setColor(Color.parseColor(color));
-                    holder.viewIcon.setBackground(drawable);
+                    // Fallback icon
+                    holder.imgIcon.setImageResource(R.drawable.ic_food);
                 }
-            } catch (Exception ignored) {
+            } else {
+                // Default fallback icon
+                holder.imgIcon.setImageResource(R.drawable.ic_food);
             }
 
             holder.ivSelected.setVisibility(View.GONE);
@@ -509,13 +474,13 @@ public class AddTransactionFragment extends Fragment {
         }
 
         static class VH extends RecyclerView.ViewHolder {
-            View viewIcon;
+            ImageView imgIcon;
             TextView tvName;
             ImageView ivSelected;
 
             VH(@NonNull View itemView) {
                 super(itemView);
-                viewIcon = itemView.findViewById(R.id.viewCategoryIcon);
+                imgIcon = itemView.findViewById(R.id.imgCategoryIcon);
                 tvName = itemView.findViewById(R.id.tvCategoryName);
                 ivSelected = itemView.findViewById(R.id.ivSelected);
             }

@@ -45,6 +45,7 @@ public class ViewBudgetDialogFragment extends DialogFragment {
     private static final String ARG_START_DATE = "start_date";
     private static final String ARG_END_DATE = "end_date";
     private static final String ARG_WALLET_ID = "wallet_id";
+    private static final String ARG_WALLET_NAME = "wallet_name";
     private static final String ARG_COLOR = "color";
 
     private BudgetItem budgetItem;
@@ -67,6 +68,7 @@ public class ViewBudgetDialogFragment extends DialogFragment {
         args.putLong(ARG_START_DATE, item.getStartDate());
         args.putLong(ARG_END_DATE, item.getEndDate());
         args.putString(ARG_WALLET_ID, item.getWalletId());
+        args.putString(ARG_WALLET_NAME, item.getWalletName());
         args.putString(ARG_COLOR, item.getColor());
         fragment.setArguments(args);
         return fragment;
@@ -92,6 +94,7 @@ public class ViewBudgetDialogFragment extends DialogFragment {
                     .setStartDate(getArguments().getLong(ARG_START_DATE))
                     .setEndDate(getArguments().getLong(ARG_END_DATE))
                     .setWalletId(getArguments().getString(ARG_WALLET_ID))
+                    .setWalletName(getArguments().getString(ARG_WALLET_NAME))
                     .setColor(getArguments().getString(ARG_COLOR))
                     .build();
         }
@@ -146,15 +149,22 @@ public class ViewBudgetDialogFragment extends DialogFragment {
             if (actionListener != null) actionListener.onDeleteClicked(budgetItem);
         });
 
-        // --- Category icon ---
-        View viewCategoryIcon = view.findViewById(R.id.viewCategoryIcon);
-        try {
-            String colorStr = budgetItem.getColor() != null ? budgetItem.getColor() : "#4CAF50";
-            GradientDrawable drawable = new GradientDrawable();
-            drawable.setShape(GradientDrawable.OVAL);
-            drawable.setColor(Color.parseColor(colorStr));
-            viewCategoryIcon.setBackground(drawable);
-        } catch (Exception ignored) {}
+        // --- Category icon: load icon thực tế từ drawable resources ---
+        ImageView imgCategoryIcon = view.findViewById(R.id.imgCategoryIcon);
+        String iconName = budgetItem.getCategoryIcon();
+        if (iconName != null && !iconName.isEmpty()) {
+            int resId = requireContext().getResources().getIdentifier(
+                    iconName, "drawable", requireContext().getPackageName());
+            if (resId != 0) {
+                imgCategoryIcon.setImageResource(resId);
+            } else {
+                // Fallback icon
+                imgCategoryIcon.setImageResource(R.drawable.ic_food);
+            }
+        } else {
+            // Default fallback icon
+            imgCategoryIcon.setImageResource(R.drawable.ic_food);
+        }
 
         // --- Category name ---
         ((TextView) view.findViewById(R.id.tvCategoryName))
@@ -206,6 +216,14 @@ public class ViewBudgetDialogFragment extends DialogFragment {
         int daysLeft = budgetItem.getDaysRemaining();
         ((TextView) view.findViewById(R.id.tvDaysLeft))
                 .setText("Còn " + daysLeft + " ngày");
+
+        // --- Wallet name ---
+        String walletName = budgetItem.getWalletName();
+        if (walletName != null && !walletName.isEmpty()) {
+            ((TextView) view.findViewById(R.id.tvWalletName)).setText(walletName);
+        } else {
+            ((TextView) view.findViewById(R.id.tvWalletName)).setText("Tổng cộng");
+        }
 
         // --- Chart date labels ---
         ((TextView) view.findViewById(R.id.tvStartDateLabel))

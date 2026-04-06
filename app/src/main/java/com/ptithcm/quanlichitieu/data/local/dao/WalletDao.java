@@ -26,6 +26,18 @@ public class WalletDao {
         this.dbHelper = dbHelper;
     }
 
+    public Wallet getWalletById(@NonNull String walletId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        try (Cursor cursor = db.query(WalletEntry.TABLE_NAME, null,
+                WalletEntry.COLUMN_ID + " = ?", new String[]{walletId},
+                null, null, null)) {
+            if (cursor.moveToFirst()) {
+                return cursorToWallet(cursor);
+            }
+            return null;
+        }
+    }
+
     public void setActiveWallet(String walletId, String userId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         db.beginTransaction();

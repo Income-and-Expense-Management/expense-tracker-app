@@ -168,6 +168,22 @@ public class SelectWalletBottomSheet extends BottomSheetDialogFragment {
                 tvWalletBalance.setText(formatMoney(wallet.getInitialBalance()));
                 ivSelected.setVisibility(isSelected ? View.VISIBLE : View.GONE);
 
+                // Load icon thực tế từ wallet.iconId
+                String iconId = wallet.getIconId();
+                if (iconId != null && !iconId.isEmpty()) {
+                    int resId = itemView.getContext().getResources().getIdentifier(
+                            iconId, "drawable", itemView.getContext().getPackageName());
+                    if (resId != 0) {
+                        ivWalletIcon.setImageResource(resId);
+                    } else {
+                        // Fallback icon
+                        ivWalletIcon.setImageResource(R.drawable.ic_wallet);
+                    }
+                } else {
+                    // Default fallback icon
+                    ivWalletIcon.setImageResource(R.drawable.ic_wallet);
+                }
+
                 itemView.setOnClickListener(v -> {
                     if (listener != null) {
                         listener.onClick(wallet);

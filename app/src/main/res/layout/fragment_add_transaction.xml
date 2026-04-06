@@ -162,11 +162,12 @@
         android:paddingVertical="14dp">
 
         <ImageView
-            android:id="@+id/viewCategoryIcon"
+            android:id="@+id/imgCategoryIcon"
             android:layout_width="28dp"
             android:layout_height="28dp"
             android:scaleType="centerInside"
             android:background="@drawable/bg_circle_gray"
+            android:src="@drawable/ic_food"
             android:contentDescription="@string/icon_content_description" />
 
         <TextView

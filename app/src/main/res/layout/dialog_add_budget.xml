@@ -53,11 +53,15 @@
             android:padding="16dp"
             android:background="?attr/selectableItemBackground">
 
-            <View
-                android:id="@+id/viewCategoryIcon"
+            <ImageView
+                android:id="@+id/imgCategoryIcon"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="@drawable/bg_circle_dark" />
+                android:padding="5dp"
+                android:scaleType="centerInside"
+                android:background="@drawable/bg_circle_dark"
+                android:src="@drawable/ic_food"
+                android:contentDescription="@string/icon_content_description" />
 
             <TextView
                 android:id="@+id/tvCategoryName"

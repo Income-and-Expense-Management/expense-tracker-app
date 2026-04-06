@@ -92,11 +92,15 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <View
-                        android:id="@+id/viewCategoryIcon"
+                    <ImageView
+                        android:id="@+id/imgCategoryIcon"
                         android:layout_width="52dp"
                         android:layout_height="52dp"
-                        android:background="@drawable/bg_circle_food" />
+                        android:padding="5dp"
+                        android:scaleType="centerInside"
+                        android:background="@drawable/bg_circle_dark"
+                        android:src="@drawable/ic_food"
+                        android:contentDescription="@string/icon_content_description" />
 
                     <TextView
                         android:id="@+id/tvCategoryName"
@@ -270,6 +274,7 @@
                         android:contentDescription="Wallet" />
 
                     <TextView
+                        android:id="@+id/tvWalletName"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"

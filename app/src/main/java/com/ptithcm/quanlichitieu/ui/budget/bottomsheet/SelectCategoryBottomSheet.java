@@ -1,7 +1,5 @@
 package com.ptithcm.quanlichitieu.ui.budget.bottomsheet;
 
-import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -28,6 +26,11 @@ import java.util.List;
 
 /**
  * SelectCategoryBottomSheet - BottomSheet để chọn category cho budget.
+ * 
+ * Đã được cập nhật để:
+ * - Sử dụng icon thực tế từ drawable resources
+ * - Đồng bộ với cách hiển thị category trong CategoryAdapter
+ * - Lấy danh sách category từ database thực tế
  */
 public class SelectCategoryBottomSheet extends BottomSheetDialogFragment {
 
@@ -142,6 +145,7 @@ public class SelectCategoryBottomSheet extends BottomSheetDialogFragment {
 
     /**
      * Adapter for category selection list.
+     * Sử dụng icon thực tế từ drawable resources, giống như CategoryAdapter.
      */
     private static class CategorySelectAdapter extends RecyclerView.Adapter<CategorySelectAdapter.ViewHolder> {
 
@@ -180,13 +184,13 @@ public class SelectCategoryBottomSheet extends BottomSheetDialogFragment {
         }
 
         static class ViewHolder extends RecyclerView.ViewHolder {
-            private final View viewCategoryIcon;
+            private final ImageView imgCategoryIcon;
             private final TextView tvCategoryName;
             private final ImageView ivSelected;
 
             ViewHolder(@NonNull View itemView) {
                 super(itemView);
-                viewCategoryIcon = itemView.findViewById(R.id.viewCategoryIcon);
+                imgCategoryIcon = itemView.findViewById(R.id.imgCategoryIcon);
                 tvCategoryName = itemView.findViewById(R.id.tvCategoryName);
                 ivSelected = itemView.findViewById(R.id.ivSelected);
             }
@@ -194,15 +198,20 @@ public class SelectCategoryBottomSheet extends BottomSheetDialogFragment {
             void bind(Category category, OnCategoryClickListener listener) {
                 tvCategoryName.setText(category.getName());
 
-                // Set icon color based on category
-                try {
-                    String color = getCategoryColor(category.getIconName());
-                    GradientDrawable drawable = new GradientDrawable();
-                    drawable.setShape(GradientDrawable.OVAL);
-                    drawable.setColor(Color.parseColor(color));
-                    viewCategoryIcon.setBackground(drawable);
-                } catch (Exception e) {
-                    // Use default
+                // Hiển thị icon thực tế từ drawable resources
+                // Đồng bộ với cách CategoryAdapter hiển thị icon
+                if (category.getIconName() != null && !category.getIconName().isEmpty()) {
+                    int resId = itemView.getContext().getResources().getIdentifier(
+                            category.getIconName(), "drawable", itemView.getContext().getPackageName());
+                    if (resId != 0) {
+                        imgCategoryIcon.setImageResource(resId);
+                    } else {
+                        // Fallback icon nếu không tìm thấy
+                        imgCategoryIcon.setImageResource(R.drawable.ic_food);
+                    }
+                } else {
+                    // Default fallback icon
+                    imgCategoryIcon.setImageResource(R.drawable.ic_food);
                 }
 
                 ivSelected.setVisibility(View.GONE);
@@ -212,32 +221,6 @@ public class SelectCategoryBottomSheet extends BottomSheetDialogFragment {
                         listener.onClick(category);
                     }
                 });
-            }
-
-            private static String getCategoryColor(String iconName) {
-                if (iconName == null) return "#4CAF50";
-
-                switch (iconName.toLowerCase()) {
-                    case "food":
-                    case "ic_food":
-                        return "#E91E63";
-                    case "shopping":
-                    case "ic_shopping":
-                        return "#9C27B0";
-                    case "transport":
-                    case "ic_transport":
-                        return "#2196F3";
-                    case "entertainment":
-                        return "#FF9800";
-                    case "health":
-                        return "#00BCD4";
-                    case "education":
-                        return "#3F51B5";
-                    case "bills":
-                        return "#F44336";
-                    default:
-                        return "#4CAF50";
-                }
             }
         }
     }
