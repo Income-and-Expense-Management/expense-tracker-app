@@ -21,8 +21,8 @@
 
         <ImageView
             android:id="@+id/ivIcon"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
             android:layout_gravity="center"
             android:src="@drawable/ic_food"
             app:tint="@null" /> <!-- Để @null nếu icon của bạn đã có màu sẵn như trong hình -->

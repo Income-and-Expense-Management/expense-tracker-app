@@ -1,59 +1,128 @@
 package com.ptithcm.quanlichitieu.ui.transaction;
 
+import android.app.Application;
+
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModel;
 
 import com.ptithcm.quanlichitieu.data.model.TransactionGroup;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
-import com.ptithcm.quanlichitieu.data.repository.MockTransactionRepository;
 import com.ptithcm.quanlichitieu.data.repository.TransactionRepository;
+import com.ptithcm.quanlichitieu.data.repository.TransactionRepositoryImpl;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class TransactionViewModel extends ViewModel {
+/**
+ * TransactionViewModel - ViewModel cho màn hình giao dịch.
+ * 
+ * Chức năng:
+ * - Quản lý state của màn hình transaction
+ * - Tải dữ liệu từ repository
+ * - Tính toán số dư dựa trên ví và giao dịch
+ * - Hỗ trợ filter theo tháng (offset)
+ * 
+ * Tuân thủ MVVM pattern:
+ * - Không chứa logic UI
+ * - Expose dữ liệu qua LiveData
+ * - Giao tiếp với Repository layer
+ */
+public class TransactionViewModel extends AndroidViewModel {
 
     private final TransactionRepository transactionRepository;
 
-    private final MutableLiveData<List<TransactionGroup>> transactions = new MutableLiveData<>();
-    private final MutableLiveData<Double> totalBalance = new MutableLiveData<>();
-    private final MutableLiveData<Double> totalExpense = new MutableLiveData<>();
-    private final MutableLiveData<Double> totalIncome = new MutableLiveData<>();
+    private final MutableLiveData<List<TransactionGroup>> transactions = new MutableLiveData<>(new ArrayList<>());
+    private final MutableLiveData<Double> totalBalance = new MutableLiveData<>(0.0);
+    private final MutableLiveData<Double> totalExpense = new MutableLiveData<>(0.0);
+    private final MutableLiveData<Double> totalIncome = new MutableLiveData<>(0.0);
     private final MutableLiveData<Integer> monthOffset = new MutableLiveData<>(0);
 
-    public TransactionViewModel() {
-        this.transactionRepository = new MockTransactionRepository();
+    // Lưu wallet hiện tại để sử dụng khi thay đổi monthOffset
+    private Wallet currentWallet;
+
+    public TransactionViewModel(@NonNull Application application) {
+        super(application);
+        // Sử dụng implementation thật với database
+        this.transactionRepository = new TransactionRepositoryImpl(application.getApplicationContext());
     }
 
-    public LiveData<List<TransactionGroup>> getTransactions() { return transactions; }
-    public LiveData<Double> getTotalBalance() { return totalBalance; }
-    public LiveData<Double> getTotalExpense() { return totalExpense; }
-    public LiveData<Double> getTotalIncome() { return totalIncome; }
-    public LiveData<Integer> getMonthOffset() { return monthOffset; }
+    // ==================== GETTERS FOR LIVEDATA ====================
 
+    public LiveData<List<TransactionGroup>> getTransactions() { 
+        return transactions; 
+    }
+    
+    public LiveData<Double> getTotalBalance() { 
+        return totalBalance; 
+    }
+    
+    public LiveData<Double> getTotalExpense() { 
+        return totalExpense; 
+    }
+    
+    public LiveData<Double> getTotalIncome() { 
+        return totalIncome; 
+    }
+    
+    public LiveData<Integer> getMonthOffset() { 
+        return monthOffset; 
+    }
+
+    // ==================== PUBLIC METHODS ====================
+
+    /**
+     * Thiết lập month offset và tải lại dữ liệu.
+     * 
+     * @param offset Offset tháng (-1 = tháng trước, 0 = tháng này, 1 = tháng sau)
+     */
     public void setMonthOffset(int offset) {
         monthOffset.setValue(offset);
-        loadData(null);
+        loadData(currentWallet);
     }
 
     /**
      * Tải dữ liệu giao dịch dựa trên ví đang chọn.
-     * Nếu có ví, sử dụng số dư của ví đó làm "Tổng số dư".
+     * 
+     * Logic tính số dư:
+     * - Nếu có ví: Số dư = initialBalance + tổng thu nhập - tổng chi tiêu (của tháng hiện tại)
+     * - Nếu không có ví: Hiển thị 0
+     * 
+     * @param selectedWallet Ví đang được chọn (null nếu chưa có ví)
      */
     public void loadData(Wallet selectedWallet) {
+        // Lưu wallet hiện tại để dùng khi thay đổi monthOffset
+        this.currentWallet = selectedWallet;
+        
         int offset = monthOffset.getValue() != null ? monthOffset.getValue() : 0;
         
-        // Cập nhật danh sách giao dịch (hiện tại vẫn dùng mock)
-        transactions.setValue(transactionRepository.getTransactionsByMonth(offset));
-        
-        // Cập nhật số dư: Nếu có ví thật, lấy từ ví. Nếu không, lấy từ mock.
-        if (selectedWallet != null) {
-            totalBalance.setValue((double) selectedWallet.getInitialBalance());
-        } else {
-            totalBalance.setValue(transactionRepository.getTotalBalance());
+        if (selectedWallet == null) {
+            // Không có ví được chọn - hiển thị empty state
+            transactions.setValue(new ArrayList<>());
+            totalBalance.setValue(0.0);
+            totalExpense.setValue(0.0);
+            totalIncome.setValue(0.0);
+            return;
         }
+
+        String walletId = selectedWallet.getId();
         
-        totalExpense.setValue(transactionRepository.getTotalExpense());
-        totalIncome.setValue(transactionRepository.getTotalIncome());
+        // Tải danh sách giao dịch từ database, filter theo wallet
+        List<TransactionGroup> transactionGroups = transactionRepository
+                .getTransactionsByWalletAndMonth(walletId, offset);
+        transactions.setValue(transactionGroups);
+        
+        // Tính tổng thu nhập và chi tiêu trong tháng
+        double income = transactionRepository.getTotalIncome(walletId, offset);
+        double expense = transactionRepository.getTotalExpense(walletId, offset);
+        
+        totalIncome.setValue(income);
+        totalExpense.setValue(expense);
+        
+        // Tính số dư hiện tại của ví
+        // Công thức: Số dư ban đầu + Tổng thu nhập - Tổng chi tiêu
+        double balance = selectedWallet.getInitialBalance() + income - expense;
+        totalBalance.setValue(balance);
     }
 }

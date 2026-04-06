@@ -241,6 +241,67 @@ public class TransactionDao {
     }
 
     /**
+     * Lấy transactions trong khoảng thời gian với thông tin chi tiết (JOIN category và wallet).
+     * Method này trả về Transaction object đã có categoryName và walletName.
+     * 
+     * @param walletId ID của wallet
+     * @param startDate Ngày bắt đầu (timestamp)
+     * @param endDate Ngày kết thúc (timestamp)
+     * @return Danh sách Transaction với thông tin chi tiết
+     */
+    public List<Transaction> getByDateRangeWithDetails(@NonNull String walletId, long startDate, long endDate) {
+        List<Transaction> transactions = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        // Raw SQL query với JOIN để lấy tên category và wallet
+        String query = "SELECT " +
+                "t." + TransactionEntry.COLUMN_ID + ", " +
+                "t." + TransactionEntry.COLUMN_WALLET_ID + ", " +
+                "t." + TransactionEntry.COLUMN_CATEGORY_ID + ", " +
+                "t." + TransactionEntry.COLUMN_AMOUNT + ", " +
+                "t." + TransactionEntry.COLUMN_TYPE + ", " +
+                "t." + TransactionEntry.COLUMN_TRANSACTION_DATE + ", " +
+                "t." + TransactionEntry.COLUMN_ICON_ID + ", " +
+                "t." + TransactionEntry.COLUMN_NOTE + ", " +
+                "t." + TransactionEntry.COLUMN_CREATED_AT + ", " +
+                "t." + TransactionEntry.COLUMN_UPDATED_AT + ", " +
+                "c." + CategoryEntry.COLUMN_NAME + " AS category_name, " +
+                "w." + WalletEntry.COLUMN_NAME + " AS wallet_name " +
+                "FROM " + TransactionEntry.TABLE_NAME + " t " +
+                "LEFT JOIN " + CategoryEntry.TABLE_NAME + " c " +
+                "ON t." + TransactionEntry.COLUMN_CATEGORY_ID + " = c." + CategoryEntry.COLUMN_ID + " " +
+                "INNER JOIN " + WalletEntry.TABLE_NAME + " w " +
+                "ON t." + TransactionEntry.COLUMN_WALLET_ID + " = w." + WalletEntry.COLUMN_ID + " " +
+                "WHERE t." + TransactionEntry.COLUMN_WALLET_ID + " = ? " +
+                "AND t." + TransactionEntry.COLUMN_TRANSACTION_DATE + " >= ? " +
+                "AND t." + TransactionEntry.COLUMN_TRANSACTION_DATE + " <= ? " +
+                "ORDER BY t." + TransactionEntry.COLUMN_TRANSACTION_DATE + " DESC";
+
+        Cursor cursor = null;
+        try {
+            cursor = db.rawQuery(query, new String[]{
+                    walletId,
+                    String.valueOf(startDate),
+                    String.valueOf(endDate)
+            });
+
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    Transaction transaction = cursorToTransactionWithDetails(cursor);
+                    transactions.add(transaction);
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+
+        Log.d(TAG, "Fetched " + transactions.size() + " transactions with details for date range");
+        return transactions;
+    }
+
+    /**
      * Lấy transactions theo category.
      * 
      * @param categoryId ID của category

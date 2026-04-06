@@ -1,5 +1,7 @@
 package com.ptithcm.quanlichitieu.data.repository;
 
+import androidx.annotation.Nullable;
+
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.data.model.Transaction;
 import com.ptithcm.quanlichitieu.data.model.TransactionGroup;
@@ -8,6 +10,10 @@ import com.ptithcm.quanlichitieu.data.model.TransactionType;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * MockTransactionRepository - Mock implementation để testing và development.
+ * Implement đầy đủ interface mới với các method hỗ trợ wallet filtering.
+ */
 public class MockTransactionRepository implements TransactionRepository {
 
     /**
@@ -32,6 +38,12 @@ public class MockTransactionRepository implements TransactionRepository {
 
     @Override
     public List<TransactionGroup> getTransactionsByMonth(int monthOffset) {
+        return getTransactionsByWalletAndMonth(null, monthOffset);
+    }
+
+    @Override
+    public List<TransactionGroup> getTransactionsByWalletAndMonth(@Nullable String walletId, int monthOffset) {
+        // Mock data - không filter theo wallet
         List<TransactionGroup> groups = new ArrayList<>();
         long now = System.currentTimeMillis();
 
@@ -80,7 +92,17 @@ public class MockTransactionRepository implements TransactionRepository {
     }
 
     @Override
+    public double getTotalExpense(@Nullable String walletId, int monthOffset) {
+        return 1200000;
+    }
+
+    @Override
     public double getTotalIncome() {
+        return 500000;
+    }
+
+    @Override
+    public double getTotalIncome(@Nullable String walletId, int monthOffset) {
         return 500000;
     }
 

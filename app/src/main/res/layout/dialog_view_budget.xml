@@ -46,7 +46,7 @@
                 android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="8dp"
-                android:src="@drawable/ic_calendar"
+                android:src="@drawable/ic_edit"
                 android:contentDescription="Sửa"
                 app:tint="@android:color/white" />
 
@@ -56,9 +56,9 @@
                 android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="8dp"
-                android:src="@drawable/ic_close"
+                android:src="@drawable/ic_delete"
                 android:contentDescription="Xóa"
-                app:tint="@android:color/white" />
+                />
 
         </LinearLayout>
 

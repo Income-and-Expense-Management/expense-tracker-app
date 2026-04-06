@@ -1,77 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Item giao dịch - nằm trong section liền mạch với header -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/bg_card_dark_rounded"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="14dp">
+    android:orientation="vertical">
 
-    <!-- Category Icon -->
-    <ImageView
-        android:id="@+id/imgIcon"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:background="@drawable/bg_circle_dark"
-        android:padding="10dp"
-        android:src="@drawable/ic_food"
-        android:contentDescription="Category"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
+    <!-- Divider phía trên (trừ item đầu tiên sau header) -->
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginStart="0dp"
+        android:background="@drawable/divider_transaction" />
 
-    <!-- Category Name -->
-    <TextView
-        android:id="@+id/tvCategory"
-        android:layout_width="0dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/itemContainer"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="8dp"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:textColor="@color/white"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toEndOf="@+id/imgIcon"
-        app:layout_constraintEnd_toStartOf="@+id/tvAmount"
-        app:layout_constraintTop_toTopOf="@+id/imgIcon"
-        app:layout_constraintBottom_toBottomOf="@+id/imgIcon"
-        tools:text="Ăn uống" />
+        android:background="@drawable/bg_transaction_item"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="14dp">
 
-    <!-- Amount -->
-    <TextView
-        android:id="@+id/tvAmount"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:text="- 50,000" />
+        <!-- Category Icon -->
+        <ImageView
+            android:id="@+id/imgIcon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_circle_dark"
+            android:padding="2dp"
+            android:src="@drawable/ic_food"
+            android:contentDescription="Category"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Wallet Source -->
-    <TextView
-        android:id="@+id/tvWalletSource"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textColor="@color/home_text_secondary"
-        android:textSize="12sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvAmount"
-        tools:text="Cash" />
+        <!-- Category Name -->
+        <TextView
+            android:id="@+id/tvCategory"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/white"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toEndOf="@+id/imgIcon"
+            app:layout_constraintEnd_toStartOf="@+id/tvAmount"
+            app:layout_constraintTop_toTopOf="@+id/imgIcon"
+            tools:text="Ăn uống" />
 
-    <!-- Trend Icon (small arrow indicator next to wallet) -->
-    <ImageView
-        android:id="@+id/imgTrend"
-        android:layout_width="10dp"
-        android:layout_height="10dp"
-        android:layout_marginStart="4dp"
-        android:contentDescription="Trend"
-        app:layout_constraintStart_toEndOf="@+id/tvWalletSource"
-        app:layout_constraintTop_toTopOf="@+id/tvWalletSource"
-        app:layout_constraintBottom_toBottomOf="@+id/tvWalletSource"
-        tools:src="@drawable/ic_trend_down" />
+        <!-- Note - hiển thị dưới category name -->
+        <TextView
+            android:id="@+id/tvNote"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/home_text_secondary"
+            android:textSize="12sp"
+            android:visibility="gone"
+            app:layout_constraintStart_toEndOf="@+id/imgIcon"
+            app:layout_constraintEnd_toStartOf="@+id/tvAmount"
+            app:layout_constraintTop_toBottomOf="@+id/tvCategory"
+            tools:text="Mua đồ ăn trưa tại quán..."
+            tools:visibility="visible" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <!-- Amount -->
+        <TextView
+            android:id="@+id/tvAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="- 50,000" />
+
+        <!-- Transaction Type (Khoản chi / Khoản thu) - thay thế wallet source -->
+        <TextView
+            android:id="@+id/tvTransactionType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/home_text_secondary"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvAmount"
+            tools:text="Khoản chi" />
+
+        <!-- Trend Icon (small arrow indicator) -->
+        <ImageView
+            android:id="@+id/imgTrend"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_marginStart="4dp"
+            android:contentDescription="Trend"
+            app:layout_constraintStart_toEndOf="@+id/tvTransactionType"
+            app:layout_constraintTop_toTopOf="@+id/tvTransactionType"
+            app:layout_constraintBottom_toBottomOf="@+id/tvTransactionType"
+            tools:src="@drawable/ic_trend_down" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</LinearLayout>
