@@ -135,5 +135,25 @@ public class TransactionFragment extends Fragment {
         super.onResume();
         // Cập nhật lại ví khi quay lại màn hình
         walletViewModel.loadActiveWallet();
+
+        // Tải lại danh sách giao dịch phòng trường hợp vừa thêm mới từ trang khác
+        com.ptithcm.quanlichitieu.data.model.Wallet currentWallet = walletViewModel.getSelectedWallet().getValue();
+        if (currentWallet != null) {
+            viewModel.loadData(currentWallet);
+        }
+    }
+
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        if (!hidden) {
+            // Khi tab được hiển thị lại (trong trường hợp sử dụng hide/show fragment)
+            walletViewModel.loadActiveWallet();
+
+            com.ptithcm.quanlichitieu.data.model.Wallet currentWallet = walletViewModel.getSelectedWallet().getValue();
+            if (currentWallet != null) {
+                viewModel.loadData(currentWallet);
+            }
+        }
     }
 }
