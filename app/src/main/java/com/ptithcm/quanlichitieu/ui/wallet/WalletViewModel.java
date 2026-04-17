@@ -195,7 +195,10 @@ public class WalletViewModel extends AndroidViewModel {
         try {
             long balance = 0;
             if (balanceStr != null && !balanceStr.trim().isEmpty()) {
-                balance = Long.parseLong(balanceStr.trim().replace(",", "").replace(".", ""));
+                String cleanBal = balanceStr.replaceAll("[^0-9]", "");
+                if (!cleanBal.isEmpty()) {
+                    balance = Long.parseLong(cleanBal);
+                }
             }
 
             wallet.setName(name.trim());

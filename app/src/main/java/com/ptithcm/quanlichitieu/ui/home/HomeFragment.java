@@ -37,6 +37,8 @@ public class HomeFragment extends Fragment {
     private android.widget.ImageView imgWalletIcon;
     private View cardWallet;
     private TextView tvSeeAllWallets;
+    private TextView tvTotalSpentValue;
+    private TextView tvTotalIncomeValue;
     private RecyclerView rvTopExpenses;
     private MaterialButtonToggleGroup togglePeriod;
 
@@ -86,6 +88,8 @@ public class HomeFragment extends Fragment {
         imgWalletIcon = view.findViewById(R.id.imgWalletIcon);
         cardWallet = view.findViewById(R.id.cardWallet);
         tvSeeAllWallets = view.findViewById(R.id.tvSeeAllWallets);
+        tvTotalSpentValue = view.findViewById(R.id.tvTotalSpentValue);
+        tvTotalIncomeValue = view.findViewById(R.id.tvTotalIncomeValue);
         rvTopExpenses = view.findViewById(R.id.rvTopExpenses);
         togglePeriod = view.findViewById(R.id.togglePeriod);
     }
@@ -167,6 +171,18 @@ public class HomeFragment extends Fragment {
             }
         });
 
+        homeViewModel.getTotalSpent().observe(getViewLifecycleOwner(), spent -> {
+            if (tvTotalSpentValue != null) {
+                tvTotalSpentValue.setText(String.format(Locale.getDefault(), "%,.0f đ", spent));
+            }
+        });
+
+        homeViewModel.getTotalIncome().observe(getViewLifecycleOwner(), income -> {
+            if (tvTotalIncomeValue != null) {
+                tvTotalIncomeValue.setText(String.format(Locale.getDefault(), "%,.0f đ", income));
+            }
+        });
+
         homeViewModel.getTopExpenses().observe(getViewLifecycleOwner(), expenses ->
                 topExpenseAdapter.setExpenses(expenses));
     }
@@ -175,5 +191,6 @@ public class HomeFragment extends Fragment {
     public void onResume() {
         super.onResume();
         walletViewModel.loadActiveWallet();
+        homeViewModel.loadReportData();
     }
 }

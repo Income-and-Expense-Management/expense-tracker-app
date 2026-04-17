@@ -14,10 +14,10 @@ public final class ApiConfig {
     public static final String BASE_URL = "http://10.0.2.2:3000";
 
     // Auth endpoints
-    public static final String LOGIN_URL = BASE_URL + "/api/auth/login";
-    public static final String REGISTER_URL = BASE_URL + "/api/auth/register";
-    public static final String GOOGLE_LOGIN_URL = BASE_URL + "/api/auth/google";
-    public static final String LOGOUT_URL = BASE_URL + "/api/auth/logout";
+    public static final String LOGIN_URL = BASE_URL + "/api/v1/auth/login";
+    public static final String REGISTER_URL = BASE_URL + "/api/v1/auth/register";
+    public static final String GOOGLE_LOGIN_URL = BASE_URL + "/api/v1/auth/google";
+    public static final String LOGOUT_URL = BASE_URL + "/api/v1/auth/logout";
 
     // HTTP header constants
     public static final String HEADER_AUTHORIZATION = "Authorization";

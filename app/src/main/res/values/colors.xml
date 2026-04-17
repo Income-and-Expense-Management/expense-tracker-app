@@ -31,7 +31,7 @@
     <color name="home_accent_green">#4CAF50</color> <!-- See All / Add Button -->
     <color name="home_nav_bg_dark">#191F38</color> <!-- Navbar background -->
     <color name="home_expense_red">#FF4D4D</color> <!-- Red text for expenses -->
-    <color name="home_income_white">#000000</color> <!-- White text for income -->
+    <color name="home_income_white">#FFFFFF</color> <!-- White text for income -->
     <color name="home_wallet_orange">#FF8C42</color> <!-- Orange wallet icon -->
     <color name="home_chart_line">#E57373</color> <!-- Chart line color -->
 
