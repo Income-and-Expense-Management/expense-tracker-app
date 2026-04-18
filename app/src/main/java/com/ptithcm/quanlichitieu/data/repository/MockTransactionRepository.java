@@ -26,7 +26,7 @@ public class MockTransactionRepository implements TransactionRepository {
                 .setId(id)
                 .setCategoryName(categoryName)
                 .setAmount(amount)
-                .setType(type)
+                .setCategoryType(type)
                 .setIconId(iconId)
                 .setWalletName(walletName)
                 .setTransactionDate(timestamp)

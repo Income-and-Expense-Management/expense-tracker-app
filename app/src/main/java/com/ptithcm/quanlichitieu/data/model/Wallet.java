@@ -1,28 +1,26 @@
 package com.ptithcm.quanlichitieu.data.model;
 
 /**
- * Model đại diện cho bảng wallets.
- * Boolean is_active được lưu dưới dạng int (0/1) trong SQLite.
- * Timestamps được lưu dưới dạng long (milliseconds since epoch).
+ * Model Ä‘áº¡i diá»‡n cho báº£ng wallets.
+ * Timestamps Ä‘Æ°á»£c lÆ°u dÆ°á»›i dáº¡ng long (milliseconds since epoch).
  */
 public class Wallet {
-    private String id;           // UUID dạng String
+    private String id;           // UUID
     private String userId;
     private String name;
-    private long initialBalance; // Số dư ban đầu (VND, dạng INTEGER)
+    private long initialBalance;
     private String currency;
-    private String iconId;       // Tên tài nguyên icon trong drawable
-    private long createdAt;      // Timestamp dạng long
-    private long updatedAt;      // Timestamp dạng long
-    private boolean isActive;    // Sẽ được convert sang 0/1 khi lưu SQLite
+    private String iconId;
+    private long createdAt;
+    private long updatedAt;
+    private Long deletedAt;      
 
     public Wallet() {
         this.currency = "VND";
-        this.isActive = true;
     }
 
     public Wallet(String id, String userId, String name, long initialBalance, 
-                  String currency, String iconId, long createdAt, long updatedAt, boolean isActive) {
+                  String currency, String iconId, long createdAt, long updatedAt, Long deletedAt) {
         this.id = id;
         this.userId = userId;
         this.name = name;
@@ -31,10 +29,10 @@ public class Wallet {
         this.iconId = iconId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-        this.isActive = isActive;
+        this.deletedAt = deletedAt;
     }
 
-    // Builder pattern cho việc tạo object linh hoạt
+    // Builder pattern cho viá»‡c táº¡o object linh hoáº¡t
     public static class Builder {
         private String id;
         private String userId;
@@ -44,7 +42,7 @@ public class Wallet {
         private String iconId;
         private long createdAt;
         private long updatedAt;
-        private boolean isActive = true;
+        private Long deletedAt;
 
         public Builder setId(String id) {
             this.id = id;
@@ -86,101 +84,42 @@ public class Wallet {
             return this;
         }
 
-        public Builder setIsActive(boolean isActive) {
-            this.isActive = isActive;
+        public Builder setDeletedAt(Long deletedAt) {
+            this.deletedAt = deletedAt;
             return this;
         }
 
         public Wallet build() {
             return new Wallet(id, userId, name, initialBalance, currency, 
-                             iconId, createdAt, updatedAt, isActive);
+                             iconId, createdAt, updatedAt, deletedAt);
         }
     }
 
-    // Getters và Setters
-    public String getId() {
-        return id;
-    }
+    // Getters vĂ  Setters
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
-    public String getUserId() {
-        return userId;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
+    public long getInitialBalance() { return initialBalance; }
+    public void setInitialBalance(long initialBalance) { this.initialBalance = initialBalance; }
 
-    public String getName() {
-        return name;
-    }
+    public String getCurrency() { return currency; }
+    public void setCurrency(String currency) { this.currency = currency; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getIconId() { return iconId; }
+    public void setIconId(String iconId) { this.iconId = iconId; }
 
-    public long getInitialBalance() {
-        return initialBalance;
-    }
+    public long getCreatedAt() { return createdAt; }
+    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
 
-    public void setInitialBalance(long initialBalance) {
-        this.initialBalance = initialBalance;
-    }
+    public long getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
 
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
-    }
-
-    public String getIconId() {
-        return iconId;
-    }
-
-    public void setIconId(String iconId) {
-        this.iconId = iconId;
-    }
-
-    public long getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(long createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public long getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(long updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public boolean isActive() {
-        return isActive;
-    }
-
-    public void setActive(boolean active) {
-        isActive = active;
-    }
-
-    /**
-     * Chuyển đổi boolean isActive thành int để lưu vào SQLite.
-     */
-    public int getIsActiveAsInt() {
-        return isActive ? 1 : 0;
-    }
-
-    /**
-     * Thiết lập isActive từ giá trị int đọc từ SQLite.
-     */
-    public void setActiveFromInt(int value) {
-        this.isActive = value == 1;
-    }
+    public Long getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(Long deletedAt) { this.deletedAt = deletedAt; }
 }

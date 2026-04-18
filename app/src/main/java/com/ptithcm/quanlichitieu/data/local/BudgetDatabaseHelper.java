@@ -121,34 +121,32 @@ public class BudgetDatabaseHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion);
 
-        if (oldVersion < 2) {
-            db.execSQL("ALTER TABLE " + CategoryEntry.TABLE_NAME + " ADD COLUMN " + CategoryEntry.COLUMN_IS_ACTIVE + " INTEGER DEFAULT 1");
-            return; // Finished upgrade for v2
-        }
-
-        // Tắt tạm FK để drop bảng không bị lỗi
+        // Tắt tạm FK để drop / alter bảng
         db.execSQL("PRAGMA foreign_keys = OFF");
 
-        // Drop theo thứ tự ngược: bảng con trước, bảng cha sau
-        // 5. Drop budgets (phụ thuộc wallets, categories)
+        // Vì phiên bản 3 có quá nhiều breaking changes theo chuẩn Synchronization Server
+        // (xóa cột `type` ở bảng transactions, thêm `updated_at`, `deleted_at`, v.v)
+        // Nên sẽ Drop toàn bộ bảng và recreate (Destructive Upgrade).
+
+        // 5. Drop budgets
         db.execSQL(BudgetEntry.SQL_DROP_TABLE);
         
-        // 4. Drop transactions (phụ thuộc wallets, categories)
+        // 4. Drop transactions
         db.execSQL(TransactionEntry.SQL_DROP_TABLE);
         
-        // 3. Drop categories (phụ thuộc users)
+        // 3. Drop categories
         db.execSQL(CategoryEntry.SQL_DROP_TABLE);
         
-        // 2. Drop wallets (phụ thuộc users)
+        // 2. Drop wallets
         db.execSQL(WalletEntry.SQL_DROP_TABLE);
         
-        // 1. Drop users (không phụ thuộc bảng nào)
+        // 1. Drop users
         db.execSQL(UserEntry.SQL_DROP_TABLE);
 
         // Bật lại FK
         db.execSQL("PRAGMA foreign_keys = ON");
 
-        // Tạo lại database
+        // Recreate tables
         onCreate(db);
     }
 
@@ -168,38 +166,40 @@ public class BudgetDatabaseHelper extends SQLiteOpenHelper {
     private void insertDefaultCategories(SQLiteDatabase db) {
         Log.d(TAG, "Inserting default categories...");
 
+        long now = System.currentTimeMillis();
+
         // Danh mục chi tiêu mặc định
         String[] expenseCategories = {
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_expense_food', NULL, 'Ăn uống', 'EXPENSE', 'ic_food')",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_expense_transport', NULL, 'Di chuyển', 'EXPENSE', 'ic_transport')",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_expense_shopping', NULL, 'Mua sắm', 'EXPENSE', 'ic_shopping')",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_expense_entertainment', NULL, 'Giải trí', 'EXPENSE', 'ic_entertainment')",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_expense_bills', NULL, 'Hóa đơn', 'EXPENSE', 'ic_bills')",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_expense_health', NULL, 'Sức khỏe', 'EXPENSE', 'ic_health')",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_expense_education', NULL, 'Giáo dục', 'EXPENSE', 'ic_education')",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_expense_other', NULL, 'Khác', 'EXPENSE', 'ic_other')"
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
+                        "VALUES ('cat_expense_food', NULL, 'Ăn uống', 'EXPENSE', 'ic_food', " + now + ", " + now + ")",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
+                        "VALUES ('cat_expense_transport', NULL, 'Di chuyển', 'EXPENSE', 'ic_transport', " + now + ", " + now + ")",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
+                        "VALUES ('cat_expense_shopping', NULL, 'Mua sắm', 'EXPENSE', 'ic_shopping', " + now + ", " + now + ")",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
+                        "VALUES ('cat_expense_entertainment', NULL, 'Giải trí', 'EXPENSE', 'ic_entertainment', " + now + ", " + now + ")",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
+                        "VALUES ('cat_expense_bills', NULL, 'Hóa đơn', 'EXPENSE', 'ic_bills', " + now + ", " + now + ")",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
+                        "VALUES ('cat_expense_health', NULL, 'Sức khỏe', 'EXPENSE', 'ic_health', " + now + ", " + now + ")",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
+                        "VALUES ('cat_expense_education', NULL, 'Giáo dục', 'EXPENSE', 'ic_education', " + now + ", " + now + ")",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
+                        "VALUES ('cat_expense_other', NULL, 'Khác', 'EXPENSE', 'ic_other', " + now + ", " + now + ")"
         };
 
         // Danh mục thu nhập mặc định
         String[] incomeCategories = {
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_income_salary', NULL, 'Lương', 'INCOME', 'ic_salary')",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_income_bonus', NULL, 'Thưởng', 'INCOME', 'ic_bonus')",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_income_investment', NULL, 'Đầu tư', 'INCOME', 'ic_investment')",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_income_gift', NULL, 'Quà tặng', 'INCOME', 'ic_gift')",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name) " +
-                        "VALUES ('cat_income_other', NULL, 'Khác', 'INCOME', 'ic_others')"
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
+                        "VALUES ('cat_income_salary', NULL, 'Lương', 'INCOME', 'ic_salary', " + now + ", " + now + ")",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
+                        "VALUES ('cat_income_bonus', NULL, 'Thưởng', 'INCOME', 'ic_bonus', " + now + ", " + now + ")",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
+                        "VALUES ('cat_income_investment', NULL, 'Đầu tư', 'INCOME', 'ic_investment', " + now + ", " + now + ")",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
+                        "VALUES ('cat_income_gift', NULL, 'Quà tặng', 'INCOME', 'ic_gift', " + now + ", " + now + ")",
+                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
+                        "VALUES ('cat_income_other', NULL, 'Khác', 'INCOME', 'ic_others', " + now + ", " + now + ")"
         };
 
         // Execute các lệnh insert

@@ -1,41 +1,30 @@
 package com.ptithcm.quanlichitieu.data.model;
 
-/**
- * Model đại diện cho bảng categories.
- * Hỗ trợ cả danh mục hệ thống (user_id = null) và danh mục người dùng tự tạo.
- */
 public class Category {
-    private String id;           // UUID dạng String
-    private String userId;       // null nếu là danh mục mặc định của hệ thống
+    private String id;
+    private String userId;
     private String name;
     private TransactionType type;
     private String iconName;
     private boolean isActive = true;
+    private long createdAt;
+    private long updatedAt;
+    private Long deletedAt;
 
-    public Category() {
-    }
+    public Category() {}
 
-    public Category(String id, String userId, String name, TransactionType type, String iconName) {
+    public Category(String id, String userId, String name, TransactionType type, String iconName, boolean isActive, long createdAt, long updatedAt, Long deletedAt) {
         this.id = id;
         this.userId = userId;
         this.name = name;
         this.type = type;
         this.iconName = iconName;
-    }
-
-    public Category(String id, String userId, String name, TransactionType type, String iconName, boolean isActive) {
-        this(id, userId, name, type, iconName);
         this.isActive = isActive;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.deletedAt = deletedAt;
     }
 
-    /**
-     * Kiểm tra xem danh mục có phải là danh mục hệ thống không.
-     */
-    public boolean isSystemCategory() {
-        return userId == null;
-    }
-
-    // Builder pattern
     public static class Builder {
         private String id;
         private String userId;
@@ -43,88 +32,54 @@ public class Category {
         private TransactionType type;
         private String iconName;
         private boolean isActive = true;
+        private long createdAt;
+        private long updatedAt;
+        private Long deletedAt;
 
-        public Builder setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public Builder setUserId(String userId) {
-            this.userId = userId;
-            return this;
-        }
-
-        public Builder setName(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public Builder setType(TransactionType type) {
-            this.type = type;
-            return this;
-        }
-
-        public Builder setIconName(String iconName) {
-            this.iconName = iconName;
-            return this;
-        }
-
-        public Builder setIsActive(boolean isActive) {
-            this.isActive = isActive;
-            return this;
-        }
+        public Builder setId(String id) { this.id = id; return this; }
+        public Builder setUserId(String userId) { this.userId = userId; return this; }
+        public Builder setName(String name) { this.name = name; return this; }
+        public Builder setType(TransactionType type) { this.type = type; return this; }
+        public Builder setIconName(String iconName) { this.iconName = iconName; return this; }
+        public Builder setIsActive(boolean isActive) { this.isActive = isActive; return this; }
+        public Builder setCreatedAt(long createdAt) { this.createdAt = createdAt; return this; }
+        public Builder setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; return this; }
+        public Builder setDeletedAt(Long deletedAt) { this.deletedAt = deletedAt; return this; }
 
         public Category build() {
-            return new Category(id, userId, name, type, iconName, isActive);
+            return new Category(id, userId, name, type, iconName, isActive, createdAt, updatedAt, deletedAt);
         }
     }
 
-    // Getters và Setters
-    public String getId() {
-        return id;
+    public boolean isSystemCategory() {
+        return userId == null;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    // Getters and Setters...
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public String getUserId() {
-        return userId;
-    }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public TransactionType getType() { return type; }
+    public void setType(TransactionType type) { this.type = type; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getIconName() { return iconName; }
+    public void setIconName(String iconName) { this.iconName = iconName; }
 
-    public TransactionType getType() {
-        return type;
-    }
+    public boolean isActive() { return isActive; }
+    public void setActive(boolean active) { isActive = active; }
 
-    public void setType(TransactionType type) {
-        this.type = type;
-    }
+    public long getCreatedAt() { return createdAt; }
+    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
 
-    public String getIconName() {
-        return iconName;
-    }
+    public long getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
 
-    public void setIconName(String iconName) {
-        this.iconName = iconName;
-    }
-
-    public boolean isActive() {
-        return isActive;
-    }
-
-    public void setActive(boolean active) {
-        isActive = active;
-    }
+    public Long getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(Long deletedAt) { this.deletedAt = deletedAt; }
 }

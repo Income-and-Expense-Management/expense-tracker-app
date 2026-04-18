@@ -8,6 +8,8 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
+import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
 import com.ptithcm.quanlichitieu.data.model.Budget;
 import com.ptithcm.quanlichitieu.data.model.Category;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
@@ -47,7 +49,8 @@ public class BudgetViewModel extends AndroidViewModel {
     public BudgetViewModel(@NonNull Application application) {
         super(application);
         this.repository = BudgetRepository.getInstance(application);
-        this.currentUserId = null;
+        TokenStorage tokenStorage = EncryptedTokenStorage.getInstance(application);
+        this.currentUserId = tokenStorage.getUserId();
     }
 
     // ==================== GETTERS cho LiveData ====================
@@ -103,13 +106,18 @@ public class BudgetViewModel extends AndroidViewModel {
         List<Wallet> walletList = repository.getWalletsForUser(currentUserId);
         wallets.setValue(walletList);
 
-        // Nếu chưa có ví được chọn, chọn ví đầu tiên
         if (selectedWallet.getValue() == null && walletList != null && !walletList.isEmpty()) {
+            android.content.SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
+            String userIdKey = (currentUserId == null || currentUserId.trim().isEmpty()) ? "default_user_id" : currentUserId;
+            String savedWalletId = prefs.getString("active_wallet_id_" + userIdKey, null);
+            
             Wallet activeWallet = null;
-            for (Wallet w : walletList) {
-                if (w.isActive()) {
-                    activeWallet = w;
-                    break;
+            if (savedWalletId != null) {
+                for (Wallet w : walletList) {
+                    if (w.getId().equals(savedWalletId)) {
+                        activeWallet = w;
+                        break;
+                    }
                 }
             }
             if (activeWallet == null) {

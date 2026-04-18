@@ -18,28 +18,29 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.ptithcm.quanlichitieu.R;
+import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
+import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
 import com.ptithcm.quanlichitieu.data.model.Category;
 import com.ptithcm.quanlichitieu.data.repository.BudgetRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * SelectCategoryBottomSheet - BottomSheet để chọn category cho budget.
- * 
- * Đã được cập nhật để:
- * - Sử dụng icon thực tế từ drawable resources
- * - Đồng bộ với cách hiển thị category trong CategoryAdapter
- * - Lấy danh sách category từ database thực tế
+ * SelectCategoryBottomSheet - BottomSheet để chọn danh mục cho ngân sách.
+ * Đã được refactor theo chuẩn Clean Code: dễ đọc, ưu tiên tính module và bảo trì.
  */
 public class SelectCategoryBottomSheet extends BottomSheetDialogFragment {
 
     public static final String TAG = "SelectCategoryBottomSheet";
 
+    // Views
     private RecyclerView rvCategories;
     private EditText etSearch;
     private LinearLayout layoutEmpty;
 
+    // State & Adapters
     private CategorySelectAdapter adapter;
     private List<Category> allCategories = new ArrayList<>();
     private OnCategorySelectedListener listener;
@@ -99,8 +100,7 @@ public class SelectCategoryBottomSheet extends BottomSheetDialogFragment {
     private void setupSearch() {
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -108,45 +108,49 @@ public class SelectCategoryBottomSheet extends BottomSheetDialogFragment {
             }
 
             @Override
-            public void afterTextChanged(Editable s) {
-            }
+            public void afterTextChanged(Editable s) {}
         });
     }
 
     private void loadCategories() {
         BudgetRepository repository = BudgetRepository.getInstance(requireContext());
-        allCategories = repository.getExpenseCategories(null);
+        TokenStorage tokenStorage = EncryptedTokenStorage.getInstance(requireContext());
+        String userId = tokenStorage.getUserId();
         
-        if (allCategories.isEmpty()) {
-            rvCategories.setVisibility(View.GONE);
-            layoutEmpty.setVisibility(View.VISIBLE);
-        } else {
-            rvCategories.setVisibility(View.VISIBLE);
-            layoutEmpty.setVisibility(View.GONE);
-            adapter.setCategories(allCategories);
-        }
+        allCategories = repository.getExpenseCategories(userId);
+
+        updateUIBasedOnData(allCategories);
     }
 
     private void filterCategories(String query) {
-        if (query.isEmpty()) {
+        if (query == null || query.trim().isEmpty()) {
             adapter.setCategories(allCategories);
             return;
         }
 
-        List<Category> filtered = new ArrayList<>();
-        String lowerQuery = query.toLowerCase();
-        for (Category category : allCategories) {
-            if (category.getName().toLowerCase().contains(lowerQuery)) {
-                filtered.add(category);
-            }
-        }
+        String lowerQuery = query.toLowerCase().trim();
+        List<Category> filtered = allCategories.stream()
+                .filter(category -> category.getName() != null && category.getName().toLowerCase().contains(lowerQuery))
+                .collect(Collectors.toList());
+                
         adapter.setCategories(filtered);
     }
 
-    /**
-     * Adapter for category selection list.
-     * Sử dụng icon thực tế từ drawable resources, giống như CategoryAdapter.
-     */
+    private void updateUIBasedOnData(List<Category> categories) {
+        boolean isEmpty = categories == null || categories.isEmpty();
+        
+        rvCategories.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+        layoutEmpty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        
+        if (!isEmpty) {
+            adapter.setCategories(categories);
+        }
+    }
+
+    // =========================================================================
+    // INNER CLASSES: Adapter & ViewHolder
+    // =========================================================================
+
     private static class CategorySelectAdapter extends RecyclerView.Adapter<CategorySelectAdapter.ViewHolder> {
 
         private List<Category> categories = new ArrayList<>();
@@ -168,8 +172,7 @@ public class SelectCategoryBottomSheet extends BottomSheetDialogFragment {
         @NonNull
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_category_select, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_category_select, parent, false);
             return new ViewHolder(view);
         }
 
@@ -180,7 +183,7 @@ public class SelectCategoryBottomSheet extends BottomSheetDialogFragment {
 
         @Override
         public int getItemCount() {
-            return categories.size();
+            return categories != null ? categories.size() : 0;
         }
 
         static class ViewHolder extends RecyclerView.ViewHolder {
@@ -197,23 +200,8 @@ public class SelectCategoryBottomSheet extends BottomSheetDialogFragment {
 
             void bind(Category category, OnCategoryClickListener listener) {
                 tvCategoryName.setText(category.getName());
-
-                // Hiển thị icon thực tế từ drawable resources
-                // Đồng bộ với cách CategoryAdapter hiển thị icon
-                if (category.getIconName() != null && !category.getIconName().isEmpty()) {
-                    int resId = itemView.getContext().getResources().getIdentifier(
-                            category.getIconName(), "drawable", itemView.getContext().getPackageName());
-                    if (resId != 0) {
-                        imgCategoryIcon.setImageResource(resId);
-                    } else {
-                        // Fallback icon nếu không tìm thấy
-                        imgCategoryIcon.setImageResource(R.drawable.ic_food);
-                    }
-                } else {
-                    // Default fallback icon
-                    imgCategoryIcon.setImageResource(R.drawable.ic_food);
-                }
-
+                loadIconResource(category.getIconName());
+                
                 ivSelected.setVisibility(View.GONE);
 
                 itemView.setOnClickListener(v -> {
@@ -221,6 +209,20 @@ public class SelectCategoryBottomSheet extends BottomSheetDialogFragment {
                         listener.onClick(category);
                     }
                 });
+            }
+
+            private void loadIconResource(String iconName) {
+                int defaultIcon = R.drawable.ic_food;
+
+                if (iconName == null || iconName.trim().isEmpty()) {
+                    imgCategoryIcon.setImageResource(defaultIcon);
+                    return;
+                }
+
+                int resId = itemView.getContext().getResources().getIdentifier(
+                        iconName, "drawable", itemView.getContext().getPackageName());
+
+                imgCategoryIcon.setImageResource(resId != 0 ? resId : defaultIcon);
             }
         }
     }

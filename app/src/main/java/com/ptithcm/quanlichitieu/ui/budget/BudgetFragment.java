@@ -136,6 +136,13 @@ public class BudgetFragment extends Fragment {
             }
         });
         
+        viewModel.getOperationResult().observe(getViewLifecycleOwner(), result -> {
+            if (result != null) {
+                Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
+                viewModel.clearOperationResult();
+            }
+        });
+        
         // Observe budget update events từ EventBus
         // Tuân thủ Dependency Inversion Principle: phụ thuộc vào abstraction (LiveData/EventBus)
         // không phụ thuộc vào concrete implementation của AddTransactionFragment

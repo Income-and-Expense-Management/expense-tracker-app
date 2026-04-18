@@ -64,6 +64,11 @@ public class CategoryDao {
         }
         values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
         values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
+        if (category.getDeletedAt() != null) {
+            values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt());
+        } else {
+            values.putNull(CategoryEntry.COLUMN_DELETED_AT);
+        }
 
         try {
             long result = db.insertOrThrow(CategoryEntry.TABLE_NAME, null, values);
@@ -126,12 +131,12 @@ public class CategoryDao {
         String[] selectionArgs;
 
         if (userId == null) {
-            selection = CategoryEntry.COLUMN_TYPE + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NULL";
+            selection = CategoryEntry.COLUMN_TYPE + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ type.getValue() };
         } else {
             selection = CategoryEntry.COLUMN_TYPE + " = ? AND (" +
                     CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
-                    CategoryEntry.COLUMN_USER_ID + " = ?)";
+                    CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ type.getValue(), userId };
         }
 
@@ -174,7 +179,7 @@ public class CategoryDao {
             cursor = db.query(
                     CategoryEntry.TABLE_NAME,
                     null,
-                    CategoryEntry.COLUMN_USER_ID + " IS NULL",
+                    CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL",
                     null,
                     null, null,
                     CategoryEntry.COLUMN_TYPE + ", " + CategoryEntry.COLUMN_NAME + " ASC"
@@ -213,7 +218,7 @@ public class CategoryDao {
             cursor = db.query(
                     CategoryEntry.TABLE_NAME,
                     null,
-                    CategoryEntry.COLUMN_USER_ID + " = ?",
+                    CategoryEntry.COLUMN_USER_ID + " = ? AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL",
                     new String[]{userId},
                     null, null,
                     CategoryEntry.COLUMN_TYPE + ", " + CategoryEntry.COLUMN_NAME + " ASC"
@@ -247,11 +252,11 @@ public class CategoryDao {
         String[] selectionArgs;
 
         if (userId == null) {
-            selection = CategoryEntry.COLUMN_USER_ID + " IS NULL";
+            selection = CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = null;
         } else {
             selection = "(" + CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
-                    CategoryEntry.COLUMN_USER_ID + " = ?)";
+                    CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ userId };
         }
 
@@ -295,11 +300,11 @@ public class CategoryDao {
         String[] selectionArgs;
 
         if (userId == null) {
-            selection = CategoryEntry.COLUMN_USER_ID + " IS NULL";
+            selection = CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = null;
         } else {
             selection = "(" + CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
-                    CategoryEntry.COLUMN_USER_ID + " = ?)";
+                    CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ userId };
         }
 
@@ -352,6 +357,11 @@ public class CategoryDao {
             }
             values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
             values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
+            if (category.getDeletedAt() != null) {
+                values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt());
+            } else {
+                values.putNull(CategoryEntry.COLUMN_DELETED_AT);
+            }
         }
 
         return db.update(
@@ -376,7 +386,7 @@ public class CategoryDao {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         return db.delete(
                 CategoryEntry.TABLE_NAME,
-                CategoryEntry.COLUMN_ID + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NOT NULL",
+                CategoryEntry.COLUMN_ID + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NOT NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL",
                 new String[]{categoryId}
         );
     }
@@ -405,6 +415,7 @@ public class CategoryDao {
                 .setType(type)
                 .setIconName(CursorUtils.getString(cursor, CategoryEntry.COLUMN_ICON_NAME))
                 .setIsActive(isActiveInt == 1)
+                .setDeletedAt(CursorUtils.getLong(cursor, CategoryEntry.COLUMN_DELETED_AT) == 0 ? null : CursorUtils.getLong(cursor, CategoryEntry.COLUMN_DELETED_AT))
                 .build();
     }
 

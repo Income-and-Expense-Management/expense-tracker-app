@@ -10,6 +10,8 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.ptithcm.quanlichitieu.data.local.DatabaseManager;
 import com.ptithcm.quanlichitieu.data.local.dao.WalletDao;
+import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
+import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
 
 import java.util.List;
@@ -32,7 +34,9 @@ public class WalletViewModel extends AndroidViewModel {
     public WalletViewModel(@NonNull Application application) {
         super(application);
         this.walletDao = DatabaseManager.getInstance(application).getWalletDao();
-        this.currentUserId = null;
+        
+        TokenStorage tokenStorage = EncryptedTokenStorage.getInstance(application);
+        this.currentUserId = tokenStorage.getUserId();
     }
 
     /**
@@ -45,6 +49,10 @@ public class WalletViewModel extends AndroidViewModel {
     @Nullable
     private String userIdOrNull() {
         return (currentUserId == null || currentUserId.trim().isEmpty()) ? null : currentUserId;
+    }
+
+    private String getUserIdOrDefault() {
+        return (currentUserId != null && !currentUserId.trim().isEmpty()) ? currentUserId : null;
     }
 
     private List<Wallet> getWalletsForCurrentUserOrLegacyFallback() {
@@ -83,11 +91,16 @@ public class WalletViewModel extends AndroidViewModel {
             return;
         }
 
+        android.content.SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
+        String savedWalletId = prefs.getString("active_wallet_id_" + getUserIdOrDefault(), null);
+
         Wallet active = null;
-        for (Wallet w : walletList) {
-            if (w.isActive()) {
-                active = w;
-                break;
+        if (savedWalletId != null) {
+            for (Wallet w : walletList) {
+                if (w.getId().equals(savedWalletId)) {
+                    active = w;
+                    break;
+                }
             }
         }
 
@@ -105,11 +118,9 @@ public class WalletViewModel extends AndroidViewModel {
     public void selectWallet(Wallet wallet) {
         if (wallet == null) return;
 
-        String userId = userIdOrNull();
-        // If wallet belongs to legacy NULL user, keep operating on NULL user group
-        if (wallet.getUserId() == null) userId = null;
+        android.content.SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
+        prefs.edit().putString("active_wallet_id_" + getUserIdOrDefault(), wallet.getId()).apply();
 
-        walletDao.setActiveWallet(wallet.getId(), userId);
         selectedWallet.setValue(wallet);
         loadAllWallets();
     }
@@ -128,14 +139,13 @@ public class WalletViewModel extends AndroidViewModel {
         try {
             long balance = Long.parseLong(balanceStr.trim().replace(",", "").replace(".", ""));
 
-            String userId = userIdOrNull();
+            String userId = getUserIdOrDefault();
             Wallet wallet = new Wallet.Builder()
                     .setUserId(userId)
                     .setName(name.trim())
                     .setInitialBalance(balance)
                     .setCurrency("VND")
                     .setIconId(iconId)
-                    .setIsActive(wallets.getValue() == null || wallets.getValue().isEmpty())
                     .build();
 
             String walletId = walletDao.insert(wallet);
@@ -143,7 +153,8 @@ public class WalletViewModel extends AndroidViewModel {
             if (walletId != null) {
                 saveResult.setValue(new SaveResult(true, "Thêm ví thành công"));
                 loadAllWallets();
-                if (wallet.isActive()) selectedWallet.setValue(wallet);
+                boolean isFirstWallet = wallets.getValue() == null || wallets.getValue().isEmpty();
+                if (isFirstWallet) selectWallet(wallet);
             } else {
                 saveResult.setValue(new SaveResult(false, "Lỗi khi lưu ví"));
             }

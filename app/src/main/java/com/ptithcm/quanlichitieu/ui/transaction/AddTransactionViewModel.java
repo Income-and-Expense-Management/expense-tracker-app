@@ -21,6 +21,8 @@ import com.ptithcm.quanlichitieu.event.EventBus;
 
 import java.util.ArrayList;
 import java.util.List;
+import android.content.Context;
+import android.content.SharedPreferences;
 
 public class AddTransactionViewModel extends AndroidViewModel {
 
@@ -82,10 +84,15 @@ public class AddTransactionViewModel extends AndroidViewModel {
     public void loadActiveWallet() {
         List<Wallet> wallets = walletDao.getByUserId(null);
         if (wallets != null && !wallets.isEmpty()) {
-            for (Wallet w : wallets) {
-                if (w.isActive()) {
-                    selectedWallet.setValue(w);
-                    return;
+            SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+            String savedWalletId = prefs.getString("active_wallet_id_" + null, null);
+            
+            if (savedWalletId != null) {
+                for (Wallet w : wallets) {
+                    if (w.getId().equals(savedWalletId)) {
+                        selectedWallet.setValue(w);
+                        return;
+                    }
                 }
             }
             selectedWallet.setValue(wallets.get(0));
@@ -154,9 +161,7 @@ public class AddTransactionViewModel extends AndroidViewModel {
                 .setWalletId(wallet.getId())
                 .setCategoryId(category.getId())
                 .setAmount(amount)
-                .setType(type)
                 .setTransactionDate(date)
-                .setIconId(category.getIconName())
                 .setNote(note != null ? note.trim() : null)
                 .build();
 

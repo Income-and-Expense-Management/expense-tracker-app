@@ -17,31 +17,15 @@ import com.ptithcm.quanlichitieu.data.model.Budget;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * BudgetDao - Data Access Object cho bảng budgets.
- * 
- * Chịu trách nhiệm duy nhất: CRUD operations cho Budget entity.
- * Tuân thủ Single Responsibility Principle (SRP).
- */
 public class BudgetDao {
 
     private static final String TAG = "BudgetDao";
-
     private final BudgetDatabaseHelper dbHelper;
 
     public BudgetDao(@NonNull BudgetDatabaseHelper dbHelper) {
         this.dbHelper = dbHelper;
     }
 
-    // ==================== CREATE ====================
-
-    /**
-     * Thêm Budget mới vào database.
-     * Tự động tạo UUID nếu chưa có.
-     * 
-     * @param budget Budget object cần thêm
-     * @return ID của budget mới, hoặc null nếu thất bại
-     */
     @Nullable
     public String insert(@NonNull Budget budget) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -57,6 +41,12 @@ public class BudgetDao {
         values.put(BudgetEntry.COLUMN_TARGET_AMOUNT, budget.getTargetAmount());
         values.put(BudgetEntry.COLUMN_START_DATE, budget.getStartDate());
         values.put(BudgetEntry.COLUMN_END_DATE, budget.getEndDate());
+        
+        long now = IdGenerator.getCurrentTimestamp();
+        values.put(BudgetEntry.COLUMN_CREATED_AT, budget.getCreatedAt() == 0 ? now : budget.getCreatedAt());
+        values.put(BudgetEntry.COLUMN_UPDATED_AT, budget.getUpdatedAt() == 0 ? now : budget.getUpdatedAt());
+        if (budget.getDeletedAt() != null) values.put(BudgetEntry.COLUMN_DELETED_AT, budget.getDeletedAt());
+        else values.putNull(BudgetEntry.COLUMN_DELETED_AT);
 
         long result = db.insert(BudgetEntry.TABLE_NAME, null, values);
 
@@ -69,25 +59,16 @@ public class BudgetDao {
         return budget.getId();
     }
 
-    // ==================== READ ====================
-
-    /**
-     * Lấy Budget theo ID.
-     * 
-     * @param budgetId ID của budget cần tìm
-     * @return Budget object, hoặc null nếu không tìm thấy
-     */
     @Nullable
     public Budget getById(@NonNull String budgetId) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Budget budget = null;
-
         Cursor cursor = null;
         try {
             cursor = db.query(
                     BudgetEntry.TABLE_NAME,
                     null,
-                    BudgetEntry.COLUMN_ID + " = ?",
+                    BudgetEntry.COLUMN_ID + " = ? AND " + BudgetEntry.COLUMN_DELETED_AT + " IS NULL",
                     new String[]{budgetId},
                     null, null, null
             );
@@ -96,30 +77,21 @@ public class BudgetDao {
                 budget = cursorToBudget(cursor);
             }
         } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+            if (cursor != null) cursor.close();
         }
 
         return budget;
     }
 
-    /**
-     * Lấy tất cả Budget của một Wallet.
-     * 
-     * @param walletId ID của wallet
-     * @return Danh sách Budget của wallet
-     */
     public List<Budget> getByWalletId(@NonNull String walletId) {
         List<Budget> budgets = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-
         Cursor cursor = null;
         try {
             cursor = db.query(
                     BudgetEntry.TABLE_NAME,
                     null,
-                    BudgetEntry.COLUMN_WALLET_ID + " = ?",
+                    BudgetEntry.COLUMN_WALLET_ID + " = ? AND " + BudgetEntry.COLUMN_DELETED_AT + " IS NULL",
                     new String[]{walletId},
                     null, null,
                     BudgetEntry.COLUMN_START_DATE + " DESC"
@@ -131,30 +103,21 @@ public class BudgetDao {
                 } while (cursor.moveToNext());
             }
         } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+            if (cursor != null) cursor.close();
         }
 
         return budgets;
     }
 
-    /**
-     * Lấy Budget theo category.
-     * 
-     * @param categoryId ID của category
-     * @return Danh sách Budget theo category
-     */
     public List<Budget> getByCategoryId(@NonNull String categoryId) {
         List<Budget> budgets = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-
         Cursor cursor = null;
         try {
             cursor = db.query(
                     BudgetEntry.TABLE_NAME,
                     null,
-                    BudgetEntry.COLUMN_CATEGORY_ID + " = ?",
+                    BudgetEntry.COLUMN_CATEGORY_ID + " = ? AND " + BudgetEntry.COLUMN_DELETED_AT + " IS NULL",
                     new String[]{categoryId},
                     null, null,
                     BudgetEntry.COLUMN_START_DATE + " DESC"
@@ -166,25 +129,15 @@ public class BudgetDao {
                 } while (cursor.moveToNext());
             }
         } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+            if (cursor != null) cursor.close();
         }
 
         return budgets;
     }
 
-    /**
-     * Lấy các Budget đang active (trong khoảng thời gian hiện tại).
-     * 
-     * @param walletId ID của wallet
-     * @param currentDate Ngày hiện tại (timestamp)
-     * @return Danh sách Budget đang active
-     */
     public List<Budget> getActiveBudgets(@NonNull String walletId, long currentDate) {
         List<Budget> budgets = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-
         Cursor cursor = null;
         try {
             cursor = db.query(
@@ -192,7 +145,8 @@ public class BudgetDao {
                     null,
                     BudgetEntry.COLUMN_WALLET_ID + " = ? AND " +
                             BudgetEntry.COLUMN_START_DATE + " <= ? AND " +
-                            BudgetEntry.COLUMN_END_DATE + " >= ?",
+                            BudgetEntry.COLUMN_END_DATE + " >= ? AND " + 
+                            BudgetEntry.COLUMN_DELETED_AT + " IS NULL",
                     new String[]{walletId, String.valueOf(currentDate), String.valueOf(currentDate)},
                     null, null,
                     BudgetEntry.COLUMN_START_DATE + " DESC"
@@ -204,58 +158,38 @@ public class BudgetDao {
                 } while (cursor.moveToNext());
             }
         } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+            if (cursor != null) cursor.close();
         }
 
         return budgets;
     }
 
-    /**
-     * Lấy Budget theo wallet và category.
-     * 
-     * @param walletId ID của wallet
-     * @param categoryId ID của category
-     * @return Budget object, hoặc null nếu không tìm thấy
-     */
     @Nullable
     public Budget getByWalletAndCategory(@NonNull String walletId, @NonNull String categoryId) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Budget budget = null;
-
         Cursor cursor = null;
         try {
             cursor = db.query(
                     BudgetEntry.TABLE_NAME,
                     null,
-                    BudgetEntry.COLUMN_WALLET_ID + " = ? AND " + BudgetEntry.COLUMN_CATEGORY_ID + " = ?",
+                    BudgetEntry.COLUMN_WALLET_ID + " = ? AND " + BudgetEntry.COLUMN_CATEGORY_ID + " = ? AND " + BudgetEntry.COLUMN_DELETED_AT + " IS NULL",
                     new String[]{walletId, categoryId},
                     null, null,
                     BudgetEntry.COLUMN_START_DATE + " DESC",
-                    "1" // LIMIT 1
+                    "1" 
             );
 
             if (cursor != null && cursor.moveToFirst()) {
                 budget = cursorToBudget(cursor);
             }
         } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+            if (cursor != null) cursor.close();
         }
 
         return budget;
     }
 
-    // ==================== UPDATE ====================
-
-    /**
-     * Cập nhật thông tin Budget.
-     * 
-     * @param budget Budget object với thông tin mới
-     * @return Số dòng bị ảnh hưởng
-     */
     public int update(@NonNull Budget budget) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
@@ -265,6 +199,9 @@ public class BudgetDao {
         values.put(BudgetEntry.COLUMN_TARGET_AMOUNT, budget.getTargetAmount());
         values.put(BudgetEntry.COLUMN_START_DATE, budget.getStartDate());
         values.put(BudgetEntry.COLUMN_END_DATE, budget.getEndDate());
+        values.put(BudgetEntry.COLUMN_UPDATED_AT, IdGenerator.getCurrentTimestamp());
+        if (budget.getDeletedAt() != null) values.put(BudgetEntry.COLUMN_DELETED_AT, budget.getDeletedAt());
+        else values.putNull(BudgetEntry.COLUMN_DELETED_AT);
 
         int rowsAffected = db.update(
                 BudgetEntry.TABLE_NAME,
@@ -273,47 +210,23 @@ public class BudgetDao {
                 new String[]{budget.getId()}
         );
 
-        Log.d(TAG, "Updated budget " + budget.getId() + ", rows affected: " + rowsAffected);
         return rowsAffected;
     }
 
-    // ==================== DELETE ====================
-
-    /**
-     * Xóa Budget theo ID.
-     * 
-     * @param budgetId ID của budget cần xóa
-     * @return Số dòng bị xóa
-     */
     public int delete(@NonNull String budgetId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        return db.delete(
-                BudgetEntry.TABLE_NAME,
-                BudgetEntry.COLUMN_ID + " = ?",
-                new String[]{budgetId}
-        );
+        ContentValues values = new ContentValues();
+        values.put(BudgetEntry.COLUMN_DELETED_AT, IdGenerator.getCurrentTimestamp());
+        return db.update(BudgetEntry.TABLE_NAME, values, BudgetEntry.COLUMN_ID + " = ?", new String[]{budgetId});
     }
 
-    /**
-     * Xóa tất cả budgets của một wallet.
-     * 
-     * @param walletId ID của wallet
-     * @return Số dòng bị xóa
-     */
     public int deleteByWalletId(@NonNull String walletId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        return db.delete(
-                BudgetEntry.TABLE_NAME,
-                BudgetEntry.COLUMN_WALLET_ID + " = ?",
-                new String[]{walletId}
-        );
+        ContentValues values = new ContentValues();
+        values.put(BudgetEntry.COLUMN_DELETED_AT, IdGenerator.getCurrentTimestamp());
+        return db.update(BudgetEntry.TABLE_NAME, values, BudgetEntry.COLUMN_WALLET_ID + " = ?", new String[]{walletId});
     }
 
-    // ==================== CURSOR MAPPING ====================
-
-    /**
-     * Parse Cursor thành Budget object.
-     */
     private Budget cursorToBudget(Cursor cursor) {
         return new Budget.Builder()
                 .setId(CursorUtils.getString(cursor, BudgetEntry.COLUMN_ID))
@@ -322,6 +235,9 @@ public class BudgetDao {
                 .setTargetAmount(CursorUtils.getLong(cursor, BudgetEntry.COLUMN_TARGET_AMOUNT))
                 .setStartDate(CursorUtils.getLong(cursor, BudgetEntry.COLUMN_START_DATE))
                 .setEndDate(CursorUtils.getLong(cursor, BudgetEntry.COLUMN_END_DATE))
+                .setCreatedAt(CursorUtils.getLong(cursor, BudgetEntry.COLUMN_CREATED_AT))
+                .setUpdatedAt(CursorUtils.getLong(cursor, BudgetEntry.COLUMN_UPDATED_AT))
+                .setDeletedAt(CursorUtils.getLong(cursor, BudgetEntry.COLUMN_DELETED_AT) == 0 ? null : CursorUtils.getLong(cursor, BudgetEntry.COLUMN_DELETED_AT))
                 .build();
     }
 }

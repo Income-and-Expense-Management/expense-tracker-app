@@ -14,7 +14,7 @@ public final class DatabaseContract {
 
     // Thông tin chung về database
     public static final String DATABASE_NAME = "quanlichitieu.db";
-    public static final int DATABASE_VERSION = 2; // Updated to 2
+    public static final int DATABASE_VERSION = 4; // Bumping to force drop & create
 
     // Private constructor để ngăn việc khởi tạo
     private DatabaseContract() {
@@ -29,7 +29,9 @@ public final class DatabaseContract {
         public static final String COLUMN_EMAIL = "email";
         public static final String COLUMN_AVATAR_URL = "avatar_url";
         public static final String COLUMN_AUTH_PROVIDER = "auth_provider";
+        public static final String COLUMN_PASSWORD = "password";
         public static final String COLUMN_CREATED_AT = "created_at";
+        public static final String COLUMN_UPDATED_AT = "updated_at";
 
         public static final String SQL_CREATE_TABLE =
                 "CREATE TABLE " + TABLE_NAME + " (" +
@@ -38,14 +40,16 @@ public final class DatabaseContract {
                         COLUMN_EMAIL + " TEXT UNIQUE, " +
                         COLUMN_AVATAR_URL + " TEXT, " +
                         COLUMN_AUTH_PROVIDER + " TEXT, " +
-                        COLUMN_CREATED_AT + " INTEGER DEFAULT (strftime('%s','now') * 1000)" +
+                        COLUMN_PASSWORD + " TEXT, " +
+                        COLUMN_CREATED_AT + " INTEGER NOT NULL, " +
+                        COLUMN_UPDATED_AT + " INTEGER NOT NULL" +
                         ")";
 
         public static final String SQL_DROP_TABLE = 
                 "DROP TABLE IF EXISTS " + TABLE_NAME;
     }
 
-    // ================= BẢNG WALLETS =================
+    // ================= BNG WALLETS =================
     public static class WalletEntry implements BaseColumns {
         public static final String TABLE_NAME = "wallets";
         
@@ -57,26 +61,30 @@ public final class DatabaseContract {
         public static final String COLUMN_ICON_ID = "icon_id";
         public static final String COLUMN_CREATED_AT = "created_at";
         public static final String COLUMN_UPDATED_AT = "updated_at";
-        public static final String COLUMN_IS_ACTIVE = "is_active";
+        public static final String COLUMN_DELETED_AT = "deleted_at";
 
         public static final String SQL_CREATE_TABLE =
                 "CREATE TABLE " + TABLE_NAME + " (" +
                         COLUMN_ID + " TEXT PRIMARY KEY, " +
-                        COLUMN_USER_ID + " TEXT, " +
+                        COLUMN_USER_ID + " TEXT NOT NULL, " +
                         COLUMN_NAME + " TEXT NOT NULL, " +
                         COLUMN_INITIAL_BALANCE + " INTEGER DEFAULT 0, " +
                         COLUMN_CURRENCY + " TEXT DEFAULT 'VND', " +
                         COLUMN_ICON_ID + " TEXT, " +
                         COLUMN_CREATED_AT + " INTEGER NOT NULL, " +
                         COLUMN_UPDATED_AT + " INTEGER NOT NULL, " +
-                        COLUMN_IS_ACTIVE + " INTEGER DEFAULT 1" +
+                        COLUMN_DELETED_AT + " INTEGER" +
                         ")";
 
         public static final String SQL_DROP_TABLE = 
                 "DROP TABLE IF EXISTS " + TABLE_NAME;
+
+        public static final String SQL_CREATE_INDEX_USER =
+                "CREATE INDEX IF NOT EXISTS idx_wallets_user ON " +
+                TABLE_NAME + "(" + COLUMN_USER_ID + ")";
     }
 
-    // ================= BẢNG CATEGORIES =================
+    // ================= BNG CATEGORIES =================
     public static class CategoryEntry implements BaseColumns {
         public static final String TABLE_NAME = "categories";
         
@@ -86,11 +94,13 @@ public final class DatabaseContract {
         public static final String COLUMN_TYPE = "type";
         public static final String COLUMN_ICON_NAME = "icon_name";
         public static final String COLUMN_IS_ACTIVE = "is_active";
+        public static final String COLUMN_CREATED_AT = "created_at";
+        public static final String COLUMN_UPDATED_AT = "updated_at";
+        public static final String COLUMN_DELETED_AT = "deleted_at";
 
         // CHECK constraint cho type
         public static final String TYPE_INCOME = "INCOME";
         public static final String TYPE_EXPENSE = "EXPENSE";
-        public static final String TYPE_LOAN = "LOAN";
 
         public static final String SQL_CREATE_TABLE =
                 "CREATE TABLE " + TABLE_NAME + " (" +
@@ -98,16 +108,19 @@ public final class DatabaseContract {
                         COLUMN_USER_ID + " TEXT, " +
                         COLUMN_NAME + " TEXT NOT NULL, " +
                         COLUMN_TYPE + " TEXT CHECK(" + COLUMN_TYPE + " IN ('" + 
-                        TYPE_INCOME + "', '" + TYPE_EXPENSE + "', '" + TYPE_LOAN + "')), " +
+                        TYPE_INCOME + "', '" + TYPE_EXPENSE + "')), " +
                         COLUMN_ICON_NAME + " TEXT, " +
-                        COLUMN_IS_ACTIVE + " INTEGER DEFAULT 1" +
+                        COLUMN_IS_ACTIVE + " INTEGER DEFAULT 1, " +
+                        COLUMN_CREATED_AT + " INTEGER NOT NULL, " +
+                        COLUMN_UPDATED_AT + " INTEGER NOT NULL, " +
+                        COLUMN_DELETED_AT + " INTEGER" +
                         ")";
 
         public static final String SQL_DROP_TABLE = 
                 "DROP TABLE IF EXISTS " + TABLE_NAME;
     }
 
-    // ================= BẢNG TRANSACTIONS =================
+    // ================= BNG TRANSACTIONS =================
     public static class TransactionEntry implements BaseColumns {
         public static final String TABLE_NAME = "transactions";
         
@@ -115,38 +128,30 @@ public final class DatabaseContract {
         public static final String COLUMN_WALLET_ID = "wallet_id";
         public static final String COLUMN_CATEGORY_ID = "category_id";
         public static final String COLUMN_AMOUNT = "amount";
-        public static final String COLUMN_TYPE = "type";
         public static final String COLUMN_TRANSACTION_DATE = "transaction_date";
-        public static final String COLUMN_ICON_ID = "icon_id";
         public static final String COLUMN_NOTE = "note";
         public static final String COLUMN_CREATED_AT = "created_at";
         public static final String COLUMN_UPDATED_AT = "updated_at";
-
-        // CHECK constraint cho type
-        public static final String TYPE_INCOME = "INCOME";
-        public static final String TYPE_EXPENSE = "EXPENSE";
-        public static final String TYPE_LOAN = "LOAN";
+        public static final String COLUMN_DELETED_AT = "deleted_at";
 
         public static final String SQL_CREATE_TABLE =
                 "CREATE TABLE " + TABLE_NAME + " (" +
                         COLUMN_ID + " TEXT PRIMARY KEY, " +
                         COLUMN_WALLET_ID + " TEXT NOT NULL, " +
-                        COLUMN_CATEGORY_ID + " TEXT, " +
+                        COLUMN_CATEGORY_ID + " TEXT NOT NULL, " +
                         COLUMN_AMOUNT + " INTEGER NOT NULL, " +
-                        COLUMN_TYPE + " TEXT CHECK(" + COLUMN_TYPE + " IN ('" + 
-                        TYPE_INCOME + "', '" + TYPE_EXPENSE + "', '" + TYPE_LOAN + "')), " +
-                        COLUMN_TRANSACTION_DATE + " INTEGER, " +
-                        COLUMN_ICON_ID + " TEXT, " +
+                        COLUMN_TRANSACTION_DATE + " INTEGER NOT NULL, " +
                         COLUMN_NOTE + " TEXT, " +
-                        COLUMN_CREATED_AT + " INTEGER DEFAULT (strftime('%s','now') * 1000), " +
-                        COLUMN_UPDATED_AT + " INTEGER DEFAULT (strftime('%s','now') * 1000)" +
+                        COLUMN_CREATED_AT + " INTEGER NOT NULL, " +
+                        COLUMN_UPDATED_AT + " INTEGER NOT NULL, " +
+                        COLUMN_DELETED_AT + " INTEGER" +
                         ")";
 
         public static final String SQL_DROP_TABLE = 
                 "DROP TABLE IF EXISTS " + TABLE_NAME;
 
-        // Index để tối ưu query theo wallet_id và category_id
-        public static final String SQL_CREATE_INDEX_WALLET = 
+        // Index
+        public static final String SQL_CREATE_INDEX_WALLET =
                 "CREATE INDEX IF NOT EXISTS idx_transactions_wallet ON " + 
                 TABLE_NAME + "(" + COLUMN_WALLET_ID + ")";
         
@@ -157,9 +162,13 @@ public final class DatabaseContract {
         public static final String SQL_CREATE_INDEX_DATE = 
                 "CREATE INDEX IF NOT EXISTS idx_transactions_date ON " + 
                 TABLE_NAME + "(" + COLUMN_TRANSACTION_DATE + ")";
+
+        public static final String SQL_CREATE_INDEX_SYNC =
+                "CREATE INDEX IF NOT EXISTS idx_transactions_sync ON " +
+                TABLE_NAME + "(" + COLUMN_UPDATED_AT + ")";
     }
 
-    // ================= BẢNG BUDGETS =================
+    // ================= BNG BUDGETS =================
     public static class BudgetEntry implements BaseColumns {
         public static final String TABLE_NAME = "budgets";
         
@@ -169,6 +178,9 @@ public final class DatabaseContract {
         public static final String COLUMN_TARGET_AMOUNT = "target_amount";
         public static final String COLUMN_START_DATE = "start_date";
         public static final String COLUMN_END_DATE = "end_date";
+        public static final String COLUMN_CREATED_AT = "created_at";
+        public static final String COLUMN_UPDATED_AT = "updated_at";
+        public static final String COLUMN_DELETED_AT = "deleted_at";
 
         public static final String SQL_CREATE_TABLE =
                 "CREATE TABLE " + TABLE_NAME + " (" +
@@ -177,10 +189,17 @@ public final class DatabaseContract {
                         COLUMN_CATEGORY_ID + " TEXT NOT NULL, " +
                         COLUMN_TARGET_AMOUNT + " INTEGER NOT NULL, " +
                         COLUMN_START_DATE + " INTEGER, " +
-                        COLUMN_END_DATE + " INTEGER" +
+                        COLUMN_END_DATE + " INTEGER, " +
+                        COLUMN_CREATED_AT + " INTEGER NOT NULL, " +
+                        COLUMN_UPDATED_AT + " INTEGER NOT NULL, " +
+                        COLUMN_DELETED_AT + " INTEGER" +
                         ")";
 
         public static final String SQL_DROP_TABLE = 
                 "DROP TABLE IF EXISTS " + TABLE_NAME;
+
+        public static final String SQL_CREATE_INDEX_WALLET =
+                "CREATE INDEX IF NOT EXISTS idx_budgets_wallet ON " +
+                TABLE_NAME + "(" + COLUMN_WALLET_ID + ")";
     }
 }

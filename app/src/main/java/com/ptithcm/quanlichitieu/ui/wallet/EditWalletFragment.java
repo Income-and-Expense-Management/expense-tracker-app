@@ -16,6 +16,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
+import com.ptithcm.quanlichitieu.ui.login.AuthViewModel;
 
 public class EditWalletFragment extends Fragment {
 
@@ -59,6 +60,8 @@ public class EditWalletFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         
         viewModel = new ViewModelProvider(requireActivity()).get(WalletViewModel.class);
+        AuthViewModel authViewModel = new ViewModelProvider(requireActivity()).get(AuthViewModel.class);
+        viewModel.setCurrentUserId(authViewModel.getUserId());
         
         initViews(view);
         loadWalletData();
