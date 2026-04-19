@@ -16,6 +16,8 @@ import com.ptithcm.quanlichitieu.data.model.Wallet;
 import com.ptithcm.quanlichitieu.data.repository.BudgetRepository;
 import com.ptithcm.quanlichitieu.ui.budget.model.BudgetItem;
 
+import android.content.SharedPreferences;
+
 import java.util.Calendar;
 import java.util.List;
 
@@ -107,7 +109,7 @@ public class BudgetViewModel extends AndroidViewModel {
         wallets.setValue(walletList);
 
         if (selectedWallet.getValue() == null && walletList != null && !walletList.isEmpty()) {
-            android.content.SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
+            SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
             // Chuẩn hóa key nhất quán với WalletViewModel và AddTransactionViewModel:
             // "active_wallet_id_" + userId (hoặc "default" khi chưa đăng nhập)
             String userKey = (currentUserId != null && !currentUserId.trim().isEmpty()) ? currentUserId : "default";

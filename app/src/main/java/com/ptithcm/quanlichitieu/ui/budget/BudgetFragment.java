@@ -48,6 +48,7 @@ public class BudgetFragment extends Fragment {
     private RecyclerView rvBudgetList;
     private LinearLayout llWalletSelector;
     private ImageView ivMenu;
+    private ImageView ivWalletIcon;
 
     private BudgetAdapter budgetAdapter;
     private BudgetViewModel viewModel;
@@ -77,6 +78,7 @@ public class BudgetFragment extends Fragment {
 
     private void initViews(View view) {
         tvWalletName = view.findViewById(R.id.tvWalletName);
+        ivWalletIcon = view.findViewById(R.id.ivWalletIcon);
         tvRemainingAmount = view.findViewById(R.id.tvRemainingAmount);
         tvTotalBudget = view.findViewById(R.id.tvTotalBudget);
         tvTotalSpent = view.findViewById(R.id.tvTotalSpent);
@@ -127,6 +129,18 @@ public class BudgetFragment extends Fragment {
         viewModel.getSelectedWallet().observe(getViewLifecycleOwner(), wallet -> {
             if (wallet != null) {
                 tvWalletName.setText(wallet.getName());
+                // Load and set wallet icon; fallback to default if not found
+                String iconId = wallet.getIconId();
+                if (iconId != null && !iconId.isEmpty()) {
+                    int resId = requireContext().getResources().getIdentifier(iconId, "drawable", requireContext().getPackageName());
+                    if (resId != 0) {
+                        ivWalletIcon.setImageResource(resId);
+                    } else {
+                        ivWalletIcon.setImageResource(R.drawable.ic_wallet);
+                    }
+                } else {
+                    ivWalletIcon.setImageResource(R.drawable.ic_wallet);
+                }
             }
         });
 
