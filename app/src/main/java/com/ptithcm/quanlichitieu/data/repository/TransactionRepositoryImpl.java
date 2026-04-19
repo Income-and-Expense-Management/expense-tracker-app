@@ -81,17 +81,8 @@ public class TransactionRepositoryImpl implements TransactionRepository {
                    ", startDate: " + startDate + 
                    ", endDate: " + endDate);
 
-        // Lấy danh sách giao dịch từ database
-        List<Transaction> transactions;
-        if (walletId != null) {
-            // Lấy theo wallet và date range với details (category name, wallet name)
-            transactions = transactionDao.getByDateRangeWithDetails(walletId, startDate, endDate);
-        } else {
-            // Nếu không có wallet, lấy tất cả (dùng getWithDetails với limit 0)
-            transactions = transactionDao.getWithDetails(null, 0);
-            // Filter theo date range manually
-            transactions = filterByDateRange(transactions, startDate, endDate);
-        }
+        // Lấy danh sách giao dịch từ database, filter trực tiếp qua DB query params
+        List<Transaction> transactions = transactionDao.getByDateRangeWithDetails(walletId, startDate, endDate);
 
         Log.d(TAG, "Fetched " + transactions.size() + " transactions from database");
 
@@ -100,15 +91,15 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     }
 
     @Override
-    public double getTotalExpense() {
+    public long getTotalExpense() {
         // Legacy method - trả về 0 hoặc implement logic lấy tất cả
-        return 0.0;
+        return 0L;
     }
 
     @Override
-    public double getTotalExpense(@Nullable String walletId, int monthOffset) {
+    public long getTotalExpense(@Nullable String walletId, int monthOffset) {
         if (walletId == null) {
-            return 0.0;
+            return 0L;
         }
 
         long startDate = DateUtils.getMonthStartTimestamp(monthOffset);
@@ -122,19 +113,19 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         );
 
         Log.d(TAG, "Total expense for wallet " + walletId + ": " + total);
-        return (double) total;
+        return total;
     }
 
     @Override
-    public double getTotalIncome() {
+    public long getTotalIncome() {
         // Legacy method - trả về 0 hoặc implement logic lấy tất cả
-        return 0.0;
+        return 0L;
     }
 
     @Override
-    public double getTotalIncome(@Nullable String walletId, int monthOffset) {
+    public long getTotalIncome(@Nullable String walletId, int monthOffset) {
         if (walletId == null) {
-            return 0.0;
+            return 0L;
         }
 
         long startDate = DateUtils.getMonthStartTimestamp(monthOffset);
@@ -148,14 +139,14 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         );
 
         Log.d(TAG, "Total income for wallet " + walletId + ": " + total);
-        return (double) total;
+        return total;
     }
 
     @Override
-    public double getTotalBalance() {
+    public long getTotalBalance() {
         // Legacy method - trả về 0
         // Balance được tính từ wallet.initialBalance + income - expense
-        return 0.0;
+        return 0L;
     }
 
     // ==================== PRIVATE HELPER METHODS ====================
@@ -205,7 +196,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
             String date = DateUtils.formatDate(timestamp);
             
             // Tính tổng tiền trong ngày (income - expense)
-            double dayTotal = calculateDayTotal(dayTransactions);
+            long dayTotal = calculateDayTotal(dayTransactions);
             
             // Tạo TransactionGroup
             TransactionGroup group = new TransactionGroup(dayOfWeek, date, dayTotal, dayTransactions);
@@ -223,8 +214,8 @@ public class TransactionRepositoryImpl implements TransactionRepository {
      * @param transactions Danh sách transaction trong ngày
      * @return Tổng tiền (dương = thu nhiều hơn chi, âm = chi nhiều hơn thu)
      */
-    private double calculateDayTotal(List<Transaction> transactions) {
-        double total = 0.0;
+    private long calculateDayTotal(List<Transaction> transactions) {
+        long total = 0L;
         
         for (Transaction transaction : transactions) {
             if (transaction.getType() == TransactionType.INCOME) {
@@ -239,24 +230,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     }
 
     /**
-     * Filter danh sách transaction theo khoảng thời gian.
-     * Dùng khi không có sẵn method filter trong DAO.
-     * 
-     * @param transactions Danh sách transaction gốc
-     * @param startDate Timestamp bắt đầu
-     * @param endDate Timestamp kết thúc
-     * @return Danh sách đã filter
+     * Helper method đã bị xóa do sử dụng DB filtering.
+     * private List<Transaction> filterByDateRange(...) {}
      */
-    private List<Transaction> filterByDateRange(List<Transaction> transactions, long startDate, long endDate) {
-        List<Transaction> filtered = new ArrayList<>();
-        
-        for (Transaction transaction : transactions) {
-            long txDate = transaction.getTransactionDate();
-            if (txDate >= startDate && txDate <= endDate) {
-                filtered.add(transaction);
-            }
-        }
-        
-        return filtered;
-    }
 }

@@ -153,4 +153,12 @@ public class WalletFragment extends Fragment {
                 .addToBackStack(null)
                 .commit();
     }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Reload danh sách ví khi quay lại màn hình (sau orientation change,
+        // sau khi popBackStack từ AddWalletFragment hoặc EditWalletFragment)
+        viewModel.loadAllWallets();
+    }
 }

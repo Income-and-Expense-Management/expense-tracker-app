@@ -201,13 +201,7 @@ public class BudgetRepository {
      */
     @Nullable
     public Wallet getWalletById(@NonNull String walletId) {
-        List<Wallet> wallets = walletDao.getByUserId(null);
-        for (Wallet wallet : wallets) {
-            if (wallet.getId().equals(walletId)) {
-                return wallet;
-            }
-        }
-        return null;
+        return walletDao.getWalletById(walletId);
     }
 
     /**

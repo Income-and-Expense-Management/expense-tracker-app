@@ -116,13 +116,13 @@ public class TransactionFragment extends Fragment {
         });
 
         viewModel.getTotalBalance().observe(getViewLifecycleOwner(), balance ->
-                tvTotalBalance.setText(String.format(Locale.getDefault(), "%,.0f đ", balance)));
+                tvTotalBalance.setText(String.format(Locale.getDefault(), "%,d đ", balance)));
 
         viewModel.getTotalExpense().observe(getViewLifecycleOwner(), expense ->
-                tvTotalExpense.setText(String.format(Locale.getDefault(), "%,.0f đ", expense)));
+                tvTotalExpense.setText(String.format(Locale.getDefault(), "%,d đ", expense)));
 
         viewModel.getTotalIncome().observe(getViewLifecycleOwner(), income ->
-                tvTotalIncome.setText(String.format(Locale.getDefault(), "%,.0f đ", income)));
+                tvTotalIncome.setText(String.format(Locale.getDefault(), "%,d đ", income)));
 
         viewModel.getTransactions().observe(getViewLifecycleOwner(), groups ->
                 transactionAdapter.setGroups(groups));

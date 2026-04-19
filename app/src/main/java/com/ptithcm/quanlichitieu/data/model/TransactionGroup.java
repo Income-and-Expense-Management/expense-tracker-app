@@ -6,10 +6,10 @@ public class TransactionGroup {
 
     private final String dayOfWeek;
     private final String date;
-    private final double dayTotal;
+    private final long dayTotal;
     private final List<Transaction> transactions;
 
-    public TransactionGroup(String dayOfWeek, String date, double dayTotal, List<Transaction> transactions) {
+    public TransactionGroup(String dayOfWeek, String date, long dayTotal, List<Transaction> transactions) {
         this.dayOfWeek = dayOfWeek;
         this.date = date;
         this.dayTotal = dayTotal;
@@ -18,6 +18,6 @@ public class TransactionGroup {
 
     public String getDayOfWeek() { return dayOfWeek; }
     public String getDate() { return date; }
-    public double getDayTotal() { return dayTotal; }
+    public long getDayTotal() { return dayTotal; }
     public List<Transaction> getTransactions() { return transactions; }
 }

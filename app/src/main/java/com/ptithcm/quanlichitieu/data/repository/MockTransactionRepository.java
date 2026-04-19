@@ -87,27 +87,27 @@ public class MockTransactionRepository implements TransactionRepository {
     }
 
     @Override
-    public double getTotalExpense() {
-        return 1200000;
+    public long getTotalExpense() {
+        return 1200000L;
     }
 
     @Override
-    public double getTotalExpense(@Nullable String walletId, int monthOffset) {
-        return 1200000;
+    public long getTotalExpense(@Nullable String walletId, int monthOffset) {
+        return 1200000L;
     }
 
     @Override
-    public double getTotalIncome() {
-        return 500000;
+    public long getTotalIncome() {
+        return 500000L;
     }
 
     @Override
-    public double getTotalIncome(@Nullable String walletId, int monthOffset) {
-        return 500000;
+    public long getTotalIncome(@Nullable String walletId, int monthOffset) {
+        return 500000L;
     }
 
     @Override
-    public double getTotalBalance() {
-        return 500000;
+    public long getTotalBalance() {
+        return 500000L;
     }
 }

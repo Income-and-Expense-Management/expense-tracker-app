@@ -62,10 +62,11 @@ public class EditWalletFragment extends Fragment {
         viewModel = new ViewModelProvider(requireActivity()).get(WalletViewModel.class);
         AuthViewModel authViewModel = new ViewModelProvider(requireActivity()).get(AuthViewModel.class);
         viewModel.setCurrentUserId(authViewModel.getUserId());
-        
+
         initViews(view);
-        loadWalletData();
         observeViewModel();
+        // Load wallet trực tiếp theo ID, không phụ thuộc vào getWallets().getValue()
+        viewModel.loadWalletById(walletId);
 
         getParentFragmentManager().setFragmentResultListener(
                 IconSelectionFragment.REQUEST_KEY_ICON,
@@ -89,16 +90,33 @@ public class EditWalletFragment extends Fragment {
     }
 
     private void observeViewModel() {
+        // Observe wallet được load theo ID để fill form
+        viewModel.getSingleWallet().observe(getViewLifecycleOwner(), wallet -> {
+            if (wallet != null) {
+                currentWallet = wallet;
+                fillForm(wallet);
+            }
+        });
+
         viewModel.getSaveResult().observe(getViewLifecycleOwner(), result -> {
             if (result != null) {
                 Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
                 if (result.isSuccess()) {
                     requireActivity().getSupportFragmentManager().popBackStack();
-                    // Reset save result so it doesn't trigger again on rotation
                     viewModel.clearSaveResult();
                 }
             }
         });
+    }
+
+    private void fillForm(Wallet wallet) {
+        etName.setText(wallet.getName());
+        etBalance.setText(String.valueOf(wallet.getInitialBalance()));
+        tvCurrency.setText(wallet.getCurrency().equals("VND") ? "Việt Nam Đồng" : wallet.getCurrency());
+        if (wallet.getIconId() != null && !wallet.getIconId().isEmpty()) {
+            selectedIconId = wallet.getIconId();
+            updateWalletIcon(selectedIconId);
+        }
     }
 
     private void initViews(View view) {
@@ -124,35 +142,14 @@ public class EditWalletFragment extends Fragment {
                 .setMessage("Bạn có chắc chắn muốn xóa ví \"" + currentWallet.getName() + "\" này không?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
                     viewModel.deleteWallet(currentWallet);
-                    Toast.makeText(requireContext(), "Đã xóa ví", Toast.LENGTH_SHORT).show();
-                    requireActivity().getSupportFragmentManager().popBackStack();
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
 
     private void loadWalletData() {
-        // In a real app, you'd get this from the ViewModel/Repo by ID
-        // For now, let's find it in the current list
-        if (viewModel.getWallets().getValue() != null) {
-            for (Wallet w : viewModel.getWallets().getValue()) {
-                if (w.getId().equals(walletId)) {
-                    currentWallet = w;
-                    break;
-                }
-            }
-        }
-
-        if (currentWallet != null) {
-            etName.setText(currentWallet.getName());
-            etBalance.setText(String.valueOf(currentWallet.getInitialBalance()));
-            tvCurrency.setText(currentWallet.getCurrency().equals("VND") ? "Việt Nam Đồng" : currentWallet.getCurrency());
-
-            if (currentWallet.getIconId() != null && !currentWallet.getIconId().isEmpty()) {
-                selectedIconId = currentWallet.getIconId();
-                updateWalletIcon(selectedIconId);
-            }
-        }
+        // Deprecated: đã chuyển sang loadWalletById() + observe getSingleWallet()
+        // Giữ lại method rỗng để không ảnh hưởng cấu trúc
     }
 
     private void openIconSelection() {

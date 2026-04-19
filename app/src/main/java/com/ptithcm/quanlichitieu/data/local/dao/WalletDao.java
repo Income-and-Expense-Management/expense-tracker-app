@@ -109,7 +109,15 @@ public class WalletDao {
 
     public int delete(@NonNull String walletId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        return db.delete(WalletEntry.TABLE_NAME, WalletEntry.COLUMN_ID + " = ?", new String[]{walletId});
+        // Soft delete: chỉ cập nhật deleted_at thay vì xóa vật lý
+        // Đảm bảo server nhận biết được bản ghi đã bị xóa khi sync
+        long now = IdGenerator.getCurrentTimestamp();
+        ContentValues values = new ContentValues();
+        values.put(WalletEntry.COLUMN_DELETED_AT, now);
+        values.put(WalletEntry.COLUMN_UPDATED_AT, now);
+        return db.update(WalletEntry.TABLE_NAME, values,
+                WalletEntry.COLUMN_ID + " = ? AND " + WalletEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{walletId});
     }
 
     public int update(@NonNull Wallet wallet) {

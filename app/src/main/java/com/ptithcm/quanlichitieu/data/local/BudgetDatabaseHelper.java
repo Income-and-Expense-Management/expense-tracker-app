@@ -102,7 +102,10 @@ public class BudgetDatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(TransactionEntry.SQL_CREATE_INDEX_WALLET);
         db.execSQL(TransactionEntry.SQL_CREATE_INDEX_CATEGORY);
         db.execSQL(TransactionEntry.SQL_CREATE_INDEX_DATE);
-        Log.d(TAG, "Created indexes for transactions table");
+        db.execSQL(TransactionEntry.SQL_CREATE_INDEX_SYNC);   // idx_transactions_sync (sync support)
+        db.execSQL(BudgetEntry.SQL_CREATE_INDEX_WALLET);      // idx_budgets_wallet
+        db.execSQL(WalletEntry.SQL_CREATE_INDEX_USER);        // idx_wallets_user
+        Log.d(TAG, "Created indexes for all tables");
 
         // Insert các danh mục mặc định của hệ thống
         insertDefaultCategories(db);

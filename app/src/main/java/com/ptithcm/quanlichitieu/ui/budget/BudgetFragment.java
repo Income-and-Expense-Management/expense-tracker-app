@@ -137,9 +137,8 @@ public class BudgetFragment extends Fragment {
         });
         
         viewModel.getOperationResult().observe(getViewLifecycleOwner(), result -> {
-            if (result != null) {
+            if (result != null && result.getAction() == BudgetViewModel.Action.DELETE && !result.hasBeenHandled()) {
                 Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
-                viewModel.clearOperationResult();
             }
         });
         
@@ -227,8 +226,9 @@ public class BudgetFragment extends Fragment {
                 .setTitle("Xóa ngân sách")
                 .setMessage("Bạn có chắc muốn xóa ngân sách \"" + item.getCategoryName() + "\"?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
+                    // deleteBudget() đã tự gọi refresh() bên trong khi thành công
+                    // Không cần gọi viewModel.refresh() thêm lần nữa
                     viewModel.deleteBudget(item.getId());
-                    viewModel.refresh();
                 })
                 .setNegativeButton("Hủy", null)
                 .show();

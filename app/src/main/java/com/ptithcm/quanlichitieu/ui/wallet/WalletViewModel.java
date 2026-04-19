@@ -22,6 +22,7 @@ public class WalletViewModel extends AndroidViewModel {
 
     private final MutableLiveData<List<Wallet>> wallets = new MutableLiveData<>();
     private final MutableLiveData<Wallet> selectedWallet = new MutableLiveData<>();
+    private final MutableLiveData<Wallet> singleWallet = new MutableLiveData<>();
     private final MutableLiveData<SaveResult> saveResult = new MutableLiveData<>();
 
     /**
@@ -46,13 +47,18 @@ public class WalletViewModel extends AndroidViewModel {
         this.currentUserId = (userId == null || userId.trim().isEmpty()) ? null : userId;
     }
 
+    /**
+     * Trả về userId cho SharedPrefs key.
+     * Luôn trả về chuỗi không null để key nhất quán giữa các ViewModel.
+     * Key format: "active_wallet_id_" + getUserIdForKey()
+     */
+    private String getUserIdForKey() {
+        return (currentUserId != null && !currentUserId.trim().isEmpty()) ? currentUserId : "default";
+    }
+
     @Nullable
     private String userIdOrNull() {
         return (currentUserId == null || currentUserId.trim().isEmpty()) ? null : currentUserId;
-    }
-
-    private String getUserIdOrDefault() {
-        return (currentUserId != null && !currentUserId.trim().isEmpty()) ? currentUserId : null;
     }
 
     private List<Wallet> getWalletsForCurrentUserOrLegacyFallback() {
@@ -77,6 +83,26 @@ public class WalletViewModel extends AndroidViewModel {
         return saveResult;
     }
 
+    /**
+     * LiveData chứa một wallet được load theo ID.
+     * Dùng cho EditWalletFragment để kông phụ thuộc vào getWallets() có thể null.
+     */
+    public LiveData<Wallet> getSingleWallet() {
+        return singleWallet;
+    }
+
+    /**
+     * Load wallet theo ID trực tiếp từ DB.
+     * Chạy trên background thread, post kết quả về singleWallet LiveData.
+     */
+    public void loadWalletById(String walletId) {
+        if (walletId == null) return;
+        new Thread(() -> {
+            Wallet wallet = walletDao.getWalletById(walletId);
+            singleWallet.postValue(wallet);
+        }).start();
+    }
+
     public void clearSaveResult() {
         saveResult.setValue(null);
     }
@@ -92,7 +118,7 @@ public class WalletViewModel extends AndroidViewModel {
         }
 
         android.content.SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
-        String savedWalletId = prefs.getString("active_wallet_id_" + getUserIdOrDefault(), null);
+        String savedWalletId = prefs.getString("active_wallet_id_" + getUserIdForKey(), null);
 
         Wallet active = null;
         if (savedWalletId != null) {
@@ -119,7 +145,7 @@ public class WalletViewModel extends AndroidViewModel {
         if (wallet == null) return;
 
         android.content.SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
-        prefs.edit().putString("active_wallet_id_" + getUserIdOrDefault(), wallet.getId()).apply();
+        prefs.edit().putString("active_wallet_id_" + getUserIdForKey(), wallet.getId()).apply();
 
         selectedWallet.setValue(wallet);
         loadAllWallets();
@@ -139,7 +165,7 @@ public class WalletViewModel extends AndroidViewModel {
         try {
             long balance = Long.parseLong(balanceStr.trim().replace(",", "").replace(".", ""));
 
-            String userId = getUserIdOrDefault();
+            String userId = userIdOrNull();
             Wallet wallet = new Wallet.Builder()
                     .setUserId(userId)
                     .setName(name.trim())

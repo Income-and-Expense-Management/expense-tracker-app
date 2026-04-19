@@ -114,7 +114,9 @@ public class CategoryViewModel extends AndroidViewModel {
             boolean success = repository.addCategory(category);
             addResult.postValue(success);
             if (success) {
-                loadCategories(userId); // reload
+                // Dùng loadCategoriesForManagement để reload đồng nhất với CategoryFragment:
+                // bao gồm cả system categories + user categories
+                loadCategoriesForManagement(userId);
             }
         }).start();
     }
@@ -124,7 +126,8 @@ public class CategoryViewModel extends AndroidViewModel {
             boolean success = repository.updateCategory(category);
             updateResult.postValue(success);
             if (success) {
-                loadCategories(userId); // reload
+                // Dùng loadCategoriesForManagement để reload đồng nhất với CategoryFragment
+                loadCategoriesForManagement(userId);
             }
         }).start();
     }
@@ -134,7 +137,8 @@ public class CategoryViewModel extends AndroidViewModel {
             boolean success = repository.deleteCategory(categoryId);
             deleteResult.postValue(success);
             if (success) {
-                loadCategories(userId); // reload
+                // Dùng loadCategoriesForManagement để reload đồng nhất với CategoryFragment
+                loadCategoriesForManagement(userId);
             }
         }).start();
     }

@@ -23,6 +23,27 @@ import java.util.List;
 public class TransactionDao {
 
     private static final String TAG = "TransactionDao";
+
+    private static final String BASE_JOIN_QUERY = "SELECT " +
+            "t." + TransactionEntry.COLUMN_ID + ", " +
+            "t." + TransactionEntry.COLUMN_WALLET_ID + ", " +
+            "t." + TransactionEntry.COLUMN_CATEGORY_ID + ", " +
+            "t." + TransactionEntry.COLUMN_AMOUNT + ", " +
+            "t." + TransactionEntry.COLUMN_TRANSACTION_DATE + ", " +
+            "t." + TransactionEntry.COLUMN_NOTE + ", " +
+            "t." + TransactionEntry.COLUMN_CREATED_AT + ", " +
+            "t." + TransactionEntry.COLUMN_UPDATED_AT + ", " +
+            "t." + TransactionEntry.COLUMN_DELETED_AT + ", " +
+            "c." + CategoryEntry.COLUMN_NAME + " AS category_name, " +
+            "c." + CategoryEntry.COLUMN_TYPE + " AS category_type, " +
+            "c." + CategoryEntry.COLUMN_ICON_NAME + " AS icon_name, " +
+            "w." + WalletEntry.COLUMN_NAME + " AS wallet_name " +
+            "FROM " + TransactionEntry.TABLE_NAME + " t " +
+            "LEFT JOIN " + CategoryEntry.TABLE_NAME + " c " +
+            "ON t." + TransactionEntry.COLUMN_CATEGORY_ID + " = c." + CategoryEntry.COLUMN_ID + " " +
+            "INNER JOIN " + WalletEntry.TABLE_NAME + " w " +
+            "ON t." + TransactionEntry.COLUMN_WALLET_ID + " = w." + WalletEntry.COLUMN_ID + " ";
+
     private final BudgetDatabaseHelper dbHelper;
 
     public TransactionDao(@NonNull BudgetDatabaseHelper dbHelper) {
@@ -79,25 +100,7 @@ public class TransactionDao {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Transaction transaction = null;
 
-        String query = "SELECT " +
-                "t." + TransactionEntry.COLUMN_ID + ", " +
-                "t." + TransactionEntry.COLUMN_WALLET_ID + ", " +
-                "t." + TransactionEntry.COLUMN_CATEGORY_ID + ", " +
-                "t." + TransactionEntry.COLUMN_AMOUNT + ", " +
-                "t." + TransactionEntry.COLUMN_TRANSACTION_DATE + ", " +
-                "t." + TransactionEntry.COLUMN_NOTE + ", " +
-                "t." + TransactionEntry.COLUMN_CREATED_AT + ", " +
-                "t." + TransactionEntry.COLUMN_UPDATED_AT + ", " +
-                "t." + TransactionEntry.COLUMN_DELETED_AT + ", " +
-                "c." + CategoryEntry.COLUMN_NAME + " AS category_name, " +
-                "c." + CategoryEntry.COLUMN_TYPE + " AS category_type, " +
-                "w." + WalletEntry.COLUMN_NAME + " AS wallet_name " +
-                "FROM " + TransactionEntry.TABLE_NAME + " t " +
-                "LEFT JOIN " + CategoryEntry.TABLE_NAME + " c " +
-                "ON t." + TransactionEntry.COLUMN_CATEGORY_ID + " = c." + CategoryEntry.COLUMN_ID + " " +
-                "INNER JOIN " + WalletEntry.TABLE_NAME + " w " +
-                "ON t." + TransactionEntry.COLUMN_WALLET_ID + " = w." + WalletEntry.COLUMN_ID + " " +
-                "WHERE t." + TransactionEntry.COLUMN_ID + " = ? AND t." + TransactionEntry.COLUMN_DELETED_AT + " IS NULL";
+        String query = BASE_JOIN_QUERY + "WHERE t." + TransactionEntry.COLUMN_ID + " = ? AND t." + TransactionEntry.COLUMN_DELETED_AT + " IS NULL";
 
         Cursor cursor = null;
         try {
@@ -117,25 +120,7 @@ public class TransactionDao {
         List<Transaction> transactions = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        String query = "SELECT " +
-                "t." + TransactionEntry.COLUMN_ID + ", " +
-                "t." + TransactionEntry.COLUMN_WALLET_ID + ", " +
-                "t." + TransactionEntry.COLUMN_CATEGORY_ID + ", " +
-                "t." + TransactionEntry.COLUMN_AMOUNT + ", " +
-                "t." + TransactionEntry.COLUMN_TRANSACTION_DATE + ", " +
-                "t." + TransactionEntry.COLUMN_NOTE + ", " +
-                "t." + TransactionEntry.COLUMN_CREATED_AT + ", " +
-                "t." + TransactionEntry.COLUMN_UPDATED_AT + ", " +
-                "t." + TransactionEntry.COLUMN_DELETED_AT + ", " +
-                "c." + CategoryEntry.COLUMN_NAME + " AS category_name, " +
-                "c." + CategoryEntry.COLUMN_TYPE + " AS category_type, " +
-                "w." + WalletEntry.COLUMN_NAME + " AS wallet_name " +
-                "FROM " + TransactionEntry.TABLE_NAME + " t " +
-                "LEFT JOIN " + CategoryEntry.TABLE_NAME + " c " +
-                "ON t." + TransactionEntry.COLUMN_CATEGORY_ID + " = c." + CategoryEntry.COLUMN_ID + " " +
-                "INNER JOIN " + WalletEntry.TABLE_NAME + " w " +
-                "ON t." + TransactionEntry.COLUMN_WALLET_ID + " = w." + WalletEntry.COLUMN_ID + " " +
-                "WHERE t." + TransactionEntry.COLUMN_DELETED_AT + " IS NULL";
+        String query = BASE_JOIN_QUERY + "WHERE t." + TransactionEntry.COLUMN_DELETED_AT + " IS NULL";
 
         List<String> argsList = new ArrayList<>();
         if (walletId != null) {
@@ -163,41 +148,33 @@ public class TransactionDao {
         return transactions;
     }
 
-    public List<Transaction> getByDateRange(@NonNull String walletId, long startDate, long endDate) {
+    public List<Transaction> getByDateRange(@Nullable String walletId, long startDate, long endDate) {
         return getByDateRangeWithDetails(walletId, startDate, endDate);
     }
 
-    public List<Transaction> getByDateRangeWithDetails(@NonNull String walletId, long startDate, long endDate) {
+    public List<Transaction> getByDateRangeWithDetails(@Nullable String walletId, long startDate, long endDate) {
         List<Transaction> transactions = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        String query = "SELECT " +
-                "t." + TransactionEntry.COLUMN_ID + ", " +
-                "t." + TransactionEntry.COLUMN_WALLET_ID + ", " +
-                "t." + TransactionEntry.COLUMN_CATEGORY_ID + ", " +
-                "t." + TransactionEntry.COLUMN_AMOUNT + ", " +
-                "t." + TransactionEntry.COLUMN_TRANSACTION_DATE + ", " +
-                "t." + TransactionEntry.COLUMN_NOTE + ", " +
-                "t." + TransactionEntry.COLUMN_CREATED_AT + ", " +
-                "t." + TransactionEntry.COLUMN_UPDATED_AT + ", " +
-                "t." + TransactionEntry.COLUMN_DELETED_AT + ", " +
-                "c." + CategoryEntry.COLUMN_NAME + " AS category_name, " +
-                "c." + CategoryEntry.COLUMN_TYPE + " AS category_type, " +
-                "w." + WalletEntry.COLUMN_NAME + " AS wallet_name " +
-                "FROM " + TransactionEntry.TABLE_NAME + " t " +
-                "LEFT JOIN " + CategoryEntry.TABLE_NAME + " c " +
-                "ON t." + TransactionEntry.COLUMN_CATEGORY_ID + " = c." + CategoryEntry.COLUMN_ID + " " +
-                "INNER JOIN " + WalletEntry.TABLE_NAME + " w " +
-                "ON t." + TransactionEntry.COLUMN_WALLET_ID + " = w." + WalletEntry.COLUMN_ID + " " +
-                "WHERE t." + TransactionEntry.COLUMN_WALLET_ID + " = ? " +
-                "AND t." + TransactionEntry.COLUMN_TRANSACTION_DATE + " >= ? " +
+        String query = BASE_JOIN_QUERY +
+                "WHERE t." + TransactionEntry.COLUMN_TRANSACTION_DATE + " >= ? " +
                 "AND t." + TransactionEntry.COLUMN_TRANSACTION_DATE + " <= ? " +
-                "AND t." + TransactionEntry.COLUMN_DELETED_AT + " IS NULL " +
-                "ORDER BY t." + TransactionEntry.COLUMN_TRANSACTION_DATE + " DESC";
+                "AND t." + TransactionEntry.COLUMN_DELETED_AT + " IS NULL ";
+
+        List<String> argsList = new ArrayList<>();
+        argsList.add(String.valueOf(startDate));
+        argsList.add(String.valueOf(endDate));
+
+        if (walletId != null) {
+            query += "AND t." + TransactionEntry.COLUMN_WALLET_ID + " = ? ";
+            argsList.add(walletId);
+        }
+
+        query += "ORDER BY t." + TransactionEntry.COLUMN_TRANSACTION_DATE + " DESC";
 
         Cursor cursor = null;
         try {
-            cursor = db.rawQuery(query, new String[]{walletId, String.valueOf(startDate), String.valueOf(endDate)});
+            cursor = db.rawQuery(query, argsList.toArray(new String[0]));
             if (cursor != null && cursor.moveToFirst()) {
                 do {
                     transactions.add(cursorToTransactionWithDetails(cursor));
@@ -213,24 +190,7 @@ public class TransactionDao {
         List<Transaction> transactions = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        String query = "SELECT " +
-                "t." + TransactionEntry.COLUMN_ID + ", " +
-                "t." + TransactionEntry.COLUMN_WALLET_ID + ", " +
-                "t." + TransactionEntry.COLUMN_CATEGORY_ID + ", " +
-                "t." + TransactionEntry.COLUMN_AMOUNT + ", " +
-                "t." + TransactionEntry.COLUMN_TRANSACTION_DATE + ", " +
-                "t." + TransactionEntry.COLUMN_NOTE + ", " +
-                "t." + TransactionEntry.COLUMN_CREATED_AT + ", " +
-                "t." + TransactionEntry.COLUMN_UPDATED_AT + ", " +
-                "t." + TransactionEntry.COLUMN_DELETED_AT + ", " +
-                "c." + CategoryEntry.COLUMN_NAME + " AS category_name, " +
-                "c." + CategoryEntry.COLUMN_TYPE + " AS category_type, " +
-                "w." + WalletEntry.COLUMN_NAME + " AS wallet_name " +
-                "FROM " + TransactionEntry.TABLE_NAME + " t " +
-                "LEFT JOIN " + CategoryEntry.TABLE_NAME + " c " +
-                "ON t." + TransactionEntry.COLUMN_CATEGORY_ID + " = c." + CategoryEntry.COLUMN_ID + " " +
-                "INNER JOIN " + WalletEntry.TABLE_NAME + " w " +
-                "ON t." + TransactionEntry.COLUMN_WALLET_ID + " = w." + WalletEntry.COLUMN_ID + " " +
+        String query = BASE_JOIN_QUERY +
                 "WHERE t." + TransactionEntry.COLUMN_CATEGORY_ID + " = ? " +
                 "AND t." + TransactionEntry.COLUMN_DELETED_AT + " IS NULL " +
                 "ORDER BY t." + TransactionEntry.COLUMN_TRANSACTION_DATE + " DESC";
@@ -366,6 +326,7 @@ public class TransactionDao {
                 .setDeletedAt(CursorUtils.getLong(cursor, TransactionEntry.COLUMN_DELETED_AT) == 0 ? null : CursorUtils.getLong(cursor, TransactionEntry.COLUMN_DELETED_AT))
                 .setCategoryName(CursorUtils.getString(cursor, "category_name"))
                 .setCategoryType(type)
+                .setIconId(CursorUtils.getString(cursor, "icon_name"))
                 .setWalletName(CursorUtils.getString(cursor, "wallet_name"))
                 .build();
     }

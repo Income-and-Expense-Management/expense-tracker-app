@@ -14,7 +14,7 @@ public final class DatabaseContract {
 
     // Thông tin chung về database
     public static final String DATABASE_NAME = "quanlichitieu.db";
-    public static final int DATABASE_VERSION = 4; // Bumping to force drop & create
+    public static final int DATABASE_VERSION = 5; // Phase 2: category_id nullable + missing indexes
 
     // Private constructor để ngăn việc khởi tạo
     private DatabaseContract() {
@@ -138,7 +138,9 @@ public final class DatabaseContract {
                 "CREATE TABLE " + TABLE_NAME + " (" +
                         COLUMN_ID + " TEXT PRIMARY KEY, " +
                         COLUMN_WALLET_ID + " TEXT NOT NULL, " +
-                        COLUMN_CATEGORY_ID + " TEXT NOT NULL, " +
+                        // category_id nullable: cho phép ON DELETE SET NULL khi category bị xóa
+                        // Đồng nhất với database_sql.sql trên server
+                        COLUMN_CATEGORY_ID + " TEXT, " +
                         COLUMN_AMOUNT + " INTEGER NOT NULL, " +
                         COLUMN_TRANSACTION_DATE + " INTEGER NOT NULL, " +
                         COLUMN_NOTE + " TEXT, " +

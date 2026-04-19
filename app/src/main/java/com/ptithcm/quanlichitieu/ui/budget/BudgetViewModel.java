@@ -108,9 +108,11 @@ public class BudgetViewModel extends AndroidViewModel {
 
         if (selectedWallet.getValue() == null && walletList != null && !walletList.isEmpty()) {
             android.content.SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
-            String userIdKey = (currentUserId == null || currentUserId.trim().isEmpty()) ? "default_user_id" : currentUserId;
-            String savedWalletId = prefs.getString("active_wallet_id_" + userIdKey, null);
-            
+            // Chuẩn hóa key nhất quán với WalletViewModel và AddTransactionViewModel:
+            // "active_wallet_id_" + userId (hoặc "default" khi chưa đăng nhập)
+            String userKey = (currentUserId != null && !currentUserId.trim().isEmpty()) ? currentUserId : "default";
+            String savedWalletId = prefs.getString("active_wallet_id_" + userKey, null);
+
             Wallet activeWallet = null;
             if (savedWalletId != null) {
                 for (Wallet w : walletList) {
@@ -126,6 +128,7 @@ public class BudgetViewModel extends AndroidViewModel {
             selectWallet(activeWallet);
         }
     }
+
 
     /**
      * Chọn ví và load dữ liệu budget.
@@ -187,10 +190,10 @@ public class BudgetViewModel extends AndroidViewModel {
         String id = repository.insertBudget(budget);
         
         if (id != null) {
-            operationResult.setValue(new OperationResult(true, "Tạo ngân sách thành công"));
+            operationResult.setValue(new OperationResult(Action.CREATE, true, "Tạo ngân sách thành công"));
             refresh();
         } else {
-            operationResult.setValue(new OperationResult(false, "Không thể tạo ngân sách"));
+            operationResult.setValue(new OperationResult(Action.CREATE, false, "Không thể tạo ngân sách"));
         }
     }
 
@@ -212,10 +215,10 @@ public class BudgetViewModel extends AndroidViewModel {
         int result = repository.updateBudget(budget);
         
         if (result > 0) {
-            operationResult.setValue(new OperationResult(true, "Cập nhật ngân sách thành công"));
+            operationResult.setValue(new OperationResult(Action.UPDATE, true, "Cập nhật ngân sách thành công"));
             refresh();
         } else {
-            operationResult.setValue(new OperationResult(false, "Không thể cập nhật ngân sách"));
+            operationResult.setValue(new OperationResult(Action.UPDATE, false, "Không thể cập nhật ngân sách"));
         }
     }
 
@@ -226,10 +229,10 @@ public class BudgetViewModel extends AndroidViewModel {
         int result = repository.deleteBudget(budgetId);
         
         if (result > 0) {
-            operationResult.setValue(new OperationResult(true, "Xóa ngân sách thành công"));
+            operationResult.setValue(new OperationResult(Action.DELETE, true, "Xóa ngân sách thành công"));
             refresh();
         } else {
-            operationResult.setValue(new OperationResult(false, "Không thể xóa ngân sách"));
+            operationResult.setValue(new OperationResult(Action.DELETE, false, "Không thể xóa ngân sách"));
         }
     }
 
@@ -306,16 +309,27 @@ public class BudgetViewModel extends AndroidViewModel {
 
     // ==================== INNER CLASSES ====================
 
+    public enum Action {
+        CREATE, UPDATE, DELETE
+    }
+
     /**
      * Kết quả của các operation (create, update, delete).
      */
     public static class OperationResult {
+        private final Action action;
         private final boolean success;
         private final String message;
+        private boolean handled = false;
 
-        public OperationResult(boolean success, String message) {
+        public OperationResult(Action action, boolean success, String message) {
+            this.action = action;
             this.success = success;
             this.message = message;
+        }
+
+        public Action getAction() {
+            return action;
         }
 
         public boolean isSuccess() {
@@ -324,6 +338,20 @@ public class BudgetViewModel extends AndroidViewModel {
 
         public String getMessage() {
             return message;
+        }
+
+        /**
+         * Kiểm tra xem event đã được xử lý chưa (dạng SingleLiveEvent).
+         * Ngăn nhiều view cùng gọi hoặc show lại Toast khi xoay màn hình.
+         * @return false nếu chưa xử lý và cho phép chạy, true nếu đã xử lý rồi.
+         */
+        public boolean hasBeenHandled() {
+            if (handled) {
+                return true;
+            } else {
+                handled = true;
+                return false;
+            }
         }
     }
 
