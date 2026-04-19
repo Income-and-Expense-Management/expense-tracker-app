@@ -32,11 +32,21 @@ import java.util.Locale;
 public class TransactionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final int VIEW_TYPE_HEADER = 0;
-    private static final int VIEW_TYPE_ITEM = 1;
+    private static final int VIEW_TYPE_TRANSACTION = 1;
 
     private final List<Object> items = new ArrayList<>();
-    private final List<Integer> lastItemPositions = new ArrayList<>(); // Lưu vị trí item cuối cùng của mỗi group
+    private final List<Integer> lastItemPositions = new ArrayList<>();  // Lưu vị trí item cuối cùng của mỗi group
     private final List<Integer> firstItemPositions = new ArrayList<>(); // Lưu vị trí item đầu tiên của mỗi group
+
+    private OnTransactionClickListener listener;
+
+    public interface OnTransactionClickListener {
+        void onTransactionClick(Transaction transaction);
+    }
+
+    public void setOnTransactionClickListener(OnTransactionClickListener listener) {
+        this.listener = listener;
+    }
 
     public void setGroups(List<TransactionGroup> groups) {
         items.clear();
@@ -63,7 +73,7 @@ public class TransactionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     @Override
     public int getItemViewType(int position) {
-        return items.get(position) instanceof TransactionGroup ? VIEW_TYPE_HEADER : VIEW_TYPE_ITEM;
+        return items.get(position) instanceof TransactionGroup ? VIEW_TYPE_HEADER : VIEW_TYPE_TRANSACTION;
     }
 
     @NonNull
@@ -86,7 +96,14 @@ public class TransactionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         } else if (holder instanceof TransactionViewHolder) {
             boolean isLastItem = lastItemPositions.contains(position);
             boolean isFirstItem = firstItemPositions.contains(position);
-            ((TransactionViewHolder) holder).bind((Transaction) items.get(position), isLastItem, isFirstItem);
+            Transaction transaction = (Transaction) items.get(position);
+            ((TransactionViewHolder) holder).bind(transaction, isLastItem, isFirstItem);
+
+            holder.itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onTransactionClick(transaction);
+                }
+            });
         }
     }
 

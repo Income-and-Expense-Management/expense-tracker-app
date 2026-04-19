@@ -58,6 +58,16 @@ public class AddTransactionFragment extends Fragment {
 
     private final Calendar selectedDate = Calendar.getInstance();
 
+    private String transactionIdToEdit = null;
+
+    public static AddTransactionFragment newInstance(String transactionId) {
+        AddTransactionFragment fragment = new AddTransactionFragment();
+        Bundle args = new Bundle();
+        args.putString("transaction_id", transactionId);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -69,6 +79,10 @@ public class AddTransactionFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        if (getArguments() != null) {
+            transactionIdToEdit = getArguments().getString("transaction_id");
+        }
+
         toggleBottomNavigation(false);
 
         viewModel = new ViewModelProvider(this).get(AddTransactionViewModel.class);
@@ -77,7 +91,14 @@ public class AddTransactionFragment extends Fragment {
         setupListeners();
         observeViewModel();
 
-        viewModel.loadActiveWallet();
+        if (transactionIdToEdit != null) {
+            TextView tvTitle = view.findViewById(R.id.tvTitle);
+            if (tvTitle != null) tvTitle.setText("Sửa giao dịch");
+            if (btnSave != null) btnSave.setText("Lưu thay đổi");
+            viewModel.loadTransaction(transactionIdToEdit);
+        } else {
+            viewModel.loadActiveWallet();
+        }
         updateDateDisplay();
     }
 
@@ -153,9 +174,13 @@ public class AddTransactionFragment extends Fragment {
         layoutDateSelector.setOnClickListener(v -> showDatePicker());
 
         btnSave.setOnClickListener(v -> {
-            String amount = etAmount.getText().toString().trim();
-            String note = etNote.getText().toString().trim();
-            viewModel.saveTransaction(amount, note);
+            String amount = etAmount.getText().toString();
+            String note = etNote.getText().toString();
+            if (transactionIdToEdit != null) {
+                viewModel.updateTransaction(transactionIdToEdit, amount, note);
+            } else {
+                viewModel.saveTransaction(amount, note);
+            }
         });
     }
 
@@ -164,6 +189,12 @@ public class AddTransactionFragment extends Fragment {
             if (wallet != null) {
                 tvWalletName.setText(wallet.getName());
                 tvWalletName.setTextColor(Color.WHITE);
+
+                // Fetch categories based on transaction type if a wallet is selected and we are in edit mode
+                // Actually the ViewModel should handle fetching categories when type changes.
+            } else {
+                tvWalletName.setText(R.string.add_transaction_select_wallet);
+                tvWalletName.setTextColor(Color.parseColor("#AAAAAA"));
             }
         });
 
@@ -199,6 +230,33 @@ public class AddTransactionFragment extends Fragment {
             Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
             if (result.isSuccess()) {
                 requireActivity().getSupportFragmentManager().popBackStack();
+            }
+        });
+
+        viewModel.getTransactionType().observe(getViewLifecycleOwner(), transactionType -> {
+            if (transactionType == TransactionType.EXPENSE) {
+                toggleTransactionType.check(R.id.btnExpense);
+            } else if (transactionType == TransactionType.INCOME) {
+                toggleTransactionType.check(R.id.btnIncome);
+            }
+        });
+
+        viewModel.getTransactionDate().observe(getViewLifecycleOwner(), dateMillis -> {
+            if (dateMillis != null) {
+                selectedDate.setTimeInMillis(dateMillis);
+                updateDateDisplay();
+            }
+        });
+
+        viewModel.getInitialAmount().observe(getViewLifecycleOwner(), amount -> {
+            if (amount != null && !amount.isEmpty()) {
+                etAmount.setText(amount);
+            }
+        });
+
+        viewModel.getInitialNote().observe(getViewLifecycleOwner(), note -> {
+            if (note != null) {
+                etNote.setText(note);
             }
         });
     }

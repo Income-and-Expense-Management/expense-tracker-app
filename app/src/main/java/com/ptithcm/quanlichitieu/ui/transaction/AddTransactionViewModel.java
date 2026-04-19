@@ -38,6 +38,8 @@ public class AddTransactionViewModel extends AndroidViewModel {
     private final MutableLiveData<TransactionType> transactionType = new MutableLiveData<>(TransactionType.EXPENSE);
     private final MutableLiveData<Long> transactionDate = new MutableLiveData<>(System.currentTimeMillis());
     private final MutableLiveData<SaveResult> saveResult = new MutableLiveData<>();
+    private final MutableLiveData<String> initialAmount = new MutableLiveData<>();
+    private final MutableLiveData<String> initialNote = new MutableLiveData<>();
 
     public AddTransactionViewModel(@NonNull Application application) {
         super(application);
@@ -68,6 +70,14 @@ public class AddTransactionViewModel extends AndroidViewModel {
         return saveResult;
     }
 
+    public LiveData<String> getInitialAmount() {
+        return initialAmount;
+    }
+
+    public LiveData<String> getInitialNote() {
+        return initialNote;
+    }
+
     public void setSelectedWallet(Wallet wallet) {
         selectedWallet.setValue(wallet);
     }
@@ -77,8 +87,11 @@ public class AddTransactionViewModel extends AndroidViewModel {
     }
 
     public void setTransactionType(TransactionType type) {
-        transactionType.setValue(type);
-        selectedCategory.setValue(null);
+        TransactionType current = transactionType.getValue();
+        if (current != type) {
+            transactionType.setValue(type);
+            selectedCategory.setValue(null);
+        }
     }
 
     public void setTransactionDate(long date) {
@@ -110,21 +123,90 @@ public class AddTransactionViewModel extends AndroidViewModel {
     }
 
     public List<Category> getCategoriesByType() {
-        TransactionType type = transactionType.getValue();
-        if (type == null) type = TransactionType.EXPENSE;
+        TransactionType currentType = transactionType.getValue();
+        if (currentType == null) currentType = TransactionType.EXPENSE;
 
-        String userId = tokenStorage.getUserId();
-        // Get categories by type (includes system + user). We only want active categories for selection.
-        List<Category> raw = categoryDao.getByType(userId, type);
-        if (raw == null || raw.isEmpty()) return raw;
+        // Use getByType instead of getAllCategories
+        return categoryDao.getByType(tokenStorage.getUserId(), currentType);
+    }
 
-        List<Category> active = new ArrayList<>();
-        for (Category c : raw) {
-            if (c != null && c.isActive()) {
-                active.add(c);
+    public void loadTransaction(String transactionId) {
+        Transaction transaction = transactionDao.getById(transactionId);
+        if (transaction != null) {
+            Wallet wallet = walletDao.getWalletById(transaction.getWalletId());
+            if (wallet != null) setSelectedWallet(wallet);
+
+            Category category = categoryDao.getById(transaction.getCategoryId());
+            if (category != null) {
+                // Thêm cái này trước để tránh xóa chọn nhóm
+                setTransactionType(category.getType());
+                setSelectedCategory(category);
             }
+
+            setTransactionDate(transaction.getTransactionDate());
+            initialAmount.setValue(String.valueOf(transaction.getAmount()));
+            initialNote.setValue(transaction.getNote());
         }
-        return active;
+    }
+
+    public void updateTransaction(String transactionId, String amountStr, String note) {
+        if (amountStr == null || amountStr.trim().isEmpty()) {
+            saveResult.setValue(new SaveResult(false, "Vui lòng nhập số tiền"));
+            return;
+        }
+
+        long amount;
+        try {
+            amount = Long.parseLong(amountStr.trim().replace(",", "").replace(".", ""));
+        } catch (NumberFormatException e) {
+            saveResult.setValue(new SaveResult(false, "Số tiền không hợp lệ"));
+            return;
+        }
+
+        if (amount <= 0) {
+            saveResult.setValue(new SaveResult(false, "Số tiền phải lớn hơn 0"));
+            return;
+        }
+
+        Wallet wallet = selectedWallet.getValue();
+        if (wallet == null) {
+            saveResult.setValue(new SaveResult(false, "Vui lòng chọn ví"));
+            return;
+        }
+
+        Category category = selectedCategory.getValue();
+        if (category == null) {
+            saveResult.setValue(new SaveResult(false, "Vui lòng chọn nhóm"));
+            return;
+        }
+
+        Long date = transactionDate.getValue();
+        if (date == null) date = System.currentTimeMillis();
+
+        Transaction transaction = transactionDao.getById(transactionId);
+        if (transaction != null) {
+            transaction.setWalletId(wallet.getId());
+            transaction.setCategoryId(category.getId());
+            transaction.setAmount(amount);
+            transaction.setTransactionDate(date);
+            transaction.setNote(note != null && !note.trim().isEmpty() ? note.trim() : null);
+
+            int rows = transactionDao.update(transaction);
+            if (rows > 0) {
+                BudgetUpdateEvent event = new BudgetUpdateEvent.Builder()
+                        .setWalletId(wallet.getId())
+                        .setCategoryId(category.getId())
+                        .setEventType(BudgetUpdateEvent.EventType.TRANSACTION_ADDED) // Trigger reload
+                        .build();
+                EventBus.getInstance().postBudgetUpdate(event);
+
+                saveResult.setValue(new SaveResult(true, "Cập nhật giao dịch thành công"));
+            } else {
+                saveResult.setValue(new SaveResult(false, "Lỗi khi cập nhật giao dịch"));
+            }
+        } else {
+            saveResult.setValue(new SaveResult(false, "Không tìm thấy giao dịch"));
+        }
     }
 
     public void saveTransaction(String amountStr, String note) {
