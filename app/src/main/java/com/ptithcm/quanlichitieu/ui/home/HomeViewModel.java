@@ -19,6 +19,7 @@ import com.ptithcm.quanlichitieu.data.repository.DbExpenseRepository;
 import com.ptithcm.quanlichitieu.data.repository.ExpenseRepository;
 import com.ptithcm.quanlichitieu.data.repository.TransactionRepository;
 import com.ptithcm.quanlichitieu.data.repository.TransactionRepositoryImpl;
+import com.ptithcm.quanlichitieu.utils.DateUtils;
 
 import java.util.List;
 
@@ -34,7 +35,7 @@ public class HomeViewModel extends AndroidViewModel {
     private final MutableLiveData<String> username = new MutableLiveData<>();
     private final MutableLiveData<Wallet> wallet = new MutableLiveData<>();
     private final MutableLiveData<List<Expense>> topExpenses = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> isMonthSelected = new MutableLiveData<>(true);
+    private final MutableLiveData<Boolean> isMonthSelected = new MutableLiveData<>(true); // Default to month
     private final MutableLiveData<Long> totalSpent = new MutableLiveData<>(0L);
     private final MutableLiveData<Long> totalIncome = new MutableLiveData<>(0L);
     private final MutableLiveData<Long> totalBalance = new MutableLiveData<>(0L);
@@ -89,32 +90,39 @@ public class HomeViewModel extends AndroidViewModel {
         if (wallet.getValue() != null) {
             final int requestId = ++currentReportRequestId;
             new Thread(() -> {
-                long spent = transactionRepository.getTotalExpense(wallet.getValue().getId(), 0);
-                long income = transactionRepository.getTotalIncome(wallet.getValue().getId(), 0);
-
-                // load chart data
+                // Load full month groups, but compute month-to-date (up to end of today)
+                // so totals and chart stay consistent even if user has future-dated transactions.
                 List<com.ptithcm.quanlichitieu.data.model.TransactionGroup> groups =
-                    transactionRepository.getTransactionsByWalletAndMonth(wallet.getValue().getId(), 0);
+                        transactionRepository.getTransactionsByWalletAndMonth(wallet.getValue().getId(), 0);
 
-                // Chart data should be cumulative spent per day over the month
-                float[] dailyExpenses = new float[31];
-                float[] dailyIncomes = new float[31];
+                int maxDaysInMonth = DateUtils.getDaysInMonth(0);
+                long endOfToday = DateUtils.getEndOfTodayTimestamp();
+
+                float[] dailyExpenses = new float[maxDaysInMonth];
+                float[] dailyIncomes = new float[maxDaysInMonth];
+                long spent = 0L;
+                long income = 0L;
+
+                java.util.Calendar txCal = java.util.Calendar.getInstance(new java.util.Locale("vi", "VN"));
                 for (com.ptithcm.quanlichitieu.data.model.TransactionGroup g : groups) {
-                    String dateStr = g.getDate();
-                    if (dateStr != null && dateStr.contains("/")) {
-                        try {
-                            int day = Integer.parseInt(dateStr.split("/")[0]);
-                            if (day >= 1 && day <= 31) {
-                                long dayTotalExp = 0;
-                                long dayTotalInc = 0;
-                                for (Transaction t : g.getTransactions()) {
-                                    if (t.isExpense()) dayTotalExp += Math.abs(t.getAmount());
-                                    else dayTotalInc += Math.abs(t.getAmount());
-                                }
-                                dailyExpenses[day - 1] += dayTotalExp;
-                                dailyIncomes[day - 1] += dayTotalInc;
-                            }
-                        } catch (NumberFormatException ignored) {}
+                    if (g == null || g.getTransactions() == null) continue;
+                    for (Transaction t : g.getTransactions()) {
+                        if (t == null) continue;
+                        long txTime = t.getTransactionDate();
+                        if (txTime > endOfToday) continue;
+
+                        txCal.setTimeInMillis(txTime);
+                        int day = txCal.get(java.util.Calendar.DAY_OF_MONTH);
+                        if (day < 1 || day > maxDaysInMonth) continue;
+
+                        long amount = Math.abs(t.getAmount());
+                        if (t.isExpense()) {
+                            spent += amount;
+                            dailyExpenses[day - 1] += amount;
+                        } else {
+                            income += amount;
+                            dailyIncomes[day - 1] += amount;
+                        }
                     }
                 }
 
@@ -122,18 +130,16 @@ public class HomeViewModel extends AndroidViewModel {
                 List<Float> accumulatedIncome = new java.util.ArrayList<>();
                 float currentTotal = 0;
                 float currentTotalInc = 0;
-                for (int i = 0; i < 31; i++) {
+                for (int i = 0; i < maxDaysInMonth; i++) {
                     currentTotal += dailyExpenses[i];
                     accumulated.add(currentTotal);
                     currentTotalInc += dailyIncomes[i];
                     accumulatedIncome.add(currentTotalInc);
                 }
 
+                // Ensure chart has data for current month even when empty.
                 if (accumulated.isEmpty()) {
-                    // default empty chart
                     accumulated.add(0f);
-                    accumulated.add(0f);
-                    accumulatedIncome.add(0f);
                     accumulatedIncome.add(0f);
                 }
 
@@ -153,6 +159,18 @@ public class HomeViewModel extends AndroidViewModel {
             chartData.postValue(empty);
             incomeChartData.postValue(empty);
         }
+    }
+
+    /**
+     * Refresh toàn bộ dashboard của Home (báo cáo tháng này, top chi tiêu, số dư).
+     * 
+     * Dùng khi có thay đổi transaction từ màn hình khác (Add/Update/Delete)
+     * để UI cập nhật ngay mà không phụ thuộc vào lifecycle.
+     */
+    public void refreshDashboard() {
+        loadReportData();
+        loadTopExpenses();
+        calculateCurrentBalance(wallet.getValue());
     }
 
     public void calculateCurrentBalance(Wallet currentWallet) {

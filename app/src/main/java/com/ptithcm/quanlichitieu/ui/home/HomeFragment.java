@@ -16,6 +16,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.ptithcm.quanlichitieu.R;
+import com.ptithcm.quanlichitieu.event.BudgetUpdateEvent;
+import com.ptithcm.quanlichitieu.event.EventBus;
 import com.ptithcm.quanlichitieu.ui.home.adapter.TopExpenseAdapter;
 import com.ptithcm.quanlichitieu.ui.main.MainActivity;
 import com.ptithcm.quanlichitieu.ui.wallet.WalletViewModel;
@@ -71,6 +73,7 @@ public class HomeFragment extends Fragment {
         setupPeriodToggle();
         setupWalletActions();
         observeViewModels();
+        observeEvents();
 
         String username = getArguments() != null
                 ? getArguments().getString(ARG_USERNAME, "Duy") : "Duy";
@@ -79,6 +82,27 @@ public class HomeFragment extends Fragment {
         // Tải ví đang hoạt động
         walletViewModel.loadActiveWallet();
         homeViewModel.loadTopExpenses();
+    }
+
+    private void observeEvents() {
+        // Lắng nghe event khi có thay đổi transaction (thêm/sửa/xoá) để refresh dashboard ngay.
+        // Không phụ thuộc vào onResume vì MainActivity dùng hide/show cho bottom tabs.
+        EventBus.getInstance().getBudgetUpdateEvent().observe(getViewLifecycleOwner(), event -> {
+            if (event == null) return;
+
+            handleTransactionChanged(event);
+            EventBus.getInstance().clearBudgetUpdateEvent();
+        });
+    }
+
+    private void handleTransactionChanged(@NonNull BudgetUpdateEvent event) {
+        // Chỉ refresh nếu event liên quan đến ví hiện tại (nếu có).
+        com.ptithcm.quanlichitieu.data.model.Wallet currentWallet = walletViewModel.getSelectedWallet().getValue();
+        if (currentWallet != null && event.getWalletId() != null && !event.getWalletId().equals(currentWallet.getId())) {
+            return;
+        }
+
+        homeViewModel.refreshDashboard();
     }
 
     private void initViews(View view) {
