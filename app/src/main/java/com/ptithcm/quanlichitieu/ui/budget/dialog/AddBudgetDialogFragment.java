@@ -230,15 +230,13 @@ public class AddBudgetDialogFragment extends DialogFragment {
 
     private void observeViewModel() {
         viewModel.getOperationResult().observe(getViewLifecycleOwner(), result -> {
-            if (result != null) {
+            if (result != null && result.getAction() == BudgetViewModel.Action.CREATE && !result.hasBeenHandled()) {
                 Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
                 if (result.isSuccess()) {
                     if (onBudgetSavedListener != null) {
                         onBudgetSavedListener.onBudgetSaved();
                     }
                     dismiss();
-                    // ✅ Clear sau khi dismiss để tránh toast hiện lại
-                    viewModel.clearOperationResult();
                 }
             }
         });

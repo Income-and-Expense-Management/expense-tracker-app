@@ -10,6 +10,8 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.ptithcm.quanlichitieu.data.local.DatabaseManager;
 import com.ptithcm.quanlichitieu.data.local.dao.WalletDao;
+import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
+import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
 
 import java.util.List;
@@ -20,6 +22,7 @@ public class WalletViewModel extends AndroidViewModel {
 
     private final MutableLiveData<List<Wallet>> wallets = new MutableLiveData<>();
     private final MutableLiveData<Wallet> selectedWallet = new MutableLiveData<>();
+    private final MutableLiveData<Wallet> singleWallet = new MutableLiveData<>();
     private final MutableLiveData<SaveResult> saveResult = new MutableLiveData<>();
 
     /**
@@ -32,7 +35,9 @@ public class WalletViewModel extends AndroidViewModel {
     public WalletViewModel(@NonNull Application application) {
         super(application);
         this.walletDao = DatabaseManager.getInstance(application).getWalletDao();
-        this.currentUserId = null;
+        
+        TokenStorage tokenStorage = EncryptedTokenStorage.getInstance(application);
+        this.currentUserId = tokenStorage.getUserId();
     }
 
     /**
@@ -40,6 +45,15 @@ public class WalletViewModel extends AndroidViewModel {
      */
     public void setCurrentUserId(@Nullable String userId) {
         this.currentUserId = (userId == null || userId.trim().isEmpty()) ? null : userId;
+    }
+
+    /**
+     * Trả về userId cho SharedPrefs key.
+     * Luôn trả về chuỗi không null để key nhất quán giữa các ViewModel.
+     * Key format: "active_wallet_id_" + getUserIdForKey()
+     */
+    private String getUserIdForKey() {
+        return (currentUserId != null && !currentUserId.trim().isEmpty()) ? currentUserId : "default";
     }
 
     @Nullable
@@ -69,6 +83,26 @@ public class WalletViewModel extends AndroidViewModel {
         return saveResult;
     }
 
+    /**
+     * LiveData chứa một wallet được load theo ID.
+     * Dùng cho EditWalletFragment để kông phụ thuộc vào getWallets() có thể null.
+     */
+    public LiveData<Wallet> getSingleWallet() {
+        return singleWallet;
+    }
+
+    /**
+     * Load wallet theo ID trực tiếp từ DB.
+     * Chạy trên background thread, post kết quả về singleWallet LiveData.
+     */
+    public void loadWalletById(String walletId) {
+        if (walletId == null) return;
+        new Thread(() -> {
+            Wallet wallet = walletDao.getWalletById(walletId);
+            singleWallet.postValue(wallet);
+        }).start();
+    }
+
     public void clearSaveResult() {
         saveResult.setValue(null);
     }
@@ -83,11 +117,16 @@ public class WalletViewModel extends AndroidViewModel {
             return;
         }
 
+        android.content.SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
+        String savedWalletId = prefs.getString("active_wallet_id_" + getUserIdForKey(), null);
+
         Wallet active = null;
-        for (Wallet w : walletList) {
-            if (w.isActive()) {
-                active = w;
-                break;
+        if (savedWalletId != null) {
+            for (Wallet w : walletList) {
+                if (w.getId().equals(savedWalletId)) {
+                    active = w;
+                    break;
+                }
             }
         }
 
@@ -105,11 +144,9 @@ public class WalletViewModel extends AndroidViewModel {
     public void selectWallet(Wallet wallet) {
         if (wallet == null) return;
 
-        String userId = userIdOrNull();
-        // If wallet belongs to legacy NULL user, keep operating on NULL user group
-        if (wallet.getUserId() == null) userId = null;
+        android.content.SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
+        prefs.edit().putString("active_wallet_id_" + getUserIdForKey(), wallet.getId()).apply();
 
-        walletDao.setActiveWallet(wallet.getId(), userId);
         selectedWallet.setValue(wallet);
         loadAllWallets();
     }
@@ -135,7 +172,6 @@ public class WalletViewModel extends AndroidViewModel {
                     .setInitialBalance(balance)
                     .setCurrency("VND")
                     .setIconId(iconId)
-                    .setIsActive(wallets.getValue() == null || wallets.getValue().isEmpty())
                     .build();
 
             String walletId = walletDao.insert(wallet);
@@ -143,7 +179,8 @@ public class WalletViewModel extends AndroidViewModel {
             if (walletId != null) {
                 saveResult.setValue(new SaveResult(true, "Thêm ví thành công"));
                 loadAllWallets();
-                if (wallet.isActive()) selectedWallet.setValue(wallet);
+                boolean isFirstWallet = wallets.getValue() == null || wallets.getValue().isEmpty();
+                if (isFirstWallet) selectWallet(wallet);
             } else {
                 saveResult.setValue(new SaveResult(false, "Lỗi khi lưu ví"));
             }

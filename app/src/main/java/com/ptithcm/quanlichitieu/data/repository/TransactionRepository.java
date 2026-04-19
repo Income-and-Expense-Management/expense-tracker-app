@@ -42,7 +42,7 @@ public interface TransactionRepository {
      * 
      * @return Tổng chi tiêu
      */
-    double getTotalExpense();
+    long getTotalExpense();
 
     /**
      * Lấy tổng chi tiêu theo ví và tháng.
@@ -51,14 +51,14 @@ public interface TransactionRepository {
      * @param monthOffset Offset tháng
      * @return Tổng chi tiêu
      */
-    double getTotalExpense(@Nullable String walletId, int monthOffset);
+    long getTotalExpense(@Nullable String walletId, int monthOffset);
 
     /**
      * Lấy tổng thu nhập (legacy - không filter theo wallet).
      * 
      * @return Tổng thu nhập
      */
-    double getTotalIncome();
+    long getTotalIncome();
 
     /**
      * Lấy tổng thu nhập theo ví và tháng.
@@ -67,12 +67,12 @@ public interface TransactionRepository {
      * @param monthOffset Offset tháng
      * @return Tổng thu nhập
      */
-    double getTotalIncome(@Nullable String walletId, int monthOffset);
+    long getTotalIncome(@Nullable String walletId, int monthOffset);
 
     /**
      * Lấy tổng số dư (legacy - không filter theo wallet).
      * 
      * @return Tổng số dư
      */
-    double getTotalBalance();
+    long getTotalBalance();
 }

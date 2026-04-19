@@ -12,6 +12,8 @@ import com.ptithcm.quanlichitieu.data.local.DatabaseManager;
 import com.ptithcm.quanlichitieu.data.local.dao.CategoryDao;
 import com.ptithcm.quanlichitieu.data.local.dao.TransactionDao;
 import com.ptithcm.quanlichitieu.data.local.dao.WalletDao;
+import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
+import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
 import com.ptithcm.quanlichitieu.data.model.Category;
 import com.ptithcm.quanlichitieu.data.model.Transaction;
 import com.ptithcm.quanlichitieu.data.model.TransactionType;
@@ -21,12 +23,15 @@ import com.ptithcm.quanlichitieu.event.EventBus;
 
 import java.util.ArrayList;
 import java.util.List;
+import android.content.Context;
+import android.content.SharedPreferences;
 
 public class AddTransactionViewModel extends AndroidViewModel {
 
     private final TransactionDao transactionDao;
     private final WalletDao walletDao;
     private final CategoryDao categoryDao;
+    private final TokenStorage tokenStorage;
 
     private final MutableLiveData<Wallet> selectedWallet = new MutableLiveData<>();
     private final MutableLiveData<Category> selectedCategory = new MutableLiveData<>();
@@ -40,6 +45,7 @@ public class AddTransactionViewModel extends AndroidViewModel {
         this.transactionDao = dbManager.getTransactionDao();
         this.walletDao = dbManager.getWalletDao();
         this.categoryDao = dbManager.getCategoryDao();
+        this.tokenStorage = EncryptedTokenStorage.getInstance(application);
     }
 
     public LiveData<Wallet> getSelectedWallet() {
@@ -80,12 +86,19 @@ public class AddTransactionViewModel extends AndroidViewModel {
     }
 
     public void loadActiveWallet() {
-        List<Wallet> wallets = walletDao.getByUserId(null);
+        String userId = tokenStorage.getUserId();
+        List<Wallet> wallets = walletDao.getByUserId(userId);
         if (wallets != null && !wallets.isEmpty()) {
-            for (Wallet w : wallets) {
-                if (w.isActive()) {
-                    selectedWallet.setValue(w);
-                    return;
+            SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+            String key = "active_wallet_id_" + (userId != null ? userId : "default");
+            String savedWalletId = prefs.getString(key, null);
+
+            if (savedWalletId != null) {
+                for (Wallet w : wallets) {
+                    if (w.getId().equals(savedWalletId)) {
+                        selectedWallet.setValue(w);
+                        return;
+                    }
                 }
             }
             selectedWallet.setValue(wallets.get(0));
@@ -93,15 +106,16 @@ public class AddTransactionViewModel extends AndroidViewModel {
     }
 
     public List<Wallet> getAllWallets() {
-        return walletDao.getByUserId(null);
+        return walletDao.getByUserId(tokenStorage.getUserId());
     }
 
     public List<Category> getCategoriesByType() {
         TransactionType type = transactionType.getValue();
         if (type == null) type = TransactionType.EXPENSE;
 
+        String userId = tokenStorage.getUserId();
         // Get categories by type (includes system + user). We only want active categories for selection.
-        List<Category> raw = categoryDao.getByType(null, type);
+        List<Category> raw = categoryDao.getByType(userId, type);
         if (raw == null || raw.isEmpty()) return raw;
 
         List<Category> active = new ArrayList<>();
@@ -154,9 +168,7 @@ public class AddTransactionViewModel extends AndroidViewModel {
                 .setWalletId(wallet.getId())
                 .setCategoryId(category.getId())
                 .setAmount(amount)
-                .setType(type)
                 .setTransactionDate(date)
-                .setIconId(category.getIconName())
                 .setNote(note != null ? note.trim() : null)
                 .build();
 

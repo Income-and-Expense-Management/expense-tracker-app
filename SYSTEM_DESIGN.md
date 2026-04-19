@@ -23,7 +23,9 @@ QuanLiChiTieu là ứng dụng Android quản lý chi tiêu cá nhân, cho phép
 | Database             | SQLite (raw SQLiteOpenHelper + DAO Pattern)          |
 | Architecture Pattern | MVVM + Repository Pattern + DAO Pattern              |
 | DI Strategy          | Manual instantiation (không dùng Hilt/Dagger)        |
-| Auth (hiện tại)      | Mock in-memory (MockAuthService)                     |
+| Network              | **Volley** (API Request)                             |
+| Auth                 | In-memory (Mock) + **Google Sign-In API** + JWT Storage (EncryptedSharedPreferences) |
+| Event Driven         | In-house Singleton EventBus                          |
 
 ### 1.3 Kiến trúc tổng thể
 - **Offline-First**: Toàn bộ dữ liệu lưu tại SQLite local, chưa có Remote API.
@@ -47,79 +49,85 @@ QuanLiChiTieu/
 │       │   ├── data/
 │       │   │   ├── local/
 │       │   │   │   ├── contract/
-│       │   │   │   │   └── DatabaseContract.java        # Schema & SQL constants (có bảng categories)
+│       │   │   │   │   └── DatabaseContract.java        # Schema & SQL constants
 │       │   │   │   ├── dao/
-│       │   │   │   │   ├── UserDao.java                  # CRUD cho bảng users
-│       │   │   │   │   ├── WalletDao.java                # CRUD cho bảng wallets
-│       │   │   │   │   ├── CategoryDao.java              # CRUD cho bảng categories (thêm getAllForManagement, update trạng thái)
-│       │   │   │   │   ├── TransactionDao.java           # CRUD cho bảng transactions
-│       │   │   │   │   └── BudgetDao.java                # CRUD cho bảng budgets
+│       │   │   │   │   ├── UserDao.java
+│       │   │   │   │   ├── WalletDao.java
+│       │   │   │   │   ├── CategoryDao.java
+│       │   │   │   │   ├── TransactionDao.java
+│       │   │   │   │   └── BudgetDao.java
+│       │   │   │   ├── token/
+│       │   │   │   │   ├── TokenStorage.java            # Interface lưu token
+│       │   │   │   │   └── EncryptedTokenStorage.java   # SharedPreferences mã hóa
 │       │   │   │   ├── util/
-│       │   │   │   │   ├── CursorUtils.java              # Helper đọc Cursor an toàn
-│       │   │   │   │   └── IdGenerator.java              # (duplicate - không sử dụng)
-│       │   │   │   ├── BudgetDatabaseHelper.java         # SQLiteOpenHelper (Singleton)
-│       │   │   │   └── DatabaseManager.java              # Trung tâm quản lý DB + DAO (Singleton)
+│       │   │   │   │   ├── CursorUtils.java
+│       │   │   │   │   └── IdGenerator.java
+│       │   │   │   ├── BudgetDatabaseHelper.java
+│       │   │   │   └── DatabaseManager.java
 │       │   │   ├── model/
-│       │   │   │   ├── User.java                         # Entity: người dùng
-│       │   │   │   ├── Wallet.java                       # Entity: ví tiền
-│       │   │   │   ├── Category.java                     # Entity: danh mục thu/chi
-│       │   │   │   ├── Transaction.java                  # Entity: giao dịch
-│       │   │   │   ├── Budget.java                       # Entity: ngân sách
-│       │   │   │   ├── TransactionType.java              # Enum: INCOME | EXPENSE | LOAN
-│       │   │   │   ├── TransactionGroup.java             # DTO: nhóm giao dịch theo ngày
-│       │   │   │   └── Expense.java                      # Legacy model cho mock Home
+│       │   │   │   ├── User.java, Wallet.java, Category.java, Transaction.java, Budget.java
+│       │   │   │   ├── TransactionType.java, TransactionGroup.java, Expense.java
+│       │   │   ├── remote/
+│       │   │   │   ├── ApiConfig.java                   # Cấu hình API remote (Volley)
+│       │   │   │   ├── AuthJsonObjectRequest.java       # Custom Volley Request với Token
+│       │   │   │   └── VolleySingleton.java             # Quản lý hàng đợi Volley
 │       │   │   └── repository/
-│       │   │       ├── AuthService.java                  # Interface xác thực
-│       │   │       ├── MockAuthService.java              # Mock auth (Singleton)
-│       │   │       ├── ExpenseRepository.java            # Interface chi tiêu (legacy)
-│       │   │       ├── MockExpenseRepository.java        # Mock data cho Home
-│       │   │       ├── TransactionRepository.java        # Interface giao dịch
-│       │   │       └── MockTransactionRepository.java    # Mock data cho Transaction
-│       │   │       ├── CategoryRepository.java           # Repository cho Category (getAllCategoriesForManagement, getUserCategories)
+│       │   │       ├── AuthRepository.java              # Interface cho API Auth
+│       │   │       ├── AuthRepositoryImpl.java          # Thực thi API Auth
+│       │   │       ├── AuthService.java, MockAuthService.java
+│       │   │       ├── GoogleSignInHelper.java          # Tiện ích đăng nhập Google
+│       │   │       ├── CategoryRepository.java, BudgetRepository.java
+│       │   │       ├── ExpenseRepository.java, MockExpenseRepository.java
+│       │   │       ├── TransactionRepository.java, MockTransactionRepository.java
+│       │   │       └── TransactionRepositoryImpl.java   # Thực thi DB + Remote cho Transaction
+│       │   ├── event/
+│       │   │   ├── EventBus.java                        # Singleton cho Event driven
+│       │   │   └── BudgetUpdateEvent.java               # Event khi ngân sách cập nhật
 │       │   ├── ui/
-│       │   │   ├── login/
-│       │   │   │   ├── LoginActivity.java                # Màn hình đăng nhập (Launcher)
-│       │   │   │   ├── LoginViewModel.java               # ViewModel cho login
-│       │   │   │   └── RegisterActivity.java             # Màn hình đăng ký
-│       │   │   ├── main/
-│       │   │   │   └── MainActivity.java                 # Host Activity + BottomNav
-│       │   │   ├── home/
-│       │   │   │   ├── HomeFragment.java                 # Trang chủ: tổng quan ví + chi tiêu
-│       │   │   │   ├── HomeViewModel.java                # ViewModel cho Home
-│       │   │   │   └── adapter/
-│       │   │   │       └── TopExpenseAdapter.java        # Adapter: top chi tiêu
-│       │   │   ├── transaction/
-│       │   │   │   ├── TransactionFragment.java          # Danh sách giao dịch theo tháng
-│       │   │   │   ├── TransactionViewModel.java         # ViewModel cho Transaction
-│       │   │   │   └── adapter/
-│       │   │   │       └── TransactionAdapter.java       # Adapter: danh sách giao dịch (multi-type)
-│       │   │   ├── wallet/
-│       │   │   │   ├── WalletFragment.java               # Placeholder: quản lý ví
-│       │   │   │   ├── AddWalletFragment.java            # Form tạo ví mới
-│       │   │   │   └── WalletViewModel.java              # ViewModel cho Wallet
 │       │   │   ├── account/
-│       │   │   │   └── AccountFragment.java              # Placeholder: tài khoản cá nhân
+│       │   │   │   └── AccountFragment.java             # Màn hình tài khoản
+│       │   │   ├── budget/
+│       │   │   │   ├── BudgetFragment.java              # Fragment ngân sách
+│       │   │   │   ├── BudgetViewModel.java
+│       │   │   │   ├── adapter/BudgetAdapter.java
+│       │   │   │   ├── bottomsheet/
+│       │   │   │   │   └── SelectCategoryBottomSheet.java, SelectPeriodBottomSheet.java, SelectWalletBottomSheet.java
+│       │   │   │   ├── dialog/
+│       │   │   │   │   └── AddBudgetDialogFragment.java, EditBudgetDialogFragment.java, ViewBudgetDialogFragment.java
+│       │   │   │   ├── model/BudgetItem.java
+│       │   │   │   └── view/BudgetChartView.java
 │       │   │   ├── category/
-│       │   │   │   ├── CategoryFragment.java             # Quản lý danh mục (hiện tất cả, bật/tắt)
-│       │   │   │   ├── CategoryViewModel.java            # ViewModel cho Category (loadCategoriesForManagement, loadCategories)
-│       │   │   │   ├── CategoryAdapter.java              # Adapter cho danh sách category (hiệu ứng bật/tắt)
-│       │   │   └── common/
-│       │   │       └── SimpleLineChart.java              # Custom View: biểu đồ đường
+│       │   │   │   ├── CategoryFragment.java, CategoryViewModel.java, CategoryAdapter.java
+│       │   │   │   └── IconPickerAdapter.java
+│       │   │   ├── common/
+│       │   │   │   ├── ArcProgressBar.java              # Bar progress cung tròn
+│       │   │   │   └── SimpleLineChart.java
+│       │   │   ├── home/
+│       │   │   │   ├── HomeFragment.java, HomeViewModel.java
+│       │   │   │   └── adapter/TopExpenseAdapter.java
+│       │   │   ├── login/
+│       │   │   │   ├── LoginActivity.java, RegisterActivity.java
+│       │   │   │   └── AuthViewModel.java               # ViewModel cho auth
+│       │   │   ├── main/
+│       │   │   │   └── MainActivity.java
+│       │   │   ├── transaction/
+│       │   │   │   ├── TransactionFragment.java, TransactionViewModel.java
+│       │   │   │   ├── AddTransactionFragment.java      # Thêm giao dịch
+│       │   │   │   ├── AddTransactionViewModel.java
+│       │   │   │   └── adapter/TransactionAdapter.java
+│       │   │   └── wallet/
+│       │   │       ├── WalletFragment.java, WalletViewModel.java, WalletAdapter.java
+│       │   │       ├── AddWalletFragment.java, EditWalletFragment.java
+│       │   │       └── IconSelectionFragment.java
 │       │   └── utils/
-│       │       └── IdGenerator.java                      # UUID + timestamp utility
+│       │       ├── DateUtils.java, IdGenerator.java, ValidationUtils.java
 │       └── res/
-│           ├── layout/          # XML layouts cho Activity/Fragment/Item
-│           ├── drawable/        # Vector icons, background shapes
-│           ├── menu/            # Bottom navigation menu
-│           ├── anim/            # Fade in/out animations
-│           ├── color/           # Color state lists (nav, segmented button)
-│           ├── values/          # strings.xml, colors.xml, themes.xml
-│           └── values-night/    # Dark theme overrides
+│           ├── layout/, drawable/, menu/, anim/, color/, values/, values-night/
 ├── gradle/
-│   └── libs.versions.toml      # Version catalog cho dependencies
-├── build.gradle.kts             # Root build script
-├── settings.gradle.kts          # Project settings
-└── gradle.properties            # Gradle configuration
+│   └── libs.versions.toml
+├── build.gradle.kts
+├── settings.gradle.kts
+└── gradle.properties
 ```
 
 ### 2.2 Giải thích chức năng từng package
@@ -128,19 +136,23 @@ QuanLiChiTieu/
 |---------|-----------|
 | `data.local.contract` | Định nghĩa schema database: tên bảng, tên cột, câu lệnh CREATE TABLE dưới dạng hằng số. Mọi truy vấn SQL phải tham chiếu hằng số từ đây. |
 | `data.local.dao` | Mỗi DAO class đảm nhiệm toàn bộ CRUD cho một bảng. Nhận `BudgetDatabaseHelper`, trả về model object. |
+| `data.local.token` | TokenStorage quản lý token và thông tin người dùng. `EncryptedTokenStorage` dùng EncryptedSharedPreferences. |
 | `data.local.util` | Các utility class cho tầng database: `CursorUtils` đọc Cursor an toàn, tránh crash khi column null. |
 | `data.local` | `BudgetDatabaseHelper` (SQLiteOpenHelper) tạo/nâng cấp DB. `DatabaseManager` (Singleton) cung cấp DAO instances và hỗ trợ transaction. |
-| `data.model` | Các POJO/entity class đại diện cho bảng database. Sử dụng Builder pattern. `TransactionType` là enum dùng chung. |
-| `data.repository` | Interface trừu tượng hóa nguồn dữ liệu + Mock implementation. Khi tích hợp API thật, tạo class mới implement interface, không sửa code UI. |
-| `ui.login` | Luồng xác thực: `LoginActivity` (launcher), `RegisterActivity`, `LoginViewModel`. |
-| `ui.main` | `MainActivity` là Single Host Activity chứa `BottomNavigationView` + `FragmentContainer`. Quản lý 4 Fragment chính bằng hide/show. |
+| `data.model` | Các POJO/entity class đại diện cho bảng database. Các entity sử dụng Builder pattern. `TransactionType` là enum dùng chung. |
+| `data.remote` | Package truy cập API: `ApiConfig`, `VolleySingleton`, `AuthJsonObjectRequest` tích hợp Json Request cùng Token tự động. |
+| `data.repository` | Interface trừu tượng hóa nguồn dữ liệu + Concrete implementations (`Real/Mock` / `Impl`). Repository tự động chọn dữ liệu API hoặc nội bộ tuỳ logic. `AuthRepository` tích hợp API và Google Sign In. |
+| `event` | EventBus đơn giản (EventBus.java) hỗ trợ bắn sự kiện từ Dialog, BottomSheet cho Fragment cập nhật dữ liệu (e.g. `BudgetUpdateEvent`). |
+| `ui.login` | Luồng xác thực: `LoginActivity` (launcher), `RegisterActivity`, `AuthViewModel` (kết hợp `AuthRepository`). |
+| `ui.main` | `MainActivity` là Single Host Activity chứa `BottomNavigationView` + `FragmentContainer`. Quản lý 5 Fragment chính bằng hide/show. |
 | `ui.home` | Trang chủ hiển thị tổng quan: số dư ví, biểu đồ, top chi tiêu. |
-| `ui.transaction` | Danh sách giao dịch nhóm theo ngày, lọc theo tháng. |
-| `ui.wallet` | Quản lý ví: tạo ví mới (`AddWalletFragment`), danh sách ví (placeholder). |
+| `ui.budget` | Tính năng Ngân sách: Thêm, sửa, xem, theo dõi qua biểu đồ (`ArcProgressBar`), logic tính còn bao nhiêu có thể tiêu... |
+| `ui.transaction` | Danh sách giao dịch nhóm theo ngày, bộ lọc tháng. `AddTransactionFragment` xử lý việc thêm giao dịch. |
+| `ui.wallet` | Quản lý ví: tạo/sửa (`AddWalletFragment`, `EditWalletFragment`), danh sách ví (`WalletFragment`), chọn icon (`IconSelectionFragment`). |
 | `ui.account` | Tài khoản cá nhân và cài đặt (placeholder). |
-| `ui.category` | Quản lý danh mục: hiển thị, thêm, sửa, xóa, bật/tắt trạng thái. |
-| `ui.common` | Custom View dùng chung (VD: `SimpleLineChart`). |
-| `utils` | Utility classes cấp ứng dụng: `IdGenerator` tạo UUID và timestamp. |
+| `ui.category` | Quản lý danh mục: hiển thị, thêm, sửa, xóa, bật/tắt trạng thái. Tích hợp `IconPickerAdapter`. |
+| `ui.common` | Custom View dùng chung (VD: `SimpleLineChart`, `ArcProgressBar`). |
+| `utils` | Các helper: `IdGenerator` tạo UUID, `DateUtils` xử lý ngày, `ValidationUtils` xác thực. |
 
 ---
 
@@ -274,16 +286,18 @@ LoginActivity (Launcher)
 
 MainActivity (Host)
     ├── HomeFragment        (tab 1 - mặc định)
-    │       └── [Nhấn "Xem tất cả" / cardWallet] ──► AddWalletFragment (replace + backstack)
+    │       └── [Nhấn "Xem tất cả" / cardWallet] ──► Add/Edit WalletFragment (replace)
     ├── TransactionFragment (tab 2)
-    ├── WalletFragment      (tab 3 - placeholder)
-    ├── AccountFragment     (tab 4 - placeholder)
-    └── FAB                 (thêm giao dịch - chưa implement)
+    │       └── [Nhấn "+"] ──► AddTransactionFragment (replace + backstack)
+    ├── BudgetFragment      (tab 3)
+    │       └── [Nhấn "Thêm"] ──► Dialog AddBudget, etc.
+    ├── WalletFragment      (tab 4)
+    └── AccountFragment     (tab 5 - placeholder)
 ```
 
 - Các tab Fragment được **add tất cả lúc khởi tạo** và dùng **hide/show** để chuyển tab (không recreate).
-- Fragment con (VD: `AddWalletFragment`) dùng **replace + addToBackStack** trên `R.id.fragmentContainer`.
-- Back navigation: quay về HomeFragment trước, sau đó mới exit app.
+- Fragment con (VD: `AddWalletFragment`, `AddTransactionFragment`) dùng **replace + addToBackStack** trên `R.id.fragmentContainer`.
+- Back navigation: quay về tab đang chọn trước, sau đó mới pop back stack, hoặc exit app.
 
 ---
 

@@ -15,6 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.ptithcm.quanlichitieu.R;
+import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
+import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
 import com.ptithcm.quanlichitieu.data.repository.BudgetRepository;
 
@@ -94,7 +96,9 @@ public class SelectWalletBottomSheet extends BottomSheetDialogFragment {
 
     private void loadWallets() {
         BudgetRepository repository = BudgetRepository.getInstance(requireContext());
-        List<Wallet> wallets = repository.getWalletsForUser(null);
+        TokenStorage tokenStorage = EncryptedTokenStorage.getInstance(requireContext());
+        String userId = tokenStorage.getUserId();
+        List<Wallet> wallets = repository.getWalletsForUser(userId);
 
         if (wallets.isEmpty()) {
             rvWallets.setVisibility(View.GONE);

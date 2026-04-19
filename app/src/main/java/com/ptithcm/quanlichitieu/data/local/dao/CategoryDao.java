@@ -54,6 +54,8 @@ public class CategoryDao {
             category.setId(IdGenerator.generateUUID());
         }
 
+        long now = IdGenerator.getCurrentTimestamp();
+
         ContentValues values = new ContentValues();
         values.put(CategoryEntry.COLUMN_ID, category.getId());
         values.put(CategoryEntry.COLUMN_USER_ID, category.getUserId());
@@ -64,6 +66,14 @@ public class CategoryDao {
         }
         values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
         values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
+        // Set created_at và updated_at cho schema mới (sync support)
+        values.put(CategoryEntry.COLUMN_CREATED_AT, now);
+        values.put(CategoryEntry.COLUMN_UPDATED_AT, now);
+        if (category.getDeletedAt() != null) {
+            values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt());
+        } else {
+            values.putNull(CategoryEntry.COLUMN_DELETED_AT);
+        }
 
         try {
             long result = db.insertOrThrow(CategoryEntry.TABLE_NAME, null, values);
@@ -126,12 +136,12 @@ public class CategoryDao {
         String[] selectionArgs;
 
         if (userId == null) {
-            selection = CategoryEntry.COLUMN_TYPE + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NULL";
+            selection = CategoryEntry.COLUMN_TYPE + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ type.getValue() };
         } else {
             selection = CategoryEntry.COLUMN_TYPE + " = ? AND (" +
                     CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
-                    CategoryEntry.COLUMN_USER_ID + " = ?)";
+                    CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ type.getValue(), userId };
         }
 
@@ -174,7 +184,7 @@ public class CategoryDao {
             cursor = db.query(
                     CategoryEntry.TABLE_NAME,
                     null,
-                    CategoryEntry.COLUMN_USER_ID + " IS NULL",
+                    CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL",
                     null,
                     null, null,
                     CategoryEntry.COLUMN_TYPE + ", " + CategoryEntry.COLUMN_NAME + " ASC"
@@ -213,7 +223,7 @@ public class CategoryDao {
             cursor = db.query(
                     CategoryEntry.TABLE_NAME,
                     null,
-                    CategoryEntry.COLUMN_USER_ID + " = ?",
+                    CategoryEntry.COLUMN_USER_ID + " = ? AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL",
                     new String[]{userId},
                     null, null,
                     CategoryEntry.COLUMN_TYPE + ", " + CategoryEntry.COLUMN_NAME + " ASC"
@@ -247,11 +257,11 @@ public class CategoryDao {
         String[] selectionArgs;
 
         if (userId == null) {
-            selection = CategoryEntry.COLUMN_USER_ID + " IS NULL";
+            selection = CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_IS_ACTIVE + " = 1 AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = null;
         } else {
             selection = "(" + CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
-                    CategoryEntry.COLUMN_USER_ID + " = ?)";
+                    CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_IS_ACTIVE + " = 1 AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ userId };
         }
 
@@ -295,11 +305,11 @@ public class CategoryDao {
         String[] selectionArgs;
 
         if (userId == null) {
-            selection = CategoryEntry.COLUMN_USER_ID + " IS NULL";
+            selection = CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = null;
         } else {
             selection = "(" + CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
-                    CategoryEntry.COLUMN_USER_ID + " = ?)";
+                    CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ userId };
         }
 
@@ -340,11 +350,13 @@ public class CategoryDao {
     public int update(@NonNull Category category) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
+        long now = IdGenerator.getCurrentTimestamp();
         ContentValues values = new ContentValues();
 
-        // Nếu là hệ thống thì chỉ cho update is_active
+        // Nếu là hệ thống thì chỉ cho update is_active và updated_at
         if (category.isSystemCategory()) {
             values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
+            values.put(CategoryEntry.COLUMN_UPDATED_AT, now);
         } else {
             values.put(CategoryEntry.COLUMN_NAME, category.getName());
             if (category.getType() != null) {
@@ -352,6 +364,12 @@ public class CategoryDao {
             }
             values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
             values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
+            values.put(CategoryEntry.COLUMN_UPDATED_AT, now);
+            if (category.getDeletedAt() != null) {
+                values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt());
+            } else {
+                values.putNull(CategoryEntry.COLUMN_DELETED_AT);
+            }
         }
 
         return db.update(
@@ -374,9 +392,15 @@ public class CategoryDao {
      */
     public int delete(@NonNull String categoryId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        return db.delete(
+        // Soft delete: chỉ cập nhật deleted_at thay vì xóa vật lý
+        // Đảm bảo server nhận biết được bản ghi đã bị xóa khi sync
+        ContentValues values = new ContentValues();
+        values.put(CategoryEntry.COLUMN_DELETED_AT, IdGenerator.getCurrentTimestamp());
+        values.put(CategoryEntry.COLUMN_UPDATED_AT, IdGenerator.getCurrentTimestamp());
+        return db.update(
                 CategoryEntry.TABLE_NAME,
-                CategoryEntry.COLUMN_ID + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NOT NULL",
+                values,
+                CategoryEntry.COLUMN_ID + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NOT NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL",
                 new String[]{categoryId}
         );
     }
@@ -405,6 +429,7 @@ public class CategoryDao {
                 .setType(type)
                 .setIconName(CursorUtils.getString(cursor, CategoryEntry.COLUMN_ICON_NAME))
                 .setIsActive(isActiveInt == 1)
+                .setDeletedAt(CursorUtils.getLong(cursor, CategoryEntry.COLUMN_DELETED_AT) == 0 ? null : CursorUtils.getLong(cursor, CategoryEntry.COLUMN_DELETED_AT))
                 .build();
     }
 

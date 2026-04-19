@@ -12,20 +12,17 @@ import java.util.List;
  * It abstracts the data source from the rest of the application, allowing:
  *
  * 1. DECOUPLING: UI layer (Activities/Fragments) depends on this interface,
- *    not on concrete implementations (MockExpenseRepository, ApiExpenseRepository, etc.)
+ *    not on concrete implementations.
  *
  * 2. TESTABILITY: Easy to mock for unit testing without needing real data sources.
  *
- * 3. FLEXIBILITY: Swap data sources (mock → API → database) without changing UI code.
+ * 3. FLEXIBILITY: Swap data sources without changing UI code.
  *
- * HOW TO REPLACE MOCK DATA WITH REAL API:
+ * HOW TO ADD NEW IMPLEMENTATIONS:
  * ─────────────────────────────────────────
  * 1. Create a new class: ApiExpenseRepository implements ExpenseRepository
  * 2. Implement the methods using Retrofit/OkHttp to call your backend API
- * 3. In HomeActivity (or use Dependency Injection), replace:
- *      expenseRepository = new MockExpenseRepository();
- *    with:
- *      expenseRepository = new ApiExpenseRepository(apiService);
+ * 3. Inject it into your components
  *
  * The UI code remains unchanged because it depends on the ExpenseRepository interface,
  * not the concrete implementation. This is the Dependency Inversion Principle (D in SOLID).

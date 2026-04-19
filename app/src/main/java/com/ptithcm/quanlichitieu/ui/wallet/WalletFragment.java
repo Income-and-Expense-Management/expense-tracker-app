@@ -19,6 +19,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
+import com.ptithcm.quanlichitieu.ui.login.AuthViewModel;
 
 public class WalletFragment extends Fragment {
 
@@ -39,6 +40,9 @@ public class WalletFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         viewModel = new ViewModelProvider(requireActivity()).get(WalletViewModel.class);
+        AuthViewModel authViewModel = new ViewModelProvider(requireActivity()).get(AuthViewModel.class);
+        
+        viewModel.setCurrentUserId(authViewModel.getUserId());
 
         initViews(view);
         setupRecyclerView();
@@ -148,5 +152,13 @@ public class WalletFragment extends Fragment {
                 .replace(R.id.fragmentContainer, EditWalletFragment.newInstance(wallet.getId()))
                 .addToBackStack(null)
                 .commit();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Reload danh sách ví khi quay lại màn hình (sau orientation change,
+        // sau khi popBackStack từ AddWalletFragment hoặc EditWalletFragment)
+        viewModel.loadAllWallets();
     }
 }

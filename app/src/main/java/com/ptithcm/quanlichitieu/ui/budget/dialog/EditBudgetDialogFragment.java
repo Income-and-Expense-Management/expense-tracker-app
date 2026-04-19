@@ -267,15 +267,13 @@ public class EditBudgetDialogFragment extends DialogFragment {
 
     private void observeViewModel() {
         viewModel.getOperationResult().observe(getViewLifecycleOwner(), result -> {
-            if (result != null) {
+            if (result != null && result.getAction() == BudgetViewModel.Action.UPDATE && !result.hasBeenHandled()) {
                 Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
                 if (result.isSuccess()) {
                     if (onBudgetEditedListener != null) {
                         onBudgetEditedListener.onBudgetEdited();
                     }
                     dismiss();
-                    // ✅ Clear sau khi dismiss để tránh toast hiện lại
-                    viewModel.clearOperationResult();
                 }
             }
         });

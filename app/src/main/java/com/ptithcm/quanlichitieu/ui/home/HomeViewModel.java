@@ -9,8 +9,12 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.ptithcm.quanlichitieu.data.local.DatabaseManager;
 import com.ptithcm.quanlichitieu.data.local.dao.WalletDao;
+import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
+import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
 import com.ptithcm.quanlichitieu.data.model.Expense;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
+import com.ptithcm.quanlichitieu.data.model.Transaction;
+import com.ptithcm.quanlichitieu.data.local.dao.TransactionDao;
 import com.ptithcm.quanlichitieu.data.repository.DbExpenseRepository;
 import com.ptithcm.quanlichitieu.data.repository.ExpenseRepository;
 import com.ptithcm.quanlichitieu.data.repository.TransactionRepository;
@@ -22,8 +26,9 @@ public class HomeViewModel extends AndroidViewModel {
 
     private static final int TOP_EXPENSES_LIMIT = 3;
 
-    private final ExpenseRepository expenseRepository;
+    private final TransactionDao transactionDao;
     private final WalletDao walletDao;
+    private final TokenStorage tokenStorage;
     private final TransactionRepository transactionRepository;
 
     private final MutableLiveData<String> username = new MutableLiveData<>();
@@ -35,9 +40,10 @@ public class HomeViewModel extends AndroidViewModel {
 
     public HomeViewModel(@NonNull Application application) {
         super(application);
-        this.expenseRepository = new DbExpenseRepository(application);
+        this.transactionDao = DatabaseManager.getInstance(application).getTransactionDao();
         this.walletDao = DatabaseManager.getInstance(application).getWalletDao();
         this.transactionRepository = new TransactionRepositoryImpl(application);
+        this.tokenStorage = EncryptedTokenStorage.getInstance(application);
     }
 
     public LiveData<String> getUsername() { return username; }
@@ -53,9 +59,8 @@ public class HomeViewModel extends AndroidViewModel {
     }
 
     public void loadWallet() {
-        // TODO: Lấy userId từ session/auth service
-        // Hiện tại trả về null vì chưa có user
-        List<Wallet> wallets = walletDao.getByUserId(null);
+        String userId = tokenStorage.getUserId();
+        List<Wallet> wallets = walletDao.getByUserId(userId);
         if (!wallets.isEmpty()) {
             wallet.setValue(wallets.get(0));
         } else {
@@ -72,7 +77,39 @@ public class HomeViewModel extends AndroidViewModel {
     }
 
     public void loadTopExpenses() {
-        topExpenses.setValue(expenseRepository.getTopExpenses(TOP_EXPENSES_LIMIT));
+        Wallet activeWallet = wallet.getValue();
+        if (activeWallet == null) {
+            topExpenses.setValue(new java.util.ArrayList<>());
+            return;
+        }
+
+        new Thread(() -> {
+            List<Transaction> transactions = transactionDao.getWithDetails(activeWallet.getId(), TOP_EXPENSES_LIMIT * 4);
+            List<Expense> result = new java.util.ArrayList<>();
+            int count = 0;
+            for (Transaction t : transactions) {
+                if (t.isExpense()) {
+                    String iconName = t.getIconId();
+                    int resId = com.ptithcm.quanlichitieu.R.drawable.ic_food;
+                    if (iconName != null && !iconName.isEmpty()) {
+                        resId = getApplication().getResources().getIdentifier(iconName, "drawable", getApplication().getPackageName());
+                        if (resId == 0) resId = com.ptithcm.quanlichitieu.R.drawable.ic_food;
+                    }
+
+                    result.add(new Expense(
+                        t.getId().hashCode(),
+                        t.getCategoryName() != null ? t.getCategoryName() : "Khác",
+                        t.getNote() != null && !t.getNote().isEmpty() ? t.getNote() : "Chi tiêu",
+                        t.getAmount(),
+                        resId,
+                        t.getTransactionDate()
+                    ));
+                    count++;
+                    if (count >= TOP_EXPENSES_LIMIT) break;
+                }
+            }
+            topExpenses.postValue(result);
+        }).start();
     }
 
     public void setPeriodFilter(boolean isMonth) {

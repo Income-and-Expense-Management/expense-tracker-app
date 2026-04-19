@@ -110,7 +110,7 @@ public class TransactionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         void bind(TransactionGroup group) {
             tvDayOfWeek.setText(group.getDayOfWeek());
             tvDate.setText(group.getDate());
-            String total = String.format(Locale.getDefault(), "%,.0f đ", group.getDayTotal());
+            String total = String.format(Locale.getDefault(), "%,d đ", group.getDayTotal());
             tvDayTotal.setText(total);
         }
     }

@@ -38,35 +38,7 @@ public class WalletDao {
         }
     }
 
-    public void setActiveWallet(String walletId, String userId) {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.beginTransaction();
-        try {
-            // 1. Set all wallets of this user to inactive
-            ContentValues inactiveValues = new ContentValues();
-            inactiveValues.put(WalletEntry.COLUMN_IS_ACTIVE, 0);
-            
-            String where;
-            String[] args;
-            if (userId != null) {
-                where = WalletEntry.COLUMN_USER_ID + " = ?";
-                args = new String[]{userId};
-            } else {
-                where = WalletEntry.COLUMN_USER_ID + " IS NULL";
-                args = null;
-            }
-            db.update(WalletEntry.TABLE_NAME, inactiveValues, where, args);
 
-            // 2. Set the selected wallet to active
-            ContentValues activeValues = new ContentValues();
-            activeValues.put(WalletEntry.COLUMN_IS_ACTIVE, 1);
-            db.update(WalletEntry.TABLE_NAME, activeValues, WalletEntry.COLUMN_ID + " = ?", new String[]{walletId});
-
-            db.setTransactionSuccessful();
-        } finally {
-            db.endTransaction();
-        }
-    }
 
     @Nullable
     public String insert(@NonNull Wallet wallet) {
@@ -89,7 +61,11 @@ public class WalletDao {
         values.put(WalletEntry.COLUMN_ICON_ID, wallet.getIconId());
         values.put(WalletEntry.COLUMN_CREATED_AT, wallet.getCreatedAt());
         values.put(WalletEntry.COLUMN_UPDATED_AT, wallet.getUpdatedAt());
-        values.put(WalletEntry.COLUMN_IS_ACTIVE, wallet.getIsActiveAsInt());
+        if (wallet.getDeletedAt() != null) {
+            values.put(WalletEntry.COLUMN_DELETED_AT, wallet.getDeletedAt());
+        } else {
+            values.putNull(WalletEntry.COLUMN_DELETED_AT);
+        }
 
         long result = db.insert(WalletEntry.TABLE_NAME, null, values);
         return (result == -1) ? null : wallet.getId();
@@ -100,7 +76,8 @@ public class WalletDao {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor cursor = null;
         try {
-            String selection = (userId != null) ? WalletEntry.COLUMN_USER_ID + " = ?" : WalletEntry.COLUMN_USER_ID + " IS NULL";
+            String selection = (userId != null) ? WalletEntry.COLUMN_USER_ID + " = ? AND " + WalletEntry.COLUMN_DELETED_AT + " IS NULL" 
+                                                : WalletEntry.COLUMN_USER_ID + " IS NULL AND " + WalletEntry.COLUMN_DELETED_AT + " IS NULL";
             String[] selectionArgs = (userId != null) ? new String[]{userId} : null;
 
             cursor = db.query(WalletEntry.TABLE_NAME, null, selection, selectionArgs, null, null, WalletEntry.COLUMN_CREATED_AT + " DESC");
@@ -126,13 +103,21 @@ public class WalletDao {
                 .setIconId(CursorUtils.getString(cursor, WalletEntry.COLUMN_ICON_ID))
                 .setCreatedAt(CursorUtils.getLong(cursor, WalletEntry.COLUMN_CREATED_AT))
                 .setUpdatedAt(CursorUtils.getLong(cursor, WalletEntry.COLUMN_UPDATED_AT))
-                .setIsActive(CursorUtils.getBoolean(cursor, WalletEntry.COLUMN_IS_ACTIVE))
+                .setDeletedAt(CursorUtils.getLong(cursor, WalletEntry.COLUMN_DELETED_AT) == 0 ? null : CursorUtils.getLong(cursor, WalletEntry.COLUMN_DELETED_AT))
                 .build();
     }
 
     public int delete(@NonNull String walletId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        return db.delete(WalletEntry.TABLE_NAME, WalletEntry.COLUMN_ID + " = ?", new String[]{walletId});
+        // Soft delete: chỉ cập nhật deleted_at thay vì xóa vật lý
+        // Đảm bảo server nhận biết được bản ghi đã bị xóa khi sync
+        long now = IdGenerator.getCurrentTimestamp();
+        ContentValues values = new ContentValues();
+        values.put(WalletEntry.COLUMN_DELETED_AT, now);
+        values.put(WalletEntry.COLUMN_UPDATED_AT, now);
+        return db.update(WalletEntry.TABLE_NAME, values,
+                WalletEntry.COLUMN_ID + " = ? AND " + WalletEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{walletId});
     }
 
     public int update(@NonNull Wallet wallet) {
@@ -145,7 +130,11 @@ public class WalletDao {
         values.put(WalletEntry.COLUMN_CURRENCY, wallet.getCurrency());
         values.put(WalletEntry.COLUMN_ICON_ID, wallet.getIconId());
         values.put(WalletEntry.COLUMN_UPDATED_AT, wallet.getUpdatedAt());
-        values.put(WalletEntry.COLUMN_IS_ACTIVE, wallet.getIsActiveAsInt());
+        if (wallet.getDeletedAt() != null) {
+            values.put(WalletEntry.COLUMN_DELETED_AT, wallet.getDeletedAt());
+        } else {
+            values.putNull(WalletEntry.COLUMN_DELETED_AT);
+        }
 
         return db.update(WalletEntry.TABLE_NAME, values, WalletEntry.COLUMN_ID + " = ?", new String[]{wallet.getId()});
     }

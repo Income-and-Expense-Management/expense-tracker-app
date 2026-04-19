@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.ptithcm.quanlichitieu.R;
+import com.ptithcm.quanlichitieu.ui.login.AuthViewModel;
 
 /**
  * AddWalletFragment: Form for creating a new wallet.
@@ -44,6 +45,8 @@ public class AddWalletFragment extends Fragment {
         toggleBottomNavigation(false);
 
         viewModel = new ViewModelProvider(requireActivity()).get(WalletViewModel.class);
+        AuthViewModel authViewModel = new ViewModelProvider(requireActivity()).get(AuthViewModel.class);
+        viewModel.setCurrentUserId(authViewModel.getUserId());
 
         etName = view.findViewById(R.id.etName);
         etBalance = view.findViewById(R.id.etBalance);

@@ -68,11 +68,14 @@
                 android:paddingEnd="12dp"
                 android:paddingBottom="6dp">
 
-                <View
+                <!-- Changed from a static View to ImageView so we can set icon dynamically -->
+                <ImageView
+                    android:id="@+id/ivWalletIcon"
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:layout_marginEnd="8dp"
-                    android:background="@drawable/ic_wallet" />
+                    android:src="@drawable/ic_wallet"
+                    android:contentDescription="Icon ví" />
 
                 <TextView
                     android:id="@+id/tvWalletName"

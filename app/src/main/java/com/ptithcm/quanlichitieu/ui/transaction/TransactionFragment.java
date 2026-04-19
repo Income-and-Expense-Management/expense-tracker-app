@@ -116,13 +116,13 @@ public class TransactionFragment extends Fragment {
         });
 
         viewModel.getTotalBalance().observe(getViewLifecycleOwner(), balance ->
-                tvTotalBalance.setText(String.format(Locale.getDefault(), "%,.0f đ", balance)));
+                tvTotalBalance.setText(String.format(Locale.getDefault(), "%,d đ", balance)));
 
         viewModel.getTotalExpense().observe(getViewLifecycleOwner(), expense ->
-                tvTotalExpense.setText(String.format(Locale.getDefault(), "%,.0f đ", expense)));
+                tvTotalExpense.setText(String.format(Locale.getDefault(), "%,d đ", expense)));
 
         viewModel.getTotalIncome().observe(getViewLifecycleOwner(), income ->
-                tvTotalIncome.setText(String.format(Locale.getDefault(), "%,.0f đ", income)));
+                tvTotalIncome.setText(String.format(Locale.getDefault(), "%,d đ", income)));
 
         viewModel.getTransactions().observe(getViewLifecycleOwner(), groups ->
                 transactionAdapter.setGroups(groups));
@@ -135,5 +135,25 @@ public class TransactionFragment extends Fragment {
         super.onResume();
         // Cập nhật lại ví khi quay lại màn hình
         walletViewModel.loadActiveWallet();
+
+        // Tải lại danh sách giao dịch phòng trường hợp vừa thêm mới từ trang khác
+        com.ptithcm.quanlichitieu.data.model.Wallet currentWallet = walletViewModel.getSelectedWallet().getValue();
+        if (currentWallet != null) {
+            viewModel.loadData(currentWallet);
+        }
+    }
+
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        if (!hidden) {
+            // Khi tab được hiển thị lại (trong trường hợp sử dụng hide/show fragment)
+            walletViewModel.loadActiveWallet();
+
+            com.ptithcm.quanlichitieu.data.model.Wallet currentWallet = walletViewModel.getSelectedWallet().getValue();
+            if (currentWallet != null) {
+                viewModel.loadData(currentWallet);
+            }
+        }
     }
 }

@@ -6,7 +6,7 @@ import androidx.annotation.NonNull;
  * Repository interface abstracting authentication data sources from the UI layer.
  *
  * Dependency Inversion: ViewModels depend on this interface, not concrete classes.
- * Open/Closed: Swap MockAuthService for AuthRepositoryImpl without touching UI code.
+ * Open/Closed: Swap implementations without touching UI code.
  * Interface Segregation: Only exposes auth-related operations.
  */
 public interface AuthRepository {

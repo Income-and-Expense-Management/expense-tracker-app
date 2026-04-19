@@ -34,9 +34,9 @@ public class TransactionViewModel extends AndroidViewModel {
     private final TransactionRepository transactionRepository;
 
     private final MutableLiveData<List<TransactionGroup>> transactions = new MutableLiveData<>(new ArrayList<>());
-    private final MutableLiveData<Double> totalBalance = new MutableLiveData<>(0.0);
-    private final MutableLiveData<Double> totalExpense = new MutableLiveData<>(0.0);
-    private final MutableLiveData<Double> totalIncome = new MutableLiveData<>(0.0);
+    private final MutableLiveData<Long> totalBalance = new MutableLiveData<>(0L);
+    private final MutableLiveData<Long> totalExpense = new MutableLiveData<>(0L);
+    private final MutableLiveData<Long> totalIncome = new MutableLiveData<>(0L);
     private final MutableLiveData<Integer> monthOffset = new MutableLiveData<>(0);
 
     // Lưu wallet hiện tại để sử dụng khi thay đổi monthOffset
@@ -54,15 +54,15 @@ public class TransactionViewModel extends AndroidViewModel {
         return transactions; 
     }
     
-    public LiveData<Double> getTotalBalance() { 
+    public LiveData<Long> getTotalBalance() { 
         return totalBalance; 
     }
     
-    public LiveData<Double> getTotalExpense() { 
+    public LiveData<Long> getTotalExpense() { 
         return totalExpense; 
     }
     
-    public LiveData<Double> getTotalIncome() { 
+    public LiveData<Long> getTotalIncome() { 
         return totalIncome; 
     }
     
@@ -100,9 +100,9 @@ public class TransactionViewModel extends AndroidViewModel {
         if (selectedWallet == null) {
             // Không có ví được chọn - hiển thị empty state
             transactions.setValue(new ArrayList<>());
-            totalBalance.setValue(0.0);
-            totalExpense.setValue(0.0);
-            totalIncome.setValue(0.0);
+            totalBalance.setValue(0L);
+            totalExpense.setValue(0L);
+            totalIncome.setValue(0L);
             return;
         }
 
@@ -114,15 +114,15 @@ public class TransactionViewModel extends AndroidViewModel {
         transactions.setValue(transactionGroups);
         
         // Tính tổng thu nhập và chi tiêu trong tháng
-        double income = transactionRepository.getTotalIncome(walletId, offset);
-        double expense = transactionRepository.getTotalExpense(walletId, offset);
+        long income = transactionRepository.getTotalIncome(walletId, offset);
+        long expense = transactionRepository.getTotalExpense(walletId, offset);
         
         totalIncome.setValue(income);
         totalExpense.setValue(expense);
         
         // Tính số dư hiện tại của ví
         // Công thức: Số dư ban đầu + Tổng thu nhập - Tổng chi tiêu
-        double balance = selectedWallet.getInitialBalance() + income - expense;
+        long balance = selectedWallet.getInitialBalance() + income - expense;
         totalBalance.setValue(balance);
     }
 }
