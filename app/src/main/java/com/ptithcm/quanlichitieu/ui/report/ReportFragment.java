@@ -17,6 +17,7 @@ import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.data.model.Transaction;
 import com.ptithcm.quanlichitieu.data.model.TransactionGroup;
 import com.ptithcm.quanlichitieu.data.model.TransactionType;
+import com.ptithcm.quanlichitieu.ui.budget.bottomsheet.SelectWalletBottomSheet;
 import com.ptithcm.quanlichitieu.ui.transaction.TransactionViewModel;
 import com.ptithcm.quanlichitieu.ui.wallet.WalletViewModel;
 import com.ptithcm.quanlichitieu.ui.main.MainActivity;
@@ -35,6 +36,7 @@ public class ReportFragment extends Fragment {
     private TextView tabPrevMonth, tabCurrentMonth, tabNextMonth;
     private TextView tvTotalExpense, tvTotalIncome;
     private TextView tvWalletName;
+    private android.widget.ImageView ivWalletIcon;
     private RecyclerView rvReportItems;
     private ReportAdapter adapter;
     private PieChartView pieChart;
@@ -92,12 +94,17 @@ public class ReportFragment extends Fragment {
         });
 
         tvWalletName = view.findViewById(R.id.tvWalletName);
+        ivWalletIcon = view.findViewById(R.id.ivWalletIcon);
         View walletChip = view.findViewById(R.id.walletChip);
         if (walletChip != null) {
             walletChip.setOnClickListener(v -> {
-                if (requireActivity() instanceof MainActivity) {
-                    ((MainActivity) requireActivity()).openWalletList();
-                }
+                SelectWalletBottomSheet bottomSheet = SelectWalletBottomSheet.newInstance();
+                bottomSheet.setOnWalletSelectedListener(wallet -> {
+                    if (walletViewModel != null) {
+                        walletViewModel.selectWallet(wallet);
+                    }
+                });
+                bottomSheet.show(getChildFragmentManager(), SelectWalletBottomSheet.TAG);
             });
         }
 
@@ -155,6 +162,18 @@ public class ReportFragment extends Fragment {
         walletViewModel.getSelectedWallet().observe(getViewLifecycleOwner(), wallet -> {
             if (wallet != null && tvWalletName != null) {
                 tvWalletName.setText(wallet.getName());
+                if (ivWalletIcon != null) {
+                    String iconId = wallet.getIconId();
+                    if (iconId != null && !iconId.isEmpty()) {
+                        int resId = requireContext().getResources().getIdentifier(iconId, "drawable", requireContext().getPackageName());
+                        ivWalletIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_wallet);
+                    } else {
+                        ivWalletIcon.setImageResource(R.drawable.ic_wallet);
+                    }
+                }
+            } else {
+                if (tvWalletName != null) tvWalletName.setText("Chưa có ví");
+                if (ivWalletIcon != null) ivWalletIcon.setImageResource(R.drawable.ic_wallet);
             }
             transactionViewModel.loadData(wallet);
         });
@@ -174,7 +193,20 @@ public class ReportFragment extends Fragment {
         });
     }
 
+    private void updateCardStyles() {
+        if (!isAdded() || btnExpenseCard == null || btnIncomeCard == null) return;
+
+        if (currentReportType == TransactionType.EXPENSE) {
+            btnExpenseCard.setBackgroundResource(R.drawable.bg_summary_card_expense_active);
+            btnIncomeCard.setBackgroundResource(R.drawable.bg_summary_card);
+        } else {
+            btnExpenseCard.setBackgroundResource(R.drawable.bg_summary_card);
+            btnIncomeCard.setBackgroundResource(R.drawable.bg_summary_card_income_active);
+        }
+    }
+
     private void updateChartAndList() {
+        updateCardStyles();
         List<TransactionGroup> groups = transactionViewModel.getTransactions().getValue();
         if (groups == null) return;
 

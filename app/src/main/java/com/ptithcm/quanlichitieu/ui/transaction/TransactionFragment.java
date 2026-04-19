@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ptithcm.quanlichitieu.R;
+import com.ptithcm.quanlichitieu.ui.budget.bottomsheet.SelectWalletBottomSheet;
 import com.ptithcm.quanlichitieu.ui.transaction.adapter.TransactionAdapter;
 import com.ptithcm.quanlichitieu.ui.wallet.WalletViewModel;
 import com.ptithcm.quanlichitieu.ui.main.MainActivity;
@@ -32,6 +33,7 @@ public class TransactionFragment extends Fragment {
     private RecyclerView rvTransactions;
 
     private TextView tvWalletName;
+    private android.widget.ImageView ivWalletIcon;
 
     private TextView tabPrevMonth;
     private TextView tabCurrentMonth;
@@ -68,6 +70,19 @@ public class TransactionFragment extends Fragment {
         rvTransactions = view.findViewById(R.id.rvTransactions);
 
         tvWalletName = view.findViewById(R.id.tvWalletName);
+        ivWalletIcon = view.findViewById(R.id.ivWalletIcon);
+        View walletChip = view.findViewById(R.id.walletChip);
+        if (walletChip != null) {
+            walletChip.setOnClickListener(v -> {
+                SelectWalletBottomSheet bottomSheet = SelectWalletBottomSheet.newInstance();
+                bottomSheet.setOnWalletSelectedListener(wallet -> {
+                    if (walletViewModel != null) {
+                        walletViewModel.selectWallet(wallet);
+                    }
+                });
+                bottomSheet.show(getChildFragmentManager(), SelectWalletBottomSheet.TAG);
+            });
+        }
 
         tabPrevMonth = view.findViewById(R.id.tabPrevMonth);
         tabCurrentMonth = view.findViewById(R.id.tabCurrentMonth);
@@ -122,10 +137,20 @@ public class TransactionFragment extends Fragment {
         walletViewModel.getSelectedWallet().observe(getViewLifecycleOwner(), wallet -> {
             if (wallet != null) {
                 if (tvWalletName != null) tvWalletName.setText(wallet.getName());
+                if (ivWalletIcon != null) {
+                    String iconId = wallet.getIconId();
+                    if (iconId != null && !iconId.isEmpty()) {
+                        int resId = requireContext().getResources().getIdentifier(iconId, "drawable", requireContext().getPackageName());
+                        ivWalletIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_wallet);
+                    } else {
+                        ivWalletIcon.setImageResource(R.drawable.ic_wallet);
+                    }
+                }
                 // Khi ví thay đổi, yêu cầu TransactionViewModel tải lại dữ liệu với ví mới
                 viewModel.loadData(wallet);
             } else {
                 if (tvWalletName != null) tvWalletName.setText("Chưa có ví");
+                if (ivWalletIcon != null) ivWalletIcon.setImageResource(R.drawable.ic_wallet);
                 viewModel.loadData(null);
             }
         });
