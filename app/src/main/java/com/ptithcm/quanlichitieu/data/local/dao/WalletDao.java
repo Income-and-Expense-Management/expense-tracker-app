@@ -138,4 +138,70 @@ public class WalletDao {
 
         return db.update(WalletEntry.TABLE_NAME, values, WalletEntry.COLUMN_ID + " = ?", new String[]{wallet.getId()});
     }
+
+    /**
+     * Insert ví từ server vào local DB, giữ nguyên toàn bộ timestamps từ server.
+     * Dùng cho UPSERT khi kéo dữ liệu từ server về (pull sync).
+     *
+     * KHÁC với insert() thông thường: KHÔNG ghi đè createdAt/updatedAt bằng now.
+     *
+     * @return walletId nếu thành công, null nếu lỗi
+     */
+    @Nullable
+    public String insertFromServer(@NonNull Wallet wallet) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(WalletEntry.COLUMN_ID, wallet.getId());
+        values.put(WalletEntry.COLUMN_USER_ID, wallet.getUserId());
+        values.put(WalletEntry.COLUMN_NAME, wallet.getName());
+        values.put(WalletEntry.COLUMN_INITIAL_BALANCE, wallet.getInitialBalance());
+        values.put(WalletEntry.COLUMN_CURRENCY, wallet.getCurrency() != null ? wallet.getCurrency() : "VND");
+        values.put(WalletEntry.COLUMN_ICON_ID, wallet.getIconId());
+        // Giữ nguyên timestamps từ server — không dùng IdGenerator.getCurrentTimestamp()
+        values.put(WalletEntry.COLUMN_CREATED_AT, wallet.getCreatedAt() > 0 ? wallet.getCreatedAt() : IdGenerator.getCurrentTimestamp());
+        values.put(WalletEntry.COLUMN_UPDATED_AT, wallet.getUpdatedAt() > 0 ? wallet.getUpdatedAt() : IdGenerator.getCurrentTimestamp());
+        if (wallet.getDeletedAt() != null) {
+            values.put(WalletEntry.COLUMN_DELETED_AT, wallet.getDeletedAt());
+        } else {
+            values.putNull(WalletEntry.COLUMN_DELETED_AT);
+        }
+
+        long result = db.insert(WalletEntry.TABLE_NAME, null, values);
+        if (result == -1) {
+            Log.w(TAG, "insertFromServer: Failed for wallet id=" + wallet.getId());
+            return null;
+        }
+        return wallet.getId();
+    }
+
+    /**
+     * Cập nhật ví từ server, giữ nguyên timestamps từ server.
+     * Dùng cho UPSERT khi server có phiên bản mới hơn local (updated_at server > local).
+     *
+     * @return số rows affected
+     */
+    public int updateFromServer(@NonNull Wallet wallet) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(WalletEntry.COLUMN_NAME, wallet.getName());
+        values.put(WalletEntry.COLUMN_INITIAL_BALANCE, wallet.getInitialBalance());
+        values.put(WalletEntry.COLUMN_CURRENCY, wallet.getCurrency() != null ? wallet.getCurrency() : "VND");
+        values.put(WalletEntry.COLUMN_ICON_ID, wallet.getIconId());
+        // Giữ nguyên updatedAt từ server để so sánh lần sau
+        values.put(WalletEntry.COLUMN_UPDATED_AT, wallet.getUpdatedAt());
+        if (wallet.getDeletedAt() != null) {
+            // Ví đã bị xóa trên server → soft delete local
+            values.put(WalletEntry.COLUMN_DELETED_AT, wallet.getDeletedAt());
+        } else {
+            values.putNull(WalletEntry.COLUMN_DELETED_AT);
+        }
+
+        int rows = db.update(WalletEntry.TABLE_NAME, values,
+                WalletEntry.COLUMN_ID + " = ?", new String[]{wallet.getId()});
+        Log.d(TAG, "updateFromServer: Updated " + rows + " row(s) for wallet id=" + wallet.getId());
+        return rows;
+    }
 }
+

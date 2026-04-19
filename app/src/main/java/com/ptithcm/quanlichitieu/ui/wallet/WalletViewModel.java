@@ -9,49 +9,82 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.ptithcm.quanlichitieu.data.local.DatabaseManager;
+import com.ptithcm.quanlichitieu.data.local.dao.BudgetDao;
+import com.ptithcm.quanlichitieu.data.local.dao.TransactionDao;
 import com.ptithcm.quanlichitieu.data.local.dao.WalletDao;
 import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
 import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
+import com.ptithcm.quanlichitieu.data.repository.WalletRepository;
+import com.ptithcm.quanlichitieu.data.repository.WalletRepositoryImpl;
 
 import java.util.List;
 
+/**
+ * WalletViewModel — Quản lý state và business logic của màn hình Wallet.
+ *
+ * Kiến trúc: Local-First sync thông qua WalletRepository.
+ * - Thao tác write (tạo/sửa/xóa) lưu local TRƯỚC → thông báo UI NGAY.
+ * - Sau đó push lên server bất đồng bộ (fire-and-forget).
+ * - syncStatus LiveData thông báo kết quả push về server cho UI.
+ *
+ * Scoped tới Activity (ViewModelProvider(requireActivity())) để chia sẻ
+ * trạng thái ví đang chọn giữa HomeFragment, TransactionFragment, BudgetFragment.
+ */
 public class WalletViewModel extends AndroidViewModel {
 
-    private final WalletDao walletDao;
+    // ==================== TRẠNG THÁI SYNC VỚI SERVER ====================
+
+    /**
+     * Trạng thái đồng bộ với server.
+     * - SYNCING: đang gọi API
+     * - SYNC_SUCCESS: server xác nhận thành công
+     * - SYNC_FAILED: server lỗi hoặc offline (dữ liệu đã lưu local)
+     */
+    public enum SyncStatus { SYNCING, SYNC_SUCCESS, SYNC_FAILED }
+
+    // ==================== LIVE DATA ====================
 
     private final MutableLiveData<List<Wallet>> wallets = new MutableLiveData<>();
     private final MutableLiveData<Wallet> selectedWallet = new MutableLiveData<>();
     private final MutableLiveData<Wallet> singleWallet = new MutableLiveData<>();
     private final MutableLiveData<SaveResult> saveResult = new MutableLiveData<>();
+    /** Kết quả push lên server — Fragment observe để hiện Snackbar nếu lỗi. */
+    private final MutableLiveData<SyncStatus> syncStatus = new MutableLiveData<>();
 
-    /**
-     * When auth isn't implemented yet, legacy data may have user_id = NULL.
-     * We keep currentUserId nullable by default for backward compatibility.
-     */
+    // ==================== DEPENDENCIES ====================
+
+    private final WalletRepository walletRepository;
+    private final TransactionDao transactionDao;
+    private final BudgetDao budgetDao;
+    private final WalletDao walletDao; // dùng riêng cho loadWalletById
+
     @Nullable
     private String currentUserId;
 
+    // ==================== CONSTRUCTOR ====================
+
     public WalletViewModel(@NonNull Application application) {
         super(application);
-        this.walletDao = DatabaseManager.getInstance(application).getWalletDao();
-        
+        DatabaseManager dbManager = DatabaseManager.getInstance(application);
+        this.walletDao = dbManager.getWalletDao();
+        this.transactionDao = dbManager.getTransactionDao();
+        this.budgetDao = dbManager.getBudgetDao();
+
         TokenStorage tokenStorage = EncryptedTokenStorage.getInstance(application);
         this.currentUserId = tokenStorage.getUserId();
+
+        // Truyền userId vào repository để UPSERT từ server lọc đúng user
+        this.walletRepository = new WalletRepositoryImpl(
+                application, walletDao, tokenStorage, this.currentUserId);
     }
 
-    /**
-     * Allow Activities/Fragments to set the current userId (when auth is implemented).
-     */
+    // ==================== USER ID MANAGEMENT ====================
+
     public void setCurrentUserId(@Nullable String userId) {
         this.currentUserId = (userId == null || userId.trim().isEmpty()) ? null : userId;
     }
 
-    /**
-     * Trả về userId cho SharedPrefs key.
-     * Luôn trả về chuỗi không null để key nhất quán giữa các ViewModel.
-     * Key format: "active_wallet_id_" + getUserIdForKey()
-     */
     private String getUserIdForKey() {
         return (currentUserId != null && !currentUserId.trim().isEmpty()) ? currentUserId : "default";
     }
@@ -61,40 +94,24 @@ public class WalletViewModel extends AndroidViewModel {
         return (currentUserId == null || currentUserId.trim().isEmpty()) ? null : currentUserId;
     }
 
-    private List<Wallet> getWalletsForCurrentUserOrLegacyFallback() {
-        String userId = userIdOrNull();
-        List<Wallet> list = walletDao.getByUserId(userId);
-        if ((list == null || list.isEmpty()) && userId != null) {
-            // Fallback: app versions before auth stored wallets with user_id = NULL.
-            list = walletDao.getByUserId(null);
-        }
-        return list;
-    }
+    // ==================== LIVE DATA GETTERS ====================
 
-    public LiveData<List<Wallet>> getWallets() {
-        return wallets;
-    }
-
-    public LiveData<Wallet> getSelectedWallet() {
-        return selectedWallet;
-    }
-
-    public LiveData<SaveResult> getSaveResult() {
-        return saveResult;
-    }
+    public LiveData<List<Wallet>> getWallets() { return wallets; }
+    public LiveData<Wallet> getSelectedWallet() { return selectedWallet; }
+    public LiveData<Wallet> getSingleWallet() { return singleWallet; }
+    public LiveData<SaveResult> getSaveResult() { return saveResult; }
 
     /**
-     * LiveData chứa một wallet được load theo ID.
-     * Dùng cho EditWalletFragment để kông phụ thuộc vào getWallets() có thể null.
+     * Kết quả push lên server.
+     * UI (WalletFragment) observe LiveData này để hiển thị Snackbar khi lỗi sync.
      */
-    public LiveData<Wallet> getSingleWallet() {
-        return singleWallet;
-    }
+    public LiveData<SyncStatus> getSyncStatus() { return syncStatus; }
 
-    /**
-     * Load wallet theo ID trực tiếp từ DB.
-     * Chạy trên background thread, post kết quả về singleWallet LiveData.
-     */
+    public void clearSaveResult() { saveResult.setValue(null); }
+    public void clearSyncStatus() { syncStatus.setValue(null); }
+
+    // ==================== LOAD OPERATIONS ====================
+
     public void loadWalletById(String walletId) {
         if (walletId == null) return;
         new Thread(() -> {
@@ -103,125 +120,159 @@ public class WalletViewModel extends AndroidViewModel {
         }).start();
     }
 
-    public void clearSaveResult() {
-        saveResult.setValue(null);
+    /**
+     * Kéo ví mới nhất từ server về (UPSERT local), sau đó reload list.
+     *
+     * Giải quyết vấn đề: ví tạo từ web/thiết bị khác không xuất hiện trên app.
+     * Gọi từ WalletFragment.onResume() để luôn hiển thị dữ liệu mới nhất.
+     *
+     * Luồng:
+     *   Main thread → Volley GET /api/v1/wallets/
+     *     → BG thread: UPSERT SQLite
+     *     → onDone (BG thread): postValue(walletList) lên UI
+     */
+    public void refreshFromServer() {
+        // fetchFromServer phải chạy trên main thread (Volley requirement)
+        // onDone callback chạy trên BG thread (trong WalletApiService)
+        walletRepository.fetchFromServer(() -> {
+            // Callback này chạy sau khi UPSERT xong — reload list từ local DB
+            List<Wallet> list = getWalletsForCurrentUserOrLegacyFallback();
+            wallets.postValue(list); // postValue vì đang ở BG thread
+        });
     }
 
-    /**
-     * Tải ví đang được chọn (active) hoặc ví đầu tiên nếu chưa có ví nào active
-     */
+    public void loadAllWallets() {
+        new Thread(() -> {
+            List<Wallet> list = getWalletsForCurrentUserOrLegacyFallback();
+            wallets.postValue(list);
+        }).start();
+    }
+
     public void loadActiveWallet() {
-        List<Wallet> walletList = getWalletsForCurrentUserOrLegacyFallback();
-        if (walletList == null || walletList.isEmpty()) {
-            selectedWallet.setValue(null);
-            return;
-        }
+        new Thread(() -> {
+            List<Wallet> walletList = getWalletsForCurrentUserOrLegacyFallback();
+            if (walletList == null || walletList.isEmpty()) {
+                selectedWallet.postValue(null);
+                return;
+            }
 
-        android.content.SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
-        String savedWalletId = prefs.getString("active_wallet_id_" + getUserIdForKey(), null);
+            android.content.SharedPreferences prefs =
+                    getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
+            String savedWalletId = prefs.getString("active_wallet_id_" + getUserIdForKey(), null);
 
-        Wallet active = null;
-        if (savedWalletId != null) {
-            for (Wallet w : walletList) {
-                if (w.getId().equals(savedWalletId)) {
-                    active = w;
-                    break;
+            Wallet active = null;
+            if (savedWalletId != null) {
+                for (Wallet w : walletList) {
+                    if (w.getId().equals(savedWalletId)) {
+                        active = w;
+                        break;
+                    }
                 }
             }
-        }
 
-        if (active == null) {
-            active = walletList.get(0);
-            selectWallet(active);
-        } else {
-            selectedWallet.setValue(active);
-        }
+            if (active == null) {
+                active = walletList.get(0);
+                // gọi selectWallet nhưng không thể gọi trực tiếp vì đang ở thread khác
+                final Wallet finalActive = active;
+                android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                mainHandler.post(() -> selectWallet(finalActive));
+            } else {
+                selectedWallet.postValue(active);
+                wallets.postValue(walletList);
+            }
+        }).start();
     }
 
-    /**
-     * Thực hiện chọn ví: Cập nhật DB và thông báo cho các Fragment đang quan sát
-     */
     public void selectWallet(Wallet wallet) {
         if (wallet == null) return;
-
-        android.content.SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
+        android.content.SharedPreferences prefs =
+                getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
         prefs.edit().putString("active_wallet_id_" + getUserIdForKey(), wallet.getId()).apply();
-
         selectedWallet.setValue(wallet);
         loadAllWallets();
     }
 
-    public void loadAllWallets() {
-        List<Wallet> walletList = getWalletsForCurrentUserOrLegacyFallback();
-        wallets.setValue(walletList);
+    private List<Wallet> getWalletsForCurrentUserOrLegacyFallback() {
+        String userId = userIdOrNull();
+        List<Wallet> list = walletRepository.getByUserId(userId);
+        if ((list == null || list.isEmpty()) && userId != null) {
+            list = walletRepository.getByUserId(null);
+        }
+        return list;
     }
 
+    // ==================== WRITE OPERATIONS (LOCAL-FIRST) ====================
+
+    /**
+     * Tạo ví mới.
+     *
+     * Luồng:
+     * 1. [BG Thread] Validate → insert local DB → postValue(SUCCESS)
+     * 2. [Volley Async] POST /api/v1/wallets/ → syncStatus
+     */
     public void saveWallet(String name, String balanceStr, String iconId) {
         if (name == null || name.trim().isEmpty()) {
             saveResult.setValue(new SaveResult(false, "Vui lòng nhập tên ví"));
             return;
         }
 
-        try {
-            long balance = Long.parseLong(balanceStr.trim().replace(",", "").replace(".", ""));
+        new Thread(() -> {
+            try {
+                long balance = parseBalance(balanceStr);
+                String userId = userIdOrNull();
 
-            String userId = userIdOrNull();
-            Wallet wallet = new Wallet.Builder()
-                    .setUserId(userId)
-                    .setName(name.trim())
-                    .setInitialBalance(balance)
-                    .setCurrency("VND")
-                    .setIconId(iconId)
-                    .build();
+                Wallet wallet = new Wallet.Builder()
+                        .setUserId(userId)
+                        .setName(name.trim())
+                        .setInitialBalance(balance)
+                        .setCurrency("VND")
+                        .setIconId(iconId)
+                        .build();
 
-            String walletId = walletDao.insert(wallet);
+                // Bước 1: Lưu local
+                String walletId = walletRepository.insertLocal(wallet);
 
-            if (walletId != null) {
-                saveResult.setValue(new SaveResult(true, "Thêm ví thành công"));
-                loadAllWallets();
-                boolean isFirstWallet = wallets.getValue() == null || wallets.getValue().isEmpty();
-                if (isFirstWallet) selectWallet(wallet);
-            } else {
-                saveResult.setValue(new SaveResult(false, "Lỗi khi lưu ví"));
-            }
-        } catch (Exception e) {
-            saveResult.setValue(new SaveResult(false, "Dữ liệu không hợp lệ"));
-        }
-    }
+                if (walletId != null) {
+                    saveResult.postValue(new SaveResult(true, "Thêm ví thành công"));
+                    loadAllWallets();
 
-    public void deleteWallet(Wallet wallet) {
-        if (wallet == null) return;
-        try {
-            com.ptithcm.quanlichitieu.data.local.dao.TransactionDao transactionDao = DatabaseManager.getInstance(getApplication()).getTransactionDao();
-            com.ptithcm.quanlichitieu.data.local.dao.BudgetDao budgetDao = DatabaseManager.getInstance(getApplication()).getBudgetDao();
-            
-            // Delete related transactions and budgets
-            transactionDao.deleteByWalletId(wallet.getId());
-            budgetDao.deleteByWalletId(wallet.getId());
-            
-            // Delete the wallet
-            walletDao.delete(wallet.getId());
-            
-            saveResult.setValue(new SaveResult(true, "Xóa ví thành công"));
-            
-            // Reload all wallets
-            loadAllWallets();
-            
-            // If the deleted wallet was the active one, pick another or set to null
-            Wallet currentActive = selectedWallet.getValue();
-            if (currentActive != null && currentActive.getId().equals(wallet.getId())) {
-                List<Wallet> currentList = wallets.getValue();
-                if (currentList != null && !currentList.isEmpty()) {
-                    selectWallet(currentList.get(0));
+                    // Nếu đây là ví đầu tiên → tự chọn làm active
+                    List<Wallet> currentList = wallets.getValue();
+                    if (currentList == null || currentList.isEmpty()) {
+                        android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
+                        h.post(() -> selectWallet(wallet));
+                    }
+
+                    // Bước 2: Push lên server (bất đồng bộ, không block)
+                    syncStatus.postValue(SyncStatus.SYNCING);
+                    android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
+                    h.post(() -> walletRepository.pushCreate(wallet, new WalletRepository.SyncCallback() {
+                        @Override
+                        public void onSuccess() {
+                            syncStatus.setValue(SyncStatus.SYNC_SUCCESS);
+                        }
+
+                        @Override
+                        public void onError(@NonNull String message) {
+                            syncStatus.setValue(SyncStatus.SYNC_FAILED);
+                        }
+                    }));
                 } else {
-                    selectedWallet.setValue(null);
+                    saveResult.postValue(new SaveResult(false, "Lỗi khi lưu ví"));
                 }
+            } catch (Exception e) {
+                saveResult.postValue(new SaveResult(false, "Dữ liệu không hợp lệ"));
             }
-        } catch (Exception e) {
-            saveResult.setValue(new SaveResult(false, "Lỗi khi xóa ví"));
-        }
+        }).start();
     }
 
+    /**
+     * Cập nhật ví.
+     *
+     * Luồng:
+     * 1. [BG Thread] Validate → update local DB → postValue(SUCCESS)
+     * 2. [Volley Async] PATCH /api/v1/wallets/:id → syncStatus
+     */
     public void updateWallet(Wallet wallet, String name, String balanceStr) {
         if (wallet == null) return;
         if (name == null || name.trim().isEmpty()) {
@@ -229,38 +280,125 @@ public class WalletViewModel extends AndroidViewModel {
             return;
         }
 
-        try {
-            long balance = 0;
-            if (balanceStr != null && !balanceStr.trim().isEmpty()) {
-                String cleanBal = balanceStr.replaceAll("[^0-9]", "");
-                if (!cleanBal.isEmpty()) {
-                    balance = Long.parseLong(cleanBal);
-                }
-            }
+        new Thread(() -> {
+            try {
+                long balance = parseBalance(balanceStr);
+                wallet.setName(name.trim());
+                wallet.setInitialBalance(balance);
 
-            wallet.setName(name.trim());
-            wallet.setInitialBalance(balance);
+                // Bước 1: Lưu local
+                int rows = walletRepository.updateLocal(wallet);
 
-            int rows = walletDao.update(wallet);
-            if (rows > 0) {
-                saveResult.setValue(new SaveResult(true, "Cập nhật ví thành công"));
-                loadAllWallets();
-                Wallet currentActive = selectedWallet.getValue();
-                if (currentActive != null && currentActive.getId().equals(wallet.getId())) {
-                    selectedWallet.setValue(wallet);
+                if (rows > 0) {
+                    saveResult.postValue(new SaveResult(true, "Cập nhật ví thành công"));
+                    loadAllWallets();
+
+                    // Cập nhật selectedWallet nếu đây là ví đang active
+                    Wallet currentActive = selectedWallet.getValue();
+                    if (currentActive != null && currentActive.getId().equals(wallet.getId())) {
+                        selectedWallet.postValue(wallet);
+                    }
+
+                    // Bước 2: Push lên server
+                    syncStatus.postValue(SyncStatus.SYNCING);
+                    android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
+                    h.post(() -> walletRepository.pushUpdate(wallet, new WalletRepository.SyncCallback() {
+                        @Override
+                        public void onSuccess() {
+                            syncStatus.setValue(SyncStatus.SYNC_SUCCESS);
+                        }
+
+                        @Override
+                        public void onError(@NonNull String message) {
+                            syncStatus.setValue(SyncStatus.SYNC_FAILED);
+                        }
+                    }));
+                } else {
+                    saveResult.postValue(new SaveResult(false, "Lỗi khi cập nhật ví"));
                 }
-            } else {
-                saveResult.setValue(new SaveResult(false, "Lỗi khi cập nhật ví"));
+            } catch (Exception e) {
+                saveResult.postValue(new SaveResult(false, "Dữ liệu lượng tiền không hợp lệ"));
             }
-        } catch (Exception e) {
-            saveResult.setValue(new SaveResult(false, "Dữ liệu lượng tiền không hợp lệ"));
-        }
+        }).start();
     }
+
+    /**
+     * Xóa ví (soft delete).
+     *
+     * Luồng:
+     * 1. [BG Thread] Soft-delete ví + cascade transactions/budgets → postValue(SUCCESS)
+     * 2. [Volley Async] DELETE /api/v1/wallets/:id → syncStatus
+     */
+    public void deleteWallet(Wallet wallet) {
+        if (wallet == null) return;
+        final String walletId = wallet.getId();
+
+        new Thread(() -> {
+            try {
+                // Bước 1: Cascade soft delete local
+                transactionDao.deleteByWalletId(walletId);
+                budgetDao.deleteByWalletId(walletId);
+                walletRepository.deleteLocal(walletId);
+
+                saveResult.postValue(new SaveResult(true, "Xóa ví thành công"));
+                loadAllWallets();
+
+                // Nếu ví bị xóa là ví đang active → chuyển sang ví khác
+                Wallet currentActive = selectedWallet.getValue();
+                if (currentActive != null && currentActive.getId().equals(walletId)) {
+                    android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
+                    h.post(() -> {
+                        List<Wallet> currentList = wallets.getValue();
+                        if (currentList != null && !currentList.isEmpty()) {
+                            selectWallet(currentList.get(0));
+                        } else {
+                            selectedWallet.setValue(null);
+                        }
+                    });
+                }
+
+                // Bước 2: Push lên server
+                syncStatus.postValue(SyncStatus.SYNCING);
+                android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
+                h.post(() -> walletRepository.pushDelete(walletId, new WalletRepository.SyncCallback() {
+                    @Override
+                    public void onSuccess() {
+                        syncStatus.setValue(SyncStatus.SYNC_SUCCESS);
+                    }
+
+                    @Override
+                    public void onError(@NonNull String message) {
+                        syncStatus.setValue(SyncStatus.SYNC_FAILED);
+                    }
+                }));
+            } catch (Exception e) {
+                saveResult.postValue(new SaveResult(false, "Lỗi khi xóa ví"));
+            }
+        }).start();
+    }
+
+    // ==================== HELPERS ====================
+
+    /**
+     * Parse chuỗi số tiền, chấp nhận dấu phẩy và chấm.
+     */
+    private long parseBalance(@Nullable String balanceStr) {
+        if (balanceStr == null || balanceStr.trim().isEmpty()) return 0L;
+        String clean = balanceStr.replaceAll("[^0-9]", "");
+        return clean.isEmpty() ? 0L : Long.parseLong(clean);
+    }
+
+    // ==================== SAVE RESULT ====================
 
     public static class SaveResult {
         private final boolean success;
         private final String message;
-        public SaveResult(boolean success, String message) { this.success = success; this.message = message; }
+
+        public SaveResult(boolean success, String message) {
+            this.success = success;
+            this.message = message;
+        }
+
         public boolean isSuccess() { return success; }
         public String getMessage() { return message; }
     }

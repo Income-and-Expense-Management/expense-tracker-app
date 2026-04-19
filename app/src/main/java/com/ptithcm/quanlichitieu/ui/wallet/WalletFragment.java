@@ -17,6 +17,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
 import com.ptithcm.quanlichitieu.ui.login.AuthViewModel;
@@ -27,12 +28,15 @@ public class WalletFragment extends Fragment {
     private WalletAdapter adapter;
     private RecyclerView rvWallets;
     private LinearLayout layoutEmpty;
+    /** Root view dùng để hiển thị Snackbar sync status */
+    private View rootView;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_wallet, container, false);
+        rootView = inflater.inflate(R.layout.fragment_wallet, container, false);
+        return rootView;
     }
 
     @Override
@@ -126,6 +130,7 @@ public class WalletFragment extends Fragment {
     }
 
     private void observeViewModel() {
+        // Danh sách ví
         viewModel.getWallets().observe(getViewLifecycleOwner(), wallets -> {
             if (wallets == null || wallets.isEmpty()) {
                 rvWallets.setVisibility(View.GONE);
@@ -136,6 +141,37 @@ public class WalletFragment extends Fragment {
                 adapter.setWallets(wallets);
             }
         });
+
+        // Kết quả lưu/xóa (Toast đã hiện trong Fragment con, ở đây chỉ cần xử lý
+        // trường hợp xóa từ WalletFragment — adapter menu onDelete)
+        viewModel.getSaveResult().observe(getViewLifecycleOwner(), result -> {
+            if (result != null && !result.isSuccess()) {
+                showSnackbar(result.getMessage(), false);
+                viewModel.clearSaveResult();
+            }
+        });
+
+        // Trạng thái sync với server
+        viewModel.getSyncStatus().observe(getViewLifecycleOwner(), status -> {
+            if (status == null) return;
+            if (status == WalletViewModel.SyncStatus.SYNC_FAILED) {
+                showSnackbar("Không thể đồng bộ với server. Dữ liệu đã lưu nội bộ.", false);
+            }
+            // Reset để không hiện lại khi rotate / navigate
+            viewModel.clearSyncStatus();
+        });
+    }
+
+    /**
+     * Hiển thị Snackbar nhẹ — không block UI.
+     * @param message  Nội dung thông báo
+     * @param isSuccess true = thành công (màu xanh), false = lỗi (màu đỏ nhạt)
+     */
+    private void showSnackbar(String message, boolean isSuccess) {
+        if (rootView == null || !isAdded()) return;
+        Snackbar snackbar = Snackbar.make(rootView, message,
+                isSuccess ? Snackbar.LENGTH_SHORT : Snackbar.LENGTH_LONG);
+        snackbar.show();
     }
 
     private void openAddWallet() {
@@ -157,8 +193,10 @@ public class WalletFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Reload danh sách ví khi quay lại màn hình (sau orientation change,
-        // sau khi popBackStack từ AddWalletFragment hoặc EditWalletFragment)
-        viewModel.loadAllWallets();
+        // Pull dữ liệu mới nhất từ server trước, sau đó reload list local.
+        // Giải quyết: ví tạo từ web không hiện trên app vì app chỉ đọc SQLite local.
+        // refreshFromServer() = GET /api/v1/wallets/ → UPSERT local → postValue(list)
+        // Nếu offline → không block, list local vẫn hiển thị bình thường.
+        viewModel.refreshFromServer();
     }
 }
