@@ -1,7 +1,6 @@
 package com.ptithcm.quanlichitieu.ui.main;
 
 import android.os.Bundle;
-import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,9 +14,11 @@ import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.ui.account.AccountFragment;
 import com.ptithcm.quanlichitieu.ui.home.HomeFragment;
 import com.ptithcm.quanlichitieu.ui.transaction.AddTransactionFragment;
+import com.ptithcm.quanlichitieu.ui.transaction.TransactionDetailFragment;
 import com.ptithcm.quanlichitieu.ui.transaction.TransactionFragment;
 import com.ptithcm.quanlichitieu.ui.budget.BudgetFragment;
 import com.ptithcm.quanlichitieu.ui.wallet.WalletFragment;
+import com.ptithcm.quanlichitieu.ui.report.ReportFragment;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,9 +27,11 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG_HOME = "frag_home";
     private static final String TAG_TRANSACTION = "frag_transaction";
     private static final String TAG_ACCOUNT = "frag_account";
-    private static final String TAG_BUDGET = "frag_budget";
+    private static final String TAG_BUDGET = "TAG_BUDGET";
     private static final String TAG_WALLET_LIST = "frag_wallet_list";
     private static final String TAG_ADD_TRANSACTION = "frag_add_transaction";
+    private static final String TAG_TRANSACTION_DETAIL = "TAG_TRANSACTION_DETAIL";
+    private static final String TAG_REPORT = "frag_report";
 
     private Fragment activeFragment;
     private HomeFragment homeFragment;
@@ -153,6 +156,42 @@ public class MainActivity extends AppCompatActivity {
             ft.hide(activeFragment);
         }
         ft.add(R.id.fragmentContainer, new AddTransactionFragment(), TAG_ADD_TRANSACTION)
+                .addToBackStack(null)
+                .commit();
+    }
+
+    public void openEditTransaction(String transactionId) {
+        if (getSupportFragmentManager().findFragmentByTag(TAG_ADD_TRANSACTION) != null) return;
+
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        if (activeFragment != null && activeFragment.isAdded()) {
+            ft.hide(activeFragment);
+        }
+        ft.add(R.id.fragmentContainer, AddTransactionFragment.newInstance(transactionId), TAG_ADD_TRANSACTION)
+                .addToBackStack(null)
+                .commit();
+    }
+
+    public void openTransactionDetail(String transactionId) {
+        if (getSupportFragmentManager().findFragmentByTag(TAG_TRANSACTION_DETAIL) != null) return;
+
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        if (activeFragment != null && activeFragment.isAdded()) {
+            ft.hide(activeFragment);
+        }
+        ft.add(R.id.fragmentContainer, TransactionDetailFragment.newInstance(transactionId), TAG_TRANSACTION_DETAIL)
+                .addToBackStack(null)
+                .commit();
+    }
+
+    public void openReport() {
+        if (getSupportFragmentManager().findFragmentByTag(TAG_REPORT) != null) return;
+
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        if (activeFragment != null && activeFragment.isAdded()) {
+            ft.hide(activeFragment);
+        }
+        ft.add(R.id.fragmentContainer, new ReportFragment(), TAG_REPORT)
                 .addToBackStack(null)
                 .commit();
     }

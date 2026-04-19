@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.ui.transaction.adapter.TransactionAdapter;
 import com.ptithcm.quanlichitieu.ui.wallet.WalletViewModel;
+import com.ptithcm.quanlichitieu.ui.main.MainActivity;
 
 import java.util.Locale;
 
@@ -77,10 +78,24 @@ public class TransactionFragment extends Fragment {
                 getActivity().getOnBackPressedDispatcher().onBackPressed();
             }
         });
+
+        View btnSeeReport = view.findViewById(R.id.btnSeeReport);
+        if (btnSeeReport != null) {
+            btnSeeReport.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).openReport();
+                }
+            });
+        }
     }
 
     private void setupTransactionList() {
         transactionAdapter = new TransactionAdapter();
+        transactionAdapter.setOnTransactionClickListener(transaction -> {
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).openTransactionDetail(transaction.getId());
+            }
+        });
         rvTransactions.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvTransactions.setAdapter(transactionAdapter);
         rvTransactions.setNestedScrollingEnabled(false);
