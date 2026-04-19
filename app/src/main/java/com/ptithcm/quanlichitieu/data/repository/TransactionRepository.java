@@ -1,5 +1,6 @@
 package com.ptithcm.quanlichitieu.data.repository;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.ptithcm.quanlichitieu.data.model.TransactionGroup;
@@ -75,4 +76,13 @@ public interface TransactionRepository {
      * @return Tổng số dư
      */
     long getTotalBalance();
+
+    /**
+     * Lấy số dư hiện tại của ví (Số dư ban đầu + Tổng thu - Tổng chi)
+     *
+     * @param walletId ID của ví
+     * @param initialBalance Số dư ban đầu
+     * @return Số dư hiện tại
+     */
+    long getCurrentBalance(@NonNull String walletId, long initialBalance);
 }

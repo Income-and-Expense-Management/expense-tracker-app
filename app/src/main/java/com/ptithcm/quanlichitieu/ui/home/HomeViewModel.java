@@ -37,6 +37,7 @@ public class HomeViewModel extends AndroidViewModel {
     private final MutableLiveData<Boolean> isMonthSelected = new MutableLiveData<>(true);
     private final MutableLiveData<Double> totalSpent = new MutableLiveData<>(0.0);
     private final MutableLiveData<Double> totalIncome = new MutableLiveData<>(0.0);
+    private final MutableLiveData<Long> totalBalance = new MutableLiveData<>(0L);
 
     public HomeViewModel(@NonNull Application application) {
         super(application);
@@ -53,6 +54,7 @@ public class HomeViewModel extends AndroidViewModel {
 
     public LiveData<Double> getTotalSpent() { return totalSpent; }
     public LiveData<Double> getTotalIncome() { return totalIncome; }
+    public LiveData<Long> getTotalBalance() { return totalBalance; }
 
     public void setUsername(String name) {
         username.setValue(name);
@@ -74,6 +76,17 @@ public class HomeViewModel extends AndroidViewModel {
         double income = transactionRepository.getTotalIncome(null, 0);
         totalSpent.setValue(spent);
         totalIncome.setValue(income);
+    }
+
+    public void calculateCurrentBalance(Wallet currentWallet) {
+        if (currentWallet != null) {
+            new Thread(() -> {
+                long balance = transactionRepository.getCurrentBalance(currentWallet.getId(), currentWallet.getInitialBalance());
+                totalBalance.postValue(balance);
+            }).start();
+        } else {
+            totalBalance.setValue(0L);
+        }
     }
 
     public void loadTopExpenses() {

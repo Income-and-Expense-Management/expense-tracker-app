@@ -143,10 +143,8 @@ public class HomeFragment extends Fragment {
         // Quan sát ví đang được chọn từ WalletViewModel (Shared)
         walletViewModel.getSelectedWallet().observe(getViewLifecycleOwner(), wallet -> {
             if (wallet != null) {
-                String balanceStr = String.format(Locale.getDefault(), "%,d đ", wallet.getInitialBalance());
-                tvBalanceValue.setText(balanceStr);
+                homeViewModel.calculateCurrentBalance(wallet);
                 if (tvWalletDetailName != null) tvWalletDetailName.setText(wallet.getName());
-                if (tvWalletDetailValue != null) tvWalletDetailValue.setText(balanceStr);
 
                 if (imgWalletIcon != null) {
                     if (wallet.getIconId() != null && !wallet.getIconId().isEmpty()) {
@@ -162,13 +160,19 @@ public class HomeFragment extends Fragment {
                     }
                 }
             } else {
-                tvBalanceValue.setText("0 đ");
+                homeViewModel.calculateCurrentBalance(null);
                 if (tvWalletDetailName != null) tvWalletDetailName.setText("Chưa có ví");
                 if (tvWalletDetailValue != null) tvWalletDetailValue.setText("Nhấn để tạo");
                 if (imgWalletIcon != null) {
                     imgWalletIcon.setImageResource(R.drawable.ic_payment_method);
                 }
             }
+        });
+
+        homeViewModel.getTotalBalance().observe(getViewLifecycleOwner(), balance -> {
+            String balanceStr = String.format(Locale.getDefault(), "%,d đ", balance);
+            if (tvBalanceValue != null) tvBalanceValue.setText(balanceStr);
+            if (tvWalletDetailValue != null) tvWalletDetailValue.setText(balanceStr);
         });
 
         homeViewModel.getTotalSpent().observe(getViewLifecycleOwner(), spent -> {
@@ -192,5 +196,6 @@ public class HomeFragment extends Fragment {
         super.onResume();
         walletViewModel.loadActiveWallet();
         homeViewModel.loadReportData();
+        homeViewModel.calculateCurrentBalance(walletViewModel.getSelectedWallet().getValue());
     }
 }

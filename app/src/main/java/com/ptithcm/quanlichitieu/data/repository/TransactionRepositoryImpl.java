@@ -149,6 +149,28 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         return 0L;
     }
 
+    @Override
+    public long getCurrentBalance(@NonNull String walletId, long initialBalance) {
+        long startDate = 0L;
+        long endDate = Long.MAX_VALUE;
+
+        long allIncome = transactionDao.getTotalAmountByType(
+                walletId,
+                TransactionType.INCOME,
+                startDate,
+                endDate
+        );
+
+        long allExpense = transactionDao.getTotalAmountByType(
+                walletId,
+                TransactionType.EXPENSE,
+                startDate,
+                endDate
+        );
+
+        return initialBalance + allIncome - allExpense;
+    }
+
     // ==================== PRIVATE HELPER METHODS ====================
 
     /**
