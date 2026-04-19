@@ -41,6 +41,7 @@ public class HomeFragment extends Fragment {
     private TextView tvTotalIncomeValue;
     private RecyclerView rvTopExpenses;
     private MaterialButtonToggleGroup togglePeriod;
+    private com.ptithcm.quanlichitieu.ui.common.SimpleLineChart lineChart;
 
     public static HomeFragment newInstance(String username) {
         HomeFragment fragment = new HomeFragment();
@@ -92,6 +93,30 @@ public class HomeFragment extends Fragment {
         tvTotalIncomeValue = view.findViewById(R.id.tvTotalIncomeValue);
         rvTopExpenses = view.findViewById(R.id.rvTopExpenses);
         togglePeriod = view.findViewById(R.id.togglePeriod);
+        lineChart = view.findViewById(R.id.lineChart);
+
+        View tabExpense = view.findViewById(R.id.tabExpense);
+        View tabIncome = view.findViewById(R.id.tabIncome);
+        View lineExpense = view.findViewById(R.id.lineExpense);
+        View lineIncome = view.findViewById(R.id.lineIncome);
+
+        if (tabExpense != null && tabIncome != null && lineExpense != null && lineIncome != null) {
+            tabExpense.setOnClickListener(v -> {
+                lineChart.setExpenseMode(true);
+                lineExpense.setBackgroundColor(requireContext().getResources().getColor(R.color.home_expense_red, null));
+                lineIncome.setBackgroundColor(android.graphics.Color.parseColor("#222222"));
+                if (tvTotalSpentValue != null) tvTotalSpentValue.setTextColor(requireContext().getResources().getColor(R.color.home_expense_red, null));
+                if (tvTotalIncomeValue != null) tvTotalIncomeValue.setTextColor(android.graphics.Color.parseColor("#555555"));
+            });
+
+            tabIncome.setOnClickListener(v -> {
+                lineChart.setExpenseMode(false);
+                lineIncome.setBackgroundColor(requireContext().getResources().getColor(R.color.home_accent_green, null));
+                lineExpense.setBackgroundColor(android.graphics.Color.parseColor("#222222"));
+                if (tvTotalIncomeValue != null) tvTotalIncomeValue.setTextColor(requireContext().getResources().getColor(R.color.home_accent_green, null));
+                if (tvTotalSpentValue != null) tvTotalSpentValue.setTextColor(android.graphics.Color.parseColor("#555555"));
+            });
+        }
     }
 
     private void setupTopExpensesList() {
@@ -142,6 +167,8 @@ public class HomeFragment extends Fragment {
 
         // Quan sát ví đang được chọn từ WalletViewModel (Shared)
         walletViewModel.getSelectedWallet().observe(getViewLifecycleOwner(), wallet -> {
+            homeViewModel.setWallet(wallet); // Add this line
+
             if (wallet != null) {
                 homeViewModel.calculateCurrentBalance(wallet);
                 if (tvWalletDetailName != null) tvWalletDetailName.setText(wallet.getName());
@@ -177,13 +204,27 @@ public class HomeFragment extends Fragment {
 
         homeViewModel.getTotalSpent().observe(getViewLifecycleOwner(), spent -> {
             if (tvTotalSpentValue != null) {
-                tvTotalSpentValue.setText(String.format(Locale.getDefault(), "%,.0f đ", spent));
+                tvTotalSpentValue.setText(String.format(Locale.getDefault(), "%,d đ", spent));
             }
         });
 
         homeViewModel.getTotalIncome().observe(getViewLifecycleOwner(), income -> {
             if (tvTotalIncomeValue != null) {
-                tvTotalIncomeValue.setText(String.format(Locale.getDefault(), "%,.0f đ", income));
+                tvTotalIncomeValue.setText(String.format(Locale.getDefault(), "%,d đ", income));
+            }
+        });
+
+        homeViewModel.getChartData().observe(getViewLifecycleOwner(), expenseData -> {
+            if (lineChart != null) {
+                java.util.List<Float> incomeData = homeViewModel.getIncomeChartData().getValue();
+                lineChart.setData(expenseData, incomeData);
+            }
+        });
+
+        homeViewModel.getIncomeChartData().observe(getViewLifecycleOwner(), incomeData -> {
+            if (lineChart != null) {
+                java.util.List<Float> expenseData = homeViewModel.getChartData().getValue();
+                lineChart.setData(expenseData, incomeData);
             }
         });
 

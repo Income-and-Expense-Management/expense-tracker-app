@@ -119,6 +119,42 @@ public class DateUtils {
     }
 
     /**
+     * Lấy timestamp của ngày đầu tuần (00:00:00 Thứ 2).
+     *
+     * @param weekOffset Offset tuần (-1 = tuần trước, 0 = tuần này, 1 = tuần sau)
+     * @return Timestamp của đầu tuần
+     */
+    public static long getWeekStartTimestamp(int weekOffset) {
+        Calendar calendar = Calendar.getInstance(VIETNAM_LOCALE);
+        calendar.setFirstDayOfWeek(Calendar.MONDAY);
+        calendar.add(Calendar.WEEK_OF_YEAR, weekOffset);
+        calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTimeInMillis();
+    }
+
+    /**
+     * Lấy timestamp của cuối tuần (23:59:59.999 Chủ nhật).
+     *
+     * @param weekOffset Offset tuần (-1 = tuần trước, 0 = tuần này, 1 = tuần sau)
+     * @return Timestamp của cuối tuần
+     */
+    public static long getWeekEndTimestamp(int weekOffset) {
+        Calendar calendar = Calendar.getInstance(VIETNAM_LOCALE);
+        calendar.setFirstDayOfWeek(Calendar.MONDAY);
+        calendar.add(Calendar.WEEK_OF_YEAR, weekOffset);
+        calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        calendar.set(Calendar.MILLISECOND, 999);
+        return calendar.getTimeInMillis();
+    }
+
+    /**
      * Lấy key ngày để nhóm giao dịch (format: yyyyMMdd).
      * Dùng để group các giao dịch cùng ngày.
      * 
