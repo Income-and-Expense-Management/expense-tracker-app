@@ -20,6 +20,29 @@ public class DateUtils {
     private static final Locale VIETNAM_LOCALE = new Locale("vi", "VN");
 
     /**
+     * Lấy số ngày trong tháng theo offset.
+     *
+     * @param monthOffset Offset tháng (-1 = tháng trước, 0 = tháng này, 1 = tháng sau)
+     */
+    public static int getDaysInMonth(int monthOffset) {
+        Calendar calendar = Calendar.getInstance(VIETNAM_LOCALE);
+        calendar.add(Calendar.MONTH, monthOffset);
+        return calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
+    }
+
+    /**
+     * Lấy timestamp cuối ngày hôm nay (23:59:59.999).
+     */
+    public static long getEndOfTodayTimestamp() {
+        Calendar calendar = Calendar.getInstance(VIETNAM_LOCALE);
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        calendar.set(Calendar.MILLISECOND, 999);
+        return calendar.getTimeInMillis();
+    }
+
+    /**
      * Format ngày theo định dạng dd/MM/yyyy.
      * Ví dụ: 18/3/2026
      * 
@@ -115,6 +138,52 @@ public class DateUtils {
         calendar.set(Calendar.SECOND, 59);
         calendar.set(Calendar.MILLISECOND, 999);
         
+        return calendar.getTimeInMillis();
+    }
+
+    /**
+     * Lấy timestamp của ngày đầu tuần (00:00:00 Thứ 2).
+     *
+     * @param weekOffset Offset tuần (-1 = tuần trước, 0 = tuần này, 1 = tuần sau)
+     * @return Timestamp của đầu tuần
+     */
+    public static long getWeekStartTimestamp(int weekOffset) {
+        Calendar calendar = Calendar.getInstance(VIETNAM_LOCALE);
+        calendar.setFirstDayOfWeek(Calendar.MONDAY);
+        calendar.add(Calendar.WEEK_OF_YEAR, weekOffset);
+
+        int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+        // Tinh khoang cach ve Thu 2
+        int offset = (dayOfWeek == Calendar.SUNDAY) ? -6 : Calendar.MONDAY - dayOfWeek;
+        calendar.add(Calendar.DAY_OF_MONTH, offset);
+
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTimeInMillis();
+    }
+
+    /**
+     * Lấy timestamp của cuối tuần (23:59:59.999 Chủ nhật).
+     *
+     * @param weekOffset Offset tuần (-1 = tuần trước, 0 = tuần này, 1 = tuần sau)
+     * @return Timestamp của cuối tuần
+     */
+    public static long getWeekEndTimestamp(int weekOffset) {
+        Calendar calendar = Calendar.getInstance(VIETNAM_LOCALE);
+        calendar.setFirstDayOfWeek(Calendar.MONDAY);
+        calendar.add(Calendar.WEEK_OF_YEAR, weekOffset);
+
+        int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+        // Tinh khoang cach den Chu Nhat
+        int offset = (dayOfWeek == Calendar.SUNDAY) ? 0 : 8 - dayOfWeek;
+        calendar.add(Calendar.DAY_OF_MONTH, offset);
+
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        calendar.set(Calendar.MILLISECOND, 999);
         return calendar.getTimeInMillis();
     }
 
