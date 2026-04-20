@@ -61,8 +61,6 @@ public class TransactionDetailFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        toggleBottomNavigation(false);
-
         initViews(view);
         setupListeners();
         loadTransactionDetails();
@@ -70,26 +68,7 @@ public class TransactionDetailFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        toggleBottomNavigation(true);
         super.onDestroyView();
-    }
-
-    private void toggleBottomNavigation(boolean isVisible) {
-        if (getActivity() == null) return;
-
-        View bottomAppBar = getActivity().findViewById(R.id.bottomAppBar);
-        View fab = getActivity().findViewById(R.id.fabAdd);
-        View container = getActivity().findViewById(R.id.fragmentContainer);
-
-        int visibility = isVisible ? View.VISIBLE : View.GONE;
-        if (bottomAppBar != null) bottomAppBar.setVisibility(visibility);
-        if (fab != null) fab.setVisibility(visibility);
-
-        if (container != null && container.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
-            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) container.getLayoutParams();
-            params.bottomMargin = isVisible ? (int) (80 * getResources().getDisplayMetrics().density) : 0;
-            container.setLayoutParams(params);
-        }
     }
 
     private void initViews(View view) {
@@ -109,8 +88,6 @@ public class TransactionDetailFragment extends Fragment {
 
         btnEdit.setOnClickListener(v -> {
             if (transactionId != null && getActivity() instanceof com.ptithcm.quanlichitieu.ui.main.MainActivity) {
-                // First pop this detail fragment, then open the edit
-                requireActivity().getSupportFragmentManager().popBackStack();
                 ((com.ptithcm.quanlichitieu.ui.main.MainActivity) getActivity()).openEditTransaction(transactionId);
             }
         });

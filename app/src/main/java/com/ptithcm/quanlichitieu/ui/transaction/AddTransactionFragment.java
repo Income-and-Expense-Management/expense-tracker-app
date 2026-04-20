@@ -83,8 +83,6 @@ public class AddTransactionFragment extends Fragment {
             transactionIdToEdit = getArguments().getString("transaction_id");
         }
 
-        toggleBottomNavigation(false);
-
         viewModel = new ViewModelProvider(this).get(AddTransactionViewModel.class);
 
         initViews(view);
@@ -104,26 +102,7 @@ public class AddTransactionFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        toggleBottomNavigation(true);
         super.onDestroyView();
-    }
-
-    private void toggleBottomNavigation(boolean isVisible) {
-        if (getActivity() == null) return;
-
-        View bottomAppBar = getActivity().findViewById(R.id.bottomAppBar);
-        View fab = getActivity().findViewById(R.id.fabAdd);
-        View container = getActivity().findViewById(R.id.fragmentContainer);
-
-        int visibility = isVisible ? View.VISIBLE : View.GONE;
-        if (bottomAppBar != null) bottomAppBar.setVisibility(visibility);
-        if (fab != null) fab.setVisibility(visibility);
-
-        if (container != null && container.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
-            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) container.getLayoutParams();
-            params.bottomMargin = isVisible ? (int) (80 * getResources().getDisplayMetrics().density) : 0;
-            container.setLayoutParams(params);
-        }
     }
 
     private void initViews(View view) {
