@@ -22,10 +22,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ptithcm.quanlichitieu.R;
+import com.ptithcm.quanlichitieu.ui.main.MainActivity;
 import com.ptithcm.quanlichitieu.ui.search.adapter.RecentSearchAdapter;
 import com.ptithcm.quanlichitieu.ui.transaction.adapter.TransactionAdapter;
-
-import java.util.List;
 
 /**
  * SearchTransactionFragment - Màn hình tìm kiếm giao dịch dùng chung.
@@ -150,6 +149,12 @@ public class SearchTransactionFragment extends Fragment {
 
     private void setupSearchResultList() {
         searchResultAdapter = new TransactionAdapter();
+        searchResultAdapter.setOnTransactionClickListener(transaction -> {
+            hideKeyboard();
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).openTransactionDetail(transaction.getId());
+            }
+        });
         rvSearchResults.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvSearchResults.setAdapter(searchResultAdapter);
     }
