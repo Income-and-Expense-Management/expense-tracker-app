@@ -85,6 +85,46 @@ public class CategoryDao {
         }
     }
 
+    /**
+     * Thêm Category từ server vào database, giữ nguyên timestamps của server.
+     */
+    @Nullable
+    public String insertFromServer(@NonNull Category category) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        if (category.getId() == null) {
+            category.setId(IdGenerator.generateUUID());
+        }
+
+        long now = IdGenerator.getCurrentTimestamp();
+        long createdAt = category.getCreatedAt() > 0 ? category.getCreatedAt() : now;
+        long updatedAt = category.getUpdatedAt() > 0 ? category.getUpdatedAt() : createdAt;
+
+        ContentValues values = new ContentValues();
+        values.put(CategoryEntry.COLUMN_ID, category.getId());
+        values.put(CategoryEntry.COLUMN_USER_ID, category.getUserId());
+        values.put(CategoryEntry.COLUMN_NAME, category.getName());
+        if (category.getType() != null) {
+            values.put(CategoryEntry.COLUMN_TYPE, category.getType().getValue());
+        }
+        values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
+        values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
+        values.put(CategoryEntry.COLUMN_CREATED_AT, createdAt);
+        values.put(CategoryEntry.COLUMN_UPDATED_AT, updatedAt);
+        if (category.getDeletedAt() != null) {
+            values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt());
+        } else {
+            values.putNull(CategoryEntry.COLUMN_DELETED_AT);
+        }
+
+        long result = db.insert(CategoryEntry.TABLE_NAME, null, values);
+        if (result == -1) {
+            Log.w(TAG, "insertFromServer: Failed for category id=" + category.getId());
+            return null;
+        }
+        return category.getId();
+    }
+
     // ==================== READ ====================
 
     /**
@@ -380,6 +420,61 @@ public class CategoryDao {
         );
     }
 
+    /**
+     * Cập nhật Category từ server, giữ nguyên timestamps của server.
+     */
+    public int updateFromServer(@NonNull Category category) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(CategoryEntry.COLUMN_NAME, category.getName());
+        if (category.getType() != null) {
+            values.put(CategoryEntry.COLUMN_TYPE, category.getType().getValue());
+        }
+        values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
+        values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
+        values.put(CategoryEntry.COLUMN_UPDATED_AT, category.getUpdatedAt() > 0 ? category.getUpdatedAt() : IdGenerator.getCurrentTimestamp());
+        if (category.getDeletedAt() != null) {
+            values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt());
+        } else {
+            values.putNull(CategoryEntry.COLUMN_DELETED_AT);
+        }
+
+        int rows = db.update(
+                CategoryEntry.TABLE_NAME,
+                values,
+                CategoryEntry.COLUMN_ID + " = ?",
+                new String[]{category.getId()}
+        );
+        Log.d(TAG, "updateFromServer: Updated " + rows + " row(s) for category id=" + category.getId());
+        return rows;
+    }
+
+    /**
+     * Lưu tombstone xóa mềm từ server vào local DB.
+     */
+    public int softDeleteFromServer(@NonNull Category category) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(CategoryEntry.COLUMN_IS_ACTIVE, 0);
+        values.put(CategoryEntry.COLUMN_UPDATED_AT, category.getUpdatedAt() > 0 ? category.getUpdatedAt() : IdGenerator.getCurrentTimestamp());
+        if (category.getDeletedAt() != null) {
+            values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt());
+        } else {
+            values.put(CategoryEntry.COLUMN_DELETED_AT, IdGenerator.getCurrentTimestamp());
+        }
+
+        int rows = db.update(
+                CategoryEntry.TABLE_NAME,
+                values,
+                CategoryEntry.COLUMN_ID + " = ?",
+                new String[]{category.getId()}
+        );
+        Log.d(TAG, "softDeleteFromServer: Updated " + rows + " row(s) for category id=" + category.getId());
+        return rows;
+    }
+
     // ==================== DELETE ====================
 
     /**
@@ -429,6 +524,8 @@ public class CategoryDao {
                 .setType(type)
                 .setIconName(CursorUtils.getString(cursor, CategoryEntry.COLUMN_ICON_NAME))
                 .setIsActive(isActiveInt == 1)
+            .setCreatedAt(CursorUtils.getLong(cursor, CategoryEntry.COLUMN_CREATED_AT))
+            .setUpdatedAt(CursorUtils.getLong(cursor, CategoryEntry.COLUMN_UPDATED_AT))
                 .setDeletedAt(CursorUtils.getLong(cursor, CategoryEntry.COLUMN_DELETED_AT) == 0 ? null : CursorUtils.getLong(cursor, CategoryEntry.COLUMN_DELETED_AT))
                 .build();
     }

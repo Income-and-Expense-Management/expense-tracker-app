@@ -22,6 +22,10 @@ import org.json.JSONObject;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class CategoryApiService {
 
@@ -154,18 +158,10 @@ public class CategoryApiService {
                                 for (int i = 0; i < dataArray.length(); i++) {
                                     JSONObject categoryObj = dataArray.getJSONObject(i);
 
-                                    Category category = new Category();
-                                    category.setId(categoryObj.optString("id", null));
-
-                                    if(categoryObj.has("user_id") && !categoryObj.isNull("user_id")) {
-                                        category.setUserId(categoryObj.optString("user_id", null));
+                                    Category category = parseCategoryFromJson(categoryObj, null);
+                                    if (category == null) {
+                                        continue;
                                     }
-
-                                    category.setName(categoryObj.optString("name", ""));
-                                    String typeStr = categoryObj.optString("type", "").toUpperCase();
-                                    category.setType(TransactionType.fromValue(typeStr));
-                                    category.setIconName(categoryObj.optString("icon_name", ""));
-                                    category.setActive(categoryObj.optBoolean("is_active", true));
 
                                     apiCategoryList.add(category);
                                 }
@@ -186,6 +182,64 @@ public class CategoryApiService {
                         Log.e(TAG, "API Error: " + error.getMessage(), error);
                         errorListener.onErrorResponse(error);
                     }
+                },
+                tokenStorage,
+                null
+        );
+
+        volleySingleton.addToRequestQueue(request);
+    }
+
+    public void fetchCategoriesFromSyncPull(
+            @NonNull String userId,
+            @NonNull final Response.Listener<List<Category>> successListener,
+            @NonNull final Response.ErrorListener errorListener
+    ) {
+        String token = getAuthToken();
+        if (token == null || token.isEmpty()) {
+            errorListener.onErrorResponse(new VolleyError("Unauthorized: Token is missing"));
+            return;
+        }
+
+        String url = ApiConfig.SYNC_PULL_URL + "?last_sync_time=0";
+        Log.d(TAG, "Fetching categories from sync pull: " + url);
+
+        AuthJsonObjectRequest request = new AuthJsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
+                response -> {
+                    try {
+                        if (!response.optBoolean("success", false)) {
+                            errorListener.onErrorResponse(new VolleyError(response.optString("message", "Sync pull failed")));
+                            return;
+                        }
+
+                        JSONObject dataObj = response.optJSONObject("data");
+                        JSONArray dataArray = dataObj != null ? dataObj.optJSONArray("categories") : null;
+                        List<Category> apiCategoryList = new ArrayList<>();
+                        if (dataArray == null) {
+                            successListener.onResponse(apiCategoryList);
+                            return;
+                        }
+
+                        for (int i = 0; i < dataArray.length(); i++) {
+                            JSONObject categoryObj = dataArray.getJSONObject(i);
+                            Category category = parseCategoryFromJson(categoryObj, userId);
+                            if (category != null) {
+                                apiCategoryList.add(category);
+                            }
+                        }
+
+                        successListener.onResponse(apiCategoryList);
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Sync pull JSON parsing error", e);
+                        errorListener.onErrorResponse(new VolleyError("JSON parsing error", e));
+                    }
+                },
+                error -> {
+                    Log.e(TAG, "Sync pull API error: " + error.getMessage(), error);
+                    errorListener.onErrorResponse(error);
                 },
                 tokenStorage,
                 null
@@ -223,6 +277,60 @@ public class CategoryApiService {
             }
         }
         return error.getMessage() != null ? error.getMessage() : "Unknown error";
+    }
+
+    @Nullable
+    private Category parseCategoryFromJson(@NonNull JSONObject categoryObj, @Nullable String fallbackUserId) {
+        try {
+            String id = categoryObj.optString("id", null);
+            if (id == null || id.isEmpty()) {
+                return null;
+            }
+
+            Category category = new Category();
+            category.setId(id);
+
+            String userId = categoryObj.isNull("user_id") ? null : categoryObj.optString("user_id", null);
+            if (userId == null || userId.isEmpty()) {
+                userId = fallbackUserId;
+            }
+            category.setUserId(userId);
+
+            category.setName(categoryObj.optString("name", ""));
+            String typeStr = categoryObj.optString("type", "").toUpperCase();
+            category.setType(TransactionType.fromValue(typeStr));
+            category.setIconName(categoryObj.isNull("icon_name") ? null : categoryObj.optString("icon_name", null));
+            category.setActive(categoryObj.optBoolean("is_active", true));
+            category.setCreatedAt(parseIso8601ToMillis(categoryObj.optString("created_at", null)));
+            category.setUpdatedAt(parseIso8601ToMillis(categoryObj.optString("updated_at", null)));
+            Long deletedAt = categoryObj.isNull("deleted_at") ? null : parseIso8601ToMillis(categoryObj.optString("deleted_at", null));
+            if (deletedAt != null && deletedAt == 0L) {
+                deletedAt = null;
+            }
+            category.setDeletedAt(deletedAt);
+            return category;
+        } catch (Exception e) {
+            Log.e(TAG, "parseCategoryFromJson: Error parsing category", e);
+            return null;
+        }
+    }
+
+    private long parseIso8601ToMillis(@Nullable String isoString) {
+        if (isoString == null || isoString.isEmpty()) return 0L;
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+            return sdf.parse(isoString).getTime();
+        } catch (ParseException e) {
+            try {
+                SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+                sdf2.setTimeZone(TimeZone.getTimeZone("UTC"));
+                return sdf2.parse(isoString).getTime();
+            } catch (ParseException e2) {
+                Log.w(TAG, "parseIso8601ToMillis: Cannot parse '" + isoString + "'");
+                return 0L;
+            }
+        }
     }
 
     private static class NoBodyRequest extends AuthJsonObjectRequest {

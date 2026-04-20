@@ -36,20 +36,34 @@ public class CategoryRepository {
     }
 
     public void syncCategories(String userId, Runnable onSuccess) {
-        categoryApiService.fetchCategories(context, new Response.Listener<List<Category>>() {
+        categoryApiService.fetchCategoriesFromSyncPull(userId, new Response.Listener<List<Category>>() {
             @Override
             public void onResponse(List<Category> response) {
                 if(response != null) {
-                    for(Category category : response) {
-                        Category existing = categoryDao.getById(category.getId());
-                        if(existing != null) {
-                            categoryDao.update(category);
-                        } else {
-                            categoryDao.insert(category);
+                    new Thread(() -> {
+                        for(Category category : response) {
+                            Category existing = categoryDao.getById(category.getId());
+                            if (category.getDeletedAt() != null) {
+                                if (existing == null) {
+                                    categoryDao.insertFromServer(category);
+                                } else if (category.getUpdatedAt() > existing.getUpdatedAt()) {
+                                    categoryDao.softDeleteFromServer(category);
+                                }
+                            } else {
+                                if (existing == null) {
+                                    categoryDao.insertFromServer(category);
+                                } else if (category.getUpdatedAt() > existing.getUpdatedAt()) {
+                                    categoryDao.updateFromServer(category);
+                                }
+                            }
                         }
-                    }
-                    Log.d(TAG, "Categories synced successfully.");
-                    if(onSuccess != null) {
+                        Log.d(TAG, "Categories synced successfully.");
+                        if(onSuccess != null) {
+                            onSuccess.run();
+                        }
+                    }).start();
+                } else {
+                    if (onSuccess != null) {
                         onSuccess.run();
                     }
                 }
@@ -58,6 +72,9 @@ public class CategoryRepository {
             @Override
             public void onErrorResponse(VolleyError error) {
                 Log.e(TAG, "Error syncing categories", error);
+                if (onSuccess != null) {
+                    onSuccess.run();
+                }
             }
         });
     }

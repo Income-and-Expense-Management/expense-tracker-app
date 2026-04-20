@@ -72,6 +72,14 @@ public class CategoryFragment extends Fragment {
         categoryViewModel.loadCategoriesForManagement(userId);
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (authViewModel != null && categoryViewModel != null) {
+            categoryViewModel.refreshFromServer(authViewModel.getUserId());
+        }
+    }
+
     private void observeViewModel() {
         categoryViewModel.getCategories().observe(getViewLifecycleOwner(), categories -> {
             allCategories.clear();
