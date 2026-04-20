@@ -14,7 +14,7 @@ public final class DatabaseContract {
 
     // Thông tin chung về database
     public static final String DATABASE_NAME = "quanlichitieu.db";
-    public static final int DATABASE_VERSION = 5; // Phase 2: category_id nullable + missing indexes
+    public static final int DATABASE_VERSION = 1; // Phase 2: category_id nullable + missing indexes
 
     // Private constructor để ngăn việc khởi tạo
     private DatabaseContract() {
