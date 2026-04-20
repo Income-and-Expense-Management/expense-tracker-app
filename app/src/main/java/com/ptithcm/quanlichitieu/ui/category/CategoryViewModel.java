@@ -78,11 +78,21 @@ public class CategoryViewModel extends AndroidViewModel {
         deleteResult.setValue(null);
     }
 
+    public void syncCategories(String userId, Runnable onSuccess) {
+        repository.syncCategories(userId, onSuccess);
+    }
+
     public void loadCategoriesForManagement(String userId) {
         new Thread(() -> {
             List<Category> list = repository.getAllCategoriesForManagement(userId);
             categories.postValue(list);
         }).start();
+        syncCategories(userId, () -> {
+            new Thread(() -> {
+                List<Category> list = repository.getAllCategoriesForManagement(userId);
+                categories.postValue(list);
+            }).start();
+        }); // Sync with remote
     }
 
     public void loadCategories(String userId) {
@@ -91,6 +101,12 @@ public class CategoryViewModel extends AndroidViewModel {
             List<Category> list = repository.getUserCategories(userId);
             categories.postValue(list);
         }).start();
+        syncCategories(userId, () -> {
+            new Thread(() -> {
+                List<Category> list = repository.getUserCategories(userId);
+                categories.postValue(list);
+            }).start();
+        }); // Sync with remote
     }
 
     public void addCategory(String userId, String name, TransactionType type) {
