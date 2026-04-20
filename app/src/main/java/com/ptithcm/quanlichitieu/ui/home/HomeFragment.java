@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.ptithcm.quanlichitieu.R;
@@ -25,6 +26,8 @@ import com.ptithcm.quanlichitieu.ui.main.MainActivity;
 import com.ptithcm.quanlichitieu.ui.search.SearchTransactionFragment;
 import com.ptithcm.quanlichitieu.ui.wallet.WalletViewModel;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 public class HomeFragment extends Fragment {
@@ -48,6 +51,8 @@ public class HomeFragment extends Fragment {
     private RecyclerView rvTopExpenses;
     private MaterialButtonToggleGroup togglePeriod;
     private com.ptithcm.quanlichitieu.ui.common.SimpleLineChart lineChart;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private TextView tvSyncStatus;
 
     public static HomeFragment newInstance(String username) {
         HomeFragment fragment = new HomeFragment();
@@ -110,6 +115,13 @@ public class HomeFragment extends Fragment {
     }
 
     private void initViews(View view) {
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+        tvSyncStatus = view.findViewById(R.id.tvSyncStatus);
+
+        if (swipeRefreshLayout != null) {
+            setupSwipeRefresh();
+        }
+
         tvHomeTitle = view.findViewById(R.id.tvHomeTitle);
         tvBalanceValue = view.findViewById(R.id.tvBalanceValue);
         tvWalletDetailName = view.findViewById(R.id.tvWalletDetailName);
@@ -148,6 +160,31 @@ public class HomeFragment extends Fragment {
                 if (tvTotalIncomeValue != null) tvTotalIncomeValue.setTextColor(requireContext().getResources().getColor(R.color.home_accent_green, null));
                 if (tvTotalSpentValue != null) tvTotalSpentValue.setTextColor(android.graphics.Color.parseColor("#555555"));
             });
+        }
+    }
+
+    private void setupSwipeRefresh() {
+        swipeRefreshLayout.setColorSchemeResources(R.color.home_expense_red, R.color.home_accent_green);
+        updateSyncTime();
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            // Re-load data when swiped
+            walletViewModel.loadActiveWallet();
+            homeViewModel.loadTopExpenses();
+            homeViewModel.loadReportData();
+
+            // Simulation of network delay or just stop instantly since local DB
+            swipeRefreshLayout.postDelayed(() -> {
+                swipeRefreshLayout.setRefreshing(false);
+                updateSyncTime();
+            }, 800);
+        });
+    }
+
+    private void updateSyncTime() {
+        if (tvSyncStatus != null) {
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm. dd/MM", Locale.getDefault());
+            String time = sdf.format(new Date());
+            tvSyncStatus.setText("Đồng bộ lần cuối: vừa xong (" + time + ")");
         }
     }
 
@@ -192,14 +229,14 @@ public class HomeFragment extends Fragment {
         }
 
         if (cardWallet != null) {
-            cardWallet.setOnClickListener(v -> {
+            cardWallet.setOnClickListener(v ->
                 requireActivity().getSupportFragmentManager()
                         .beginTransaction()
                         .replace(R.id.fragmentContainer,
                                 new com.ptithcm.quanlichitieu.ui.wallet.AddWalletFragment())
                         .addToBackStack(null)
-                        .commit();
-            });
+                        .commit()
+            );
         }
     }
 
