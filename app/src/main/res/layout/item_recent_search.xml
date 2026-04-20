@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="18dp"
+    android:background="?android:attr/selectableItemBackground">
+
+    <!-- Keyword Text -->
+    <TextView
+        android:id="@+id/tvRecentSearchQuery"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <!-- Fill into search box button (mũi tên chéo như ảnh mẫu) -->
+    <ImageView
+        android:id="@+id/btnFillSearch"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:padding="4dp"
+        android:src="@drawable/ic_arrow_back"
+        android:rotation="135"
+        android:contentDescription="Điền vào ô tìm kiếm"
+        app:tint="#9E9E9E" />
+
+</LinearLayout>

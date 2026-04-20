@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,10 +17,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.ptithcm.quanlichitieu.R;
+import com.ptithcm.quanlichitieu.data.model.Wallet;
 import com.ptithcm.quanlichitieu.event.BudgetUpdateEvent;
 import com.ptithcm.quanlichitieu.event.EventBus;
 import com.ptithcm.quanlichitieu.ui.home.adapter.TopExpenseAdapter;
 import com.ptithcm.quanlichitieu.ui.main.MainActivity;
+import com.ptithcm.quanlichitieu.ui.search.SearchTransactionFragment;
 import com.ptithcm.quanlichitieu.ui.wallet.WalletViewModel;
 
 import java.util.Locale;
@@ -36,7 +39,8 @@ public class HomeFragment extends Fragment {
     private TextView tvBalanceValue;
     private TextView tvWalletDetailName;
     private TextView tvWalletDetailValue;
-    private android.widget.ImageView imgWalletIcon;
+    private ImageView imgWalletIcon;
+    private ImageView imgSearch;
     private View cardWallet;
     private TextView tvSeeAllWallets;
     private TextView tvTotalSpentValue;
@@ -111,6 +115,7 @@ public class HomeFragment extends Fragment {
         tvWalletDetailName = view.findViewById(R.id.tvWalletDetailName);
         tvWalletDetailValue = view.findViewById(R.id.tvWalletDetailValue);
         imgWalletIcon = view.findViewById(R.id.imgWalletIcon);
+        imgSearch = view.findViewById(R.id.imgSearch);
         cardWallet = view.findViewById(R.id.cardWallet);
         tvSeeAllWallets = view.findViewById(R.id.tvSeeAllWallets);
         tvTotalSpentValue = view.findViewById(R.id.tvTotalSpentValue);
@@ -118,6 +123,9 @@ public class HomeFragment extends Fragment {
         rvTopExpenses = view.findViewById(R.id.rvTopExpenses);
         togglePeriod = view.findViewById(R.id.togglePeriod);
         lineChart = view.findViewById(R.id.lineChart);
+
+        // Mở màn hình tìm kiếm với walletId hiện tại
+        imgSearch.setOnClickListener(v -> openSearch());
 
         View tabExpense = view.findViewById(R.id.tabExpense);
         View tabIncome = view.findViewById(R.id.tabIncome);
@@ -161,6 +169,17 @@ public class HomeFragment extends Fragment {
                 homeViewModel.setPeriodFilter(checkedId == R.id.btnMonth);
             }
         });
+    }
+
+    private void openSearch() {
+        Wallet currentWallet = walletViewModel.getSelectedWallet().getValue();
+        String walletId = currentWallet != null ? currentWallet.getId() : null;
+        SearchTransactionFragment searchFragment = SearchTransactionFragment.newInstance(walletId);
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragmentContainer, searchFragment)
+                .addToBackStack(null)
+                .commit();
     }
 
     private void setupWalletActions() {

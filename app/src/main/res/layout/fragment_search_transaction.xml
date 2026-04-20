@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#111114"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+
+    <!-- Top Search Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        android:background="#1A1A1E">
+
+        <!-- Close Button -->
+        <ImageView
+            android:id="@+id/btnSearchClose"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@drawable/ic_close"
+            android:contentDescription="Đóng"
+            app:tint="#9E9E9E" />
+
+        <!-- Search Input -->
+        <EditText
+            android:id="@+id/etSearchQuery"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="4dp"
+            android:background="@null"
+            android:hint="@string/search_hint"
+            android:textColorHint="#666666"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:inputType="text"
+            android:imeOptions="actionSearch"
+            android:maxLines="1"
+            android:singleLine="true" />
+
+        <!-- Filter Button -->
+        <ImageView
+            android:id="@+id/btnSearchFilter"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@drawable/ic_sort"
+            android:contentDescription="Lọc"
+            app:tint="#9E9E9E" />
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#2A2A2E" />
+
+    <!-- Loading Indicator -->
+    <ProgressBar
+        android:id="@+id/progressSearch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="8dp"
+        android:visibility="gone" />
+
+    <!-- Recent Searches Section (visible khi chưa có kết quả) -->
+    <LinearLayout
+        android:id="@+id/layoutRecentSearches"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="visible">
+
+        <!-- Section Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="8dp"
+            android:background="#1A1A1E">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/search_recent"
+                android:textColor="#CCCCCC"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.05" />
+
+            <TextView
+                android:id="@+id/tvClearHistory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/search_clear_history"
+                android:textColor="#666666"
+                android:textSize="12sp"
+                android:padding="4dp" />
+
+        </LinearLayout>
+
+        <!-- Recent Search List -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvRecentSearches"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:overScrollMode="never"
+            android:nestedScrollingEnabled="false" />
+
+        <!-- Empty recent history hint -->
+        <TextView
+            android:id="@+id/tvEmptyRecent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="32dp"
+            android:gravity="center"
+            android:text="@string/search_hint"
+            android:textColor="#444448"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- Search Results Section (visible khi có kết quả hoặc không tìm thấy) -->
+    <LinearLayout
+        android:id="@+id/layoutSearchResults"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <!-- No result empty state -->
+        <LinearLayout
+            android:id="@+id/layoutNoResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingTop="64dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/ic_search"
+                android:alpha="0.3"
+                app:tint="#666666"
+                android:contentDescription="Không tìm thấy" />
+
+            <TextView
+                android:id="@+id/tvNoResult"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/search_no_result"
+                android:textColor="#666666"
+                android:textSize="15sp" />
+
+        </LinearLayout>
+
+        <!-- Results RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvSearchResults"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:overScrollMode="never"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="16dp"
+            android:clipToPadding="false" />
+
+    </LinearLayout>
+
+</LinearLayout>

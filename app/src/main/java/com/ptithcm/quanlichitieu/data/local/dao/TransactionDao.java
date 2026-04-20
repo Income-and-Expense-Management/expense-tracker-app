@@ -209,6 +209,49 @@ public class TransactionDao {
         return transactions;
     }
 
+    /**
+     * Tìm kiếm giao dịch theo từ khóa trong ghi chú hoặc tên danh mục.
+     *
+     * @param keyword  Từ khóa tìm kiếm (không phân biệt hoa/thường)
+     * @param walletId ID ví để lọc (null = tìm tất cả ví)
+     * @return Danh sách giao dịch khớp với từ khóa, sắp xếp theo ngày mới nhất
+     */
+    public List<Transaction> searchWithKeyword(@NonNull String keyword, @Nullable String walletId) {
+        List<Transaction> transactions = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String likePattern = "%" + keyword + "%";
+
+        String query = BASE_JOIN_QUERY +
+                "WHERE t." + TransactionEntry.COLUMN_DELETED_AT + " IS NULL " +
+                "AND (t." + TransactionEntry.COLUMN_NOTE + " LIKE ? " +
+                "OR c." + CategoryEntry.COLUMN_NAME + " LIKE ?) ";
+
+        List<String> argsList = new ArrayList<>();
+        argsList.add(likePattern);
+        argsList.add(likePattern);
+
+        if (walletId != null) {
+            query += "AND t." + TransactionEntry.COLUMN_WALLET_ID + " = ? ";
+            argsList.add(walletId);
+        }
+
+        query += "ORDER BY t." + TransactionEntry.COLUMN_TRANSACTION_DATE + " DESC";
+
+        Cursor cursor = null;
+        try {
+            cursor = db.rawQuery(query, argsList.toArray(new String[0]));
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    transactions.add(cursorToTransactionWithDetails(cursor));
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+        }
+        return transactions;
+    }
+
     public int update(@NonNull Transaction transaction) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         transaction.setUpdatedAt(IdGenerator.getCurrentTimestamp());

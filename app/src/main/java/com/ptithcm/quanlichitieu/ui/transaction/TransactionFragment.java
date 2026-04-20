@@ -14,7 +14,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ptithcm.quanlichitieu.R;
+import com.ptithcm.quanlichitieu.data.model.Wallet;
 import com.ptithcm.quanlichitieu.ui.budget.bottomsheet.SelectWalletBottomSheet;
+import com.ptithcm.quanlichitieu.ui.search.SearchTransactionFragment;
 import com.ptithcm.quanlichitieu.ui.transaction.adapter.TransactionAdapter;
 import com.ptithcm.quanlichitieu.ui.wallet.WalletViewModel;
 import com.ptithcm.quanlichitieu.ui.main.MainActivity;
@@ -94,6 +96,12 @@ public class TransactionFragment extends Fragment {
             }
         });
 
+        // Mở màn hình tìm kiếm với walletId hiện tại
+        View btnSearch = view.findViewById(R.id.btnSearch);
+        if (btnSearch != null) {
+            btnSearch.setOnClickListener(v -> openSearch());
+        }
+
         View btnSeeReport = view.findViewById(R.id.btnSeeReport);
         if (btnSeeReport != null) {
             btnSeeReport.setOnClickListener(v -> {
@@ -102,6 +110,17 @@ public class TransactionFragment extends Fragment {
                 }
             });
         }
+    }
+
+    private void openSearch() {
+        Wallet currentWallet = walletViewModel.getSelectedWallet().getValue();
+        String walletId = currentWallet != null ? currentWallet.getId() : null;
+        SearchTransactionFragment searchFragment = SearchTransactionFragment.newInstance(walletId);
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragmentContainer, searchFragment)
+                .addToBackStack(null)
+                .commit();
     }
 
     private void setupTransactionList() {

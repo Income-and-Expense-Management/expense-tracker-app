@@ -171,7 +171,17 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         return initialBalance + allIncome - allExpense;
     }
 
-    // ==================== PRIVATE HELPER METHODS ====================
+    @Override
+    public List<TransactionGroup> searchTransactions(@NonNull String keyword, @Nullable String walletId) {
+        if (keyword.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<Transaction> results = transactionDao.searchWithKeyword(keyword.trim(), walletId);
+        Log.d(TAG, "Search '" + keyword + "' found " + results.size() + " transactions");
+        return groupTransactionsByDate(results);
+    }
+
+
 
     /**
      * Nhóm các giao dịch theo ngày.

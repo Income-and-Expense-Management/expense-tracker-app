@@ -85,4 +85,14 @@ public interface TransactionRepository {
      * @return Số dư hiện tại
      */
     long getCurrentBalance(@NonNull String walletId, long initialBalance);
+
+    /**
+     * Tìm kiếm giao dịch theo từ khóa trong ghi chú hoặc tên danh mục.
+     * Kết quả được nhóm theo ngày, sắp xếp mới nhất trước.
+     *
+     * @param keyword  Từ khóa tìm kiếm
+     * @param walletId ID ví để lọc (null = tìm tất cả ví)
+     * @return Danh sách TransactionGroup khớp với từ khóa
+     */
+    List<TransactionGroup> searchTransactions(@NonNull String keyword, @Nullable String walletId);
 }

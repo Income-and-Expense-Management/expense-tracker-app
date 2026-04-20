@@ -58,4 +58,11 @@
     <string name="add_transaction_category_required">Vui lòng chọn nhóm</string>
     <string name="add_transaction_success">Thêm giao dịch thành công</string>
     <string name="add_transaction_failed">Lỗi khi thêm giao dịch</string>
+
+    <!-- Search Transaction -->
+    <string name="search_hint">Tìm theo #nhãn, nhóm, v.v...</string>
+    <string name="search_recent">Tìm kiếm gần đây</string>
+    <string name="search_no_result">Không tìm thấy giao dịch nào</string>
+    <string name="search_clear_history">Xoá lịch sử</string>
+
 </resources>

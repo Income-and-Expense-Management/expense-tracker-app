@@ -67,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
         setupBottomNav();
         setupFab();
         setupBackNavigation();
+        setupBottomNavVisibility();
     }
 
     private void initFragments(String username) {
@@ -107,6 +108,38 @@ public class MainActivity extends AppCompatActivity {
         bottomNav.setOnItemSelectedListener(item -> {
             switchToBottomTab(item.getItemId());
             return true;
+        });
+    }
+
+    private void setupBottomNavVisibility() {
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            boolean isRoot = getSupportFragmentManager().getBackStackEntryCount() == 0;
+            
+            android.view.View bottomAppBar = findViewById(R.id.bottomAppBar);
+            FloatingActionButton fabAdd = findViewById(R.id.fabAdd);
+            android.view.View fragmentContainer = findViewById(R.id.fragmentContainer);
+
+            if (isRoot) {
+                if (bottomAppBar != null) bottomAppBar.setVisibility(android.view.View.VISIBLE);
+                if (fabAdd != null) fabAdd.show();
+                
+                // Trả lại margin bottom cho màn hình chính (80dp)
+                if (fragmentContainer != null) {
+                    android.view.ViewGroup.MarginLayoutParams params = (android.view.ViewGroup.MarginLayoutParams) fragmentContainer.getLayoutParams();
+                    params.bottomMargin = (int) (80 * getResources().getDisplayMetrics().density);
+                    fragmentContainer.setLayoutParams(params);
+                }
+            } else {
+                if (bottomAppBar != null) bottomAppBar.setVisibility(android.view.View.GONE);
+                if (fabAdd != null) fabAdd.hide();
+                
+                // Loại bỏ margin bottom để màn hình phụ chiếm toàn màn hình
+                if (fragmentContainer != null) {
+                    android.view.ViewGroup.MarginLayoutParams params = (android.view.ViewGroup.MarginLayoutParams) fragmentContainer.getLayoutParams();
+                    params.bottomMargin = 0;
+                    fragmentContainer.setLayoutParams(params);
+                }
+            }
         });
     }
 
