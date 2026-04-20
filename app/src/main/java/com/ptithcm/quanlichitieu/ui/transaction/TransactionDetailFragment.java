@@ -63,7 +63,24 @@ public class TransactionDetailFragment extends Fragment {
 
         initViews(view);
         setupListeners();
+
+        requireActivity().getSupportFragmentManager().setFragmentResultListener("update_transaction", getViewLifecycleOwner(), (requestKey, result) -> {
+            loadTransactionDetails();
+        });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
         loadTransactionDetails();
+    }
+
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        if (!hidden) {
+            loadTransactionDetails();
+        }
     }
 
     @Override

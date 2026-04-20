@@ -208,6 +208,7 @@ public class AddTransactionFragment extends Fragment {
         viewModel.getSaveResult().observe(getViewLifecycleOwner(), result -> {
             Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
             if (result.isSuccess()) {
+                requireActivity().getSupportFragmentManager().setFragmentResult("update_transaction", new Bundle());
                 requireActivity().getSupportFragmentManager().popBackStack();
             }
         });
@@ -215,8 +216,10 @@ public class AddTransactionFragment extends Fragment {
         viewModel.getTransactionType().observe(getViewLifecycleOwner(), transactionType -> {
             if (transactionType == TransactionType.EXPENSE) {
                 toggleTransactionType.check(R.id.btnExpense);
+                etAmount.setTextColor(Color.parseColor("#E53935"));
             } else if (transactionType == TransactionType.INCOME) {
                 toggleTransactionType.check(R.id.btnIncome);
+                etAmount.setTextColor(Color.parseColor("#43A047"));
             }
         });
 
