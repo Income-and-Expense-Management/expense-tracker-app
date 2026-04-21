@@ -95,4 +95,34 @@ public interface TransactionRepository {
      * @return Danh sách TransactionGroup khớp với từ khóa
      */
     List<TransactionGroup> searchTransactions(@NonNull String keyword, @Nullable String walletId);
+
+    /**
+     * Lấy chi tiết một giao dịch theo ID
+     */
+    @Nullable
+    com.ptithcm.quanlichitieu.data.model.Transaction getById(@NonNull String transactionId);
+
+    // ==================== LOCAL OPERATIONS ====================
+
+    @Nullable
+    String insertLocal(@NonNull com.ptithcm.quanlichitieu.data.model.Transaction transaction);
+
+    int updateLocal(@NonNull com.ptithcm.quanlichitieu.data.model.Transaction transaction);
+
+    int deleteLocal(@NonNull String transactionId);
+
+    // ==================== REMOTE OPERATIONS (fire-and-forget) ====================
+
+    void pushCreate(@NonNull com.ptithcm.quanlichitieu.data.model.Transaction transaction, @Nullable SyncCallback callback);
+
+    void pushUpdate(@NonNull com.ptithcm.quanlichitieu.data.model.Transaction transaction, @Nullable SyncCallback callback);
+
+    void pushDelete(@NonNull String transactionId, @Nullable SyncCallback callback);
+
+    void fetchFromServer(@Nullable Runnable onDone);
+
+    interface SyncCallback {
+        void onSuccess();
+        void onError(@NonNull String message);
+    }
 }

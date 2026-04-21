@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
@@ -40,6 +41,8 @@ public class TransactionFragment extends Fragment {
     private TextView tabPrevMonth;
     private TextView tabCurrentMonth;
     private TextView tabNextMonth;
+
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     @Nullable
     @Override
@@ -70,6 +73,12 @@ public class TransactionFragment extends Fragment {
         tvTotalExpense = view.findViewById(R.id.tvTotalExpense);
         tvTotalIncome = view.findViewById(R.id.tvTotalIncome);
         rvTransactions = view.findViewById(R.id.rvTransactions);
+
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeResources(R.color.home_expense_red, R.color.home_accent_green);
+            swipeRefreshLayout.setOnRefreshListener(() -> viewModel.refreshFromServer());
+        }
 
         tvWalletName = view.findViewById(R.id.tvWalletName);
         ivWalletIcon = view.findViewById(R.id.ivWalletIcon);
@@ -187,6 +196,12 @@ public class TransactionFragment extends Fragment {
                 transactionAdapter.setGroups(groups));
 
         viewModel.getMonthOffset().observe(getViewLifecycleOwner(), this::updateTabStyles);
+
+        viewModel.getIsRefreshing().observe(getViewLifecycleOwner(), refreshing -> {
+            if (swipeRefreshLayout != null && refreshing != null) {
+                swipeRefreshLayout.setRefreshing(refreshing);
+            }
+        });
     }
 
     @Override
@@ -198,7 +213,7 @@ public class TransactionFragment extends Fragment {
         // Tải lại danh sách giao dịch phòng trường hợp vừa thêm mới từ trang khác
         com.ptithcm.quanlichitieu.data.model.Wallet currentWallet = walletViewModel.getSelectedWallet().getValue();
         if (currentWallet != null) {
-            viewModel.loadData(currentWallet);
+            viewModel.refreshFromServer();
         }
     }
 
@@ -211,7 +226,7 @@ public class TransactionFragment extends Fragment {
 
             com.ptithcm.quanlichitieu.data.model.Wallet currentWallet = walletViewModel.getSelectedWallet().getValue();
             if (currentWallet != null) {
-                viewModel.loadData(currentWallet);
+                viewModel.refreshFromServer();
             }
         }
     }

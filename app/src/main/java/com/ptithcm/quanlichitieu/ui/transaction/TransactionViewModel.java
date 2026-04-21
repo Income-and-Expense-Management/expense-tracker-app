@@ -11,6 +11,8 @@ import com.ptithcm.quanlichitieu.data.model.TransactionGroup;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
 import com.ptithcm.quanlichitieu.data.repository.TransactionRepository;
 import com.ptithcm.quanlichitieu.data.repository.TransactionRepositoryImpl;
+import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
+import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,14 +40,28 @@ public class TransactionViewModel extends AndroidViewModel {
     private final MutableLiveData<Long> totalExpense = new MutableLiveData<>(0L);
     private final MutableLiveData<Long> totalIncome = new MutableLiveData<>(0L);
     private final MutableLiveData<Integer> monthOffset = new MutableLiveData<>(0);
+    private final MutableLiveData<Boolean> isRefreshing = new MutableLiveData<>(false);
 
     // Lưu wallet hiện tại để sử dụng khi thay đổi monthOffset
     private Wallet currentWallet;
 
     public TransactionViewModel(@NonNull Application application) {
         super(application);
-        // Sử dụng implementation thật với database
-        this.transactionRepository = new TransactionRepositoryImpl(application.getApplicationContext());
+        TokenStorage tokenStorage = EncryptedTokenStorage.getInstance(application);
+        this.transactionRepository = new TransactionRepositoryImpl(application.getApplicationContext(), tokenStorage);
+    }
+
+    public void refreshFromServer() {
+        isRefreshing.setValue(true);
+        transactionRepository.fetchFromServer(() -> {
+            android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
+            handler.post(() -> {
+                if (currentWallet != null) {
+                    loadData(currentWallet);
+                }
+                isRefreshing.setValue(false);
+            });
+        });
     }
 
     // ==================== GETTERS FOR LIVEDATA ====================
@@ -68,6 +84,10 @@ public class TransactionViewModel extends AndroidViewModel {
     
     public LiveData<Integer> getMonthOffset() { 
         return monthOffset; 
+    }
+
+    public LiveData<Boolean> getIsRefreshing() {
+        return isRefreshing;
     }
 
     // ==================== PUBLIC METHODS ====================

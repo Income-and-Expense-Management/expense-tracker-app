@@ -31,6 +31,10 @@ public final class ApiConfig {
     public static final String BUDGETS_URL = BASE_URL + "/api/v1/budgets/";
     public static final String BUDGET_URL  = BASE_URL + "/api/v1/budgets/"; // append budgetId
 
+    // Transaction endpoints
+    public static final String TRANSACTIONS_URL = BASE_URL + "/api/v1/transactions/";
+    public static final String TRANSACTION_URL  = BASE_URL + "/api/v1/transactions/"; // append transactionId
+
     // Sync endpoints (batch sync — dùng cho pull/push toàn bộ dữ liệu)
     public static final String SYNC_PUSH_URL = BASE_URL + "/api/v1/sync/push";
     public static final String SYNC_PULL_URL = BASE_URL + "/api/v1/sync/pull";

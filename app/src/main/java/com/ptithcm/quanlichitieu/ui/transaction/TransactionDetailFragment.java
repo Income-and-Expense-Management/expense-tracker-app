@@ -27,7 +27,7 @@ public class TransactionDetailFragment extends Fragment {
     private static final String ARG_TRANSACTION_ID = "transaction_id";
 
     private String transactionId;
-    private TransactionDao transactionDao;
+    private com.ptithcm.quanlichitieu.data.repository.TransactionRepository transactionRepository;
 
     private ImageView btnClose, btnEdit, btnDelete, imgCategoryIcon;
     private TextView tvCategoryName, tvAmount, tvDate, tvWalletName, tvNote;
@@ -46,8 +46,9 @@ public class TransactionDetailFragment extends Fragment {
         if (getArguments() != null) {
             transactionId = getArguments().getString(ARG_TRANSACTION_ID);
         }
-        BudgetDatabaseHelper dbHelper = BudgetDatabaseHelper.getInstance(requireContext());
-        transactionDao = new TransactionDao(dbHelper);
+        com.ptithcm.quanlichitieu.data.local.token.TokenStorage tokenStorage = 
+            com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage.getInstance(requireContext());
+        transactionRepository = new com.ptithcm.quanlichitieu.data.repository.TransactionRepositoryImpl(requireContext(), tokenStorage);
     }
 
     @Nullable
@@ -111,8 +112,9 @@ public class TransactionDetailFragment extends Fragment {
 
         btnDelete.setOnClickListener(v -> {
             if (transactionId != null) {
-                int rows = transactionDao.delete(transactionId);
+                int rows = transactionRepository.deleteLocal(transactionId);
                 if (rows > 0) {
+                    transactionRepository.pushDelete(transactionId, null);
                     Toast.makeText(requireContext(), "Đã xoá giao dịch", Toast.LENGTH_SHORT).show();
                     requireActivity().getSupportFragmentManager().popBackStack();
                 } else {
@@ -124,7 +126,7 @@ public class TransactionDetailFragment extends Fragment {
 
     private void loadTransactionDetails() {
         if (transactionId == null) return;
-        Transaction transaction = transactionDao.getById(transactionId);
+        Transaction transaction = transactionRepository.getById(transactionId);
         if (transaction == null) {
             Toast.makeText(requireContext(), "Không tìm thấy giao dịch", Toast.LENGTH_SHORT).show();
             requireActivity().getSupportFragmentManager().popBackStack();

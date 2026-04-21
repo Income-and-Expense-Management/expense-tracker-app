@@ -49,7 +49,8 @@ public class HomeViewModel extends AndroidViewModel {
         super(application);
         this.transactionDao = DatabaseManager.getInstance(application).getTransactionDao();
         this.walletDao = DatabaseManager.getInstance(application).getWalletDao();
-        this.transactionRepository = new TransactionRepositoryImpl(application);
+        com.ptithcm.quanlichitieu.data.local.token.TokenStorage tokenStorage = com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage.getInstance(application);
+        this.transactionRepository = new TransactionRepositoryImpl(application, tokenStorage);
         this.tokenStorage = EncryptedTokenStorage.getInstance(application);
     }
 

@@ -12,6 +12,8 @@ import com.ptithcm.quanlichitieu.data.model.Transaction;
 import com.ptithcm.quanlichitieu.data.model.TransactionGroup;
 import com.ptithcm.quanlichitieu.data.model.TransactionType;
 import com.ptithcm.quanlichitieu.utils.DateUtils;
+import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
+import com.ptithcm.quanlichitieu.data.remote.TransactionApiService;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -42,15 +44,17 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     private static final String TAG = "TransactionRepositoryImpl";
 
     private final TransactionDao transactionDao;
+    private final TransactionApiService apiService;
 
     /**
      * Constructor nhận Context để khởi tạo DatabaseManager.
      * 
      * @param context Application context
      */
-    public TransactionRepositoryImpl(@NonNull Context context) {
+    public TransactionRepositoryImpl(@NonNull Context context, @NonNull TokenStorage tokenStorage) {
         DatabaseManager dbManager = DatabaseManager.getInstance(context);
         this.transactionDao = dbManager.getTransactionDao();
+        this.apiService = new TransactionApiService(context, tokenStorage);
     }
 
     /**
@@ -60,6 +64,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
      */
     public TransactionRepositoryImpl(@NonNull TransactionDao transactionDao) {
         this.transactionDao = transactionDao;
+        this.apiService = null;
     }
 
     // ==================== PUBLIC METHODS ====================
@@ -265,4 +270,104 @@ public class TransactionRepositoryImpl implements TransactionRepository {
      * Helper method đã bị xóa do sử dụng DB filtering.
      * private List<Transaction> filterByDateRange(...) {}
      */
+
+    @Override
+    @Nullable
+    public Transaction getById(@NonNull String transactionId) {
+        return transactionDao.getById(transactionId);
+    }
+
+    // ==================== LOCAL OPERATIONS ====================
+
+    @Override
+    @Nullable
+    public String insertLocal(@NonNull Transaction transaction) {
+        String id = transactionDao.insert(transaction);
+        if (id != null) {
+            Log.d(TAG, "insertLocal: Transaction saved locally with id=" + id);
+        } else {
+            Log.e(TAG, "insertLocal: Failed to save transaction locally");
+        }
+        return id;
+    }
+
+    @Override
+    public int updateLocal(@NonNull Transaction transaction) {
+        int rows = transactionDao.update(transaction);
+        Log.d(TAG, "updateLocal: Updated " + rows + " row(s) for transaction id=" + transaction.getId());
+        return rows;
+    }
+
+    @Override
+    public int deleteLocal(@NonNull String transactionId) {
+        int rows = transactionDao.delete(transactionId);
+        Log.d(TAG, "deleteLocal: Soft-deleted " + rows + " row(s) for transaction id=" + transactionId);
+        return rows;
+    }
+
+    // ==================== REMOTE OPERATIONS ====================
+
+    @Override
+    public void pushCreate(@NonNull Transaction transaction, @Nullable SyncCallback callback) {
+        if (apiService == null) return;
+        Log.d(TAG, "pushCreate: Pushing transaction id=" + transaction.getId() + " to server");
+        apiService.createTransaction(
+                transaction,
+                response -> {
+                    Log.d(TAG, "pushCreate: Server confirmed transaction creation");
+                    if (callback != null) callback.onSuccess();
+                },
+                error -> {
+                    String msg = error != null && error.getMessage() != null ? error.getMessage() : "Network error";
+                    Log.e(TAG, "pushCreate: Server error — " + msg);
+                    if (callback != null) callback.onError(msg);
+                }
+        );
+    }
+
+    @Override
+    public void pushUpdate(@NonNull Transaction transaction, @Nullable SyncCallback callback) {
+        if (apiService == null) return;
+        Log.d(TAG, "pushUpdate: Pushing update for transaction id=" + transaction.getId());
+        apiService.updateTransaction(
+                transaction,
+                response -> {
+                    Log.d(TAG, "pushUpdate: Server confirmed transaction update");
+                    if (callback != null) callback.onSuccess();
+                },
+                error -> {
+                    String msg = error != null && error.getMessage() != null ? error.getMessage() : "Network error";
+                    Log.e(TAG, "pushUpdate: Server error — " + msg);
+                    if (callback != null) callback.onError(msg);
+                }
+        );
+    }
+
+    @Override
+    public void pushDelete(@NonNull String transactionId, @Nullable SyncCallback callback) {
+        if (apiService == null) return;
+        Log.d(TAG, "pushDelete: Pushing delete for transaction id=" + transactionId);
+        apiService.deleteTransaction(
+                transactionId,
+                response -> {
+                    Log.d(TAG, "pushDelete: Server confirmed transaction deletion (204)");
+                    if (callback != null) callback.onSuccess();
+                },
+                error -> {
+                    String msg = error != null && error.getMessage() != null ? error.getMessage() : "Network error";
+                    Log.e(TAG, "pushDelete: Server error — " + msg);
+                    if (callback != null) callback.onError(msg);
+                }
+        );
+    }
+
+    @Override
+    public void fetchFromServer(@Nullable Runnable onDone) {
+        if (apiService == null) {
+            if (onDone != null) onDone.run();
+            return;
+        }
+        Log.d(TAG, "fetchFromServer: Pulling transactions from server");
+        apiService.fetchAndUpsertTransactions(transactionDao, onDone);
+    }
 }

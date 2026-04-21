@@ -278,6 +278,42 @@ public class TransactionDao {
         return db.update(TransactionEntry.TABLE_NAME, values, TransactionEntry.COLUMN_ID + " = ?", new String[]{transactionId});
     }
 
+    public void insertFromServer(@NonNull Transaction transaction) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(TransactionEntry.COLUMN_ID, transaction.getId());
+        values.put(TransactionEntry.COLUMN_WALLET_ID, transaction.getWalletId());
+        values.put(TransactionEntry.COLUMN_CATEGORY_ID, transaction.getCategoryId());
+        values.put(TransactionEntry.COLUMN_AMOUNT, transaction.getAmount());
+        values.put(TransactionEntry.COLUMN_TRANSACTION_DATE, transaction.getTransactionDate());
+        values.put(TransactionEntry.COLUMN_NOTE, transaction.getNote());
+        values.put(TransactionEntry.COLUMN_CREATED_AT, transaction.getCreatedAt());
+        values.put(TransactionEntry.COLUMN_UPDATED_AT, transaction.getUpdatedAt());
+        if (transaction.getDeletedAt() != null) {
+            values.put(TransactionEntry.COLUMN_DELETED_AT, transaction.getDeletedAt());
+        } else {
+            values.putNull(TransactionEntry.COLUMN_DELETED_AT);
+        }
+        db.insertWithOnConflict(TransactionEntry.TABLE_NAME, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    public void updateFromServer(@NonNull Transaction transaction) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(TransactionEntry.COLUMN_WALLET_ID, transaction.getWalletId());
+        values.put(TransactionEntry.COLUMN_CATEGORY_ID, transaction.getCategoryId());
+        values.put(TransactionEntry.COLUMN_AMOUNT, transaction.getAmount());
+        values.put(TransactionEntry.COLUMN_TRANSACTION_DATE, transaction.getTransactionDate());
+        values.put(TransactionEntry.COLUMN_NOTE, transaction.getNote());
+        values.put(TransactionEntry.COLUMN_UPDATED_AT, transaction.getUpdatedAt());
+        if (transaction.getDeletedAt() != null) {
+            values.put(TransactionEntry.COLUMN_DELETED_AT, transaction.getDeletedAt());
+        } else {
+            values.putNull(TransactionEntry.COLUMN_DELETED_AT);
+        }
+        db.update(TransactionEntry.TABLE_NAME, values, TransactionEntry.COLUMN_ID + " = ?", new String[]{transaction.getId()});
+    }
+
     public int deleteByWalletId(@NonNull String walletId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = new ContentValues();

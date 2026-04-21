@@ -55,7 +55,8 @@ public class SearchViewModel extends AndroidViewModel {
 
     public SearchViewModel(@NonNull Application application) {
         super(application);
-        this.transactionRepository = new TransactionRepositoryImpl(application.getApplicationContext());
+        com.ptithcm.quanlichitieu.data.local.token.TokenStorage tokenStorage = com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage.getInstance(application);
+        this.transactionRepository = new TransactionRepositoryImpl(application.getApplicationContext(), tokenStorage);
         this.sharedPreferences = application.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         loadRecentSearches();
     }

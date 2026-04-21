@@ -10,8 +10,9 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.ptithcm.quanlichitieu.data.local.DatabaseManager;
 import com.ptithcm.quanlichitieu.data.local.dao.CategoryDao;
-import com.ptithcm.quanlichitieu.data.local.dao.TransactionDao;
 import com.ptithcm.quanlichitieu.data.local.dao.WalletDao;
+import com.ptithcm.quanlichitieu.data.repository.TransactionRepository;
+import com.ptithcm.quanlichitieu.data.repository.TransactionRepositoryImpl;
 import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
 import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
 import com.ptithcm.quanlichitieu.data.model.Category;
@@ -28,7 +29,7 @@ import android.content.SharedPreferences;
 
 public class AddTransactionViewModel extends AndroidViewModel {
 
-    private final TransactionDao transactionDao;
+    private final TransactionRepository transactionRepository;
     private final WalletDao walletDao;
     private final CategoryDao categoryDao;
     private final TokenStorage tokenStorage;
@@ -44,10 +45,10 @@ public class AddTransactionViewModel extends AndroidViewModel {
     public AddTransactionViewModel(@NonNull Application application) {
         super(application);
         DatabaseManager dbManager = DatabaseManager.getInstance(application);
-        this.transactionDao = dbManager.getTransactionDao();
         this.walletDao = dbManager.getWalletDao();
         this.categoryDao = dbManager.getCategoryDao();
         this.tokenStorage = EncryptedTokenStorage.getInstance(application);
+        this.transactionRepository = new TransactionRepositoryImpl(application, tokenStorage);
     }
 
     public LiveData<Wallet> getSelectedWallet() {
@@ -131,7 +132,10 @@ public class AddTransactionViewModel extends AndroidViewModel {
     }
 
     public void loadTransaction(String transactionId) {
-        Transaction transaction = transactionDao.getById(transactionId);
+        // Lấy danh sách giao dịch chi tiết thông qua db nhưng vì repo chưa có getById, ta lấy walletId = null filter hoặc implement
+        // Wait, the AddTransactionViewModel previously used transactionDao.getById(transactionId).
+        // Since transactionDao is removed, I should get it from DatabaseManager directly for this read operation.
+        Transaction transaction = DatabaseManager.getInstance(getApplication()).getTransactionDao().getById(transactionId);
         if (transaction != null) {
             Wallet wallet = walletDao.getWalletById(transaction.getWalletId());
             if (wallet != null) setSelectedWallet(wallet);
@@ -183,7 +187,7 @@ public class AddTransactionViewModel extends AndroidViewModel {
         Long date = transactionDate.getValue();
         if (date == null) date = System.currentTimeMillis();
 
-        Transaction transaction = transactionDao.getById(transactionId);
+        Transaction transaction = DatabaseManager.getInstance(getApplication()).getTransactionDao().getById(transactionId);
         if (transaction != null) {
             transaction.setWalletId(wallet.getId());
             transaction.setCategoryId(category.getId());
@@ -191,8 +195,10 @@ public class AddTransactionViewModel extends AndroidViewModel {
             transaction.setTransactionDate(date);
             transaction.setNote(note != null && !note.trim().isEmpty() ? note.trim() : null);
 
-            int rows = transactionDao.update(transaction);
+            int rows = transactionRepository.updateLocal(transaction);
             if (rows > 0) {
+                transactionRepository.pushUpdate(transaction, null); // Sync to server
+                
                 BudgetUpdateEvent event = new BudgetUpdateEvent.Builder()
                         .setWalletId(wallet.getId())
                         .setCategoryId(category.getId())
@@ -254,9 +260,12 @@ public class AddTransactionViewModel extends AndroidViewModel {
                 .setNote(note != null ? note.trim() : null)
                 .build();
 
-        String id = transactionDao.insert(transaction);
+        String id = transactionRepository.insertLocal(transaction);
 
         if (id != null) {
+            transaction.setId(id);
+            transactionRepository.pushCreate(transaction, null); // Sync to server
+            
             // Gửi event để notify BudgetFragment refresh data
             // Tuân thủ Open/Closed Principle: BudgetFragment không cần biết về AddTransactionViewModel
             BudgetUpdateEvent event = new BudgetUpdateEvent.Builder()
