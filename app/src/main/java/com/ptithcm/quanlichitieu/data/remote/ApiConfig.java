@@ -23,6 +23,10 @@ public final class ApiConfig {
     public static final String WALLETS_URL = BASE_URL + "/api/v1/wallets/";
     public static final String WALLET_URL  = BASE_URL + "/api/v1/wallets/"; // append walletId
 
+    // Category endpoints
+    public static final String CATEGORIES_URL = BASE_URL + "/api/v1/categories/";
+    public static final String CATEGORY_URL   = BASE_URL + "/api/v1/categories/"; // append categoryId
+
     // Sync endpoints (batch sync — dùng cho pull/push toàn bộ dữ liệu)
     public static final String SYNC_PUSH_URL = BASE_URL + "/api/v1/sync/push";
     public static final String SYNC_PULL_URL = BASE_URL + "/api/v1/sync/pull";

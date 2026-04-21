@@ -107,8 +107,6 @@ public class BudgetDatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(WalletEntry.SQL_CREATE_INDEX_USER);        // idx_wallets_user
         Log.d(TAG, "Created indexes for all tables");
 
-        // Insert các danh mục mặc định của hệ thống
-        insertDefaultCategories(db);
 
         Log.d(TAG, "Database created successfully");
     }
@@ -162,59 +160,7 @@ public class BudgetDatabaseHelper extends SQLiteOpenHelper {
         onUpgrade(db, oldVersion, newVersion);
     }
 
-    /**
-     * Insert các danh mục mặc định của hệ thống.
-     * user_id = null để đánh dấu là danh mục hệ thống.
-     */
-    private void insertDefaultCategories(SQLiteDatabase db) {
-        Log.d(TAG, "Inserting default categories...");
 
-        long now = System.currentTimeMillis();
-
-        // Danh mục chi tiêu mặc định
-        String[] expenseCategories = {
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
-                        "VALUES ('cat_expense_food', NULL, 'Ăn uống', 'EXPENSE', 'ic_food', " + now + ", " + now + ")",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
-                        "VALUES ('cat_expense_transport', NULL, 'Di chuyển', 'EXPENSE', 'ic_transport', " + now + ", " + now + ")",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
-                        "VALUES ('cat_expense_shopping', NULL, 'Mua sắm', 'EXPENSE', 'ic_shopping', " + now + ", " + now + ")",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
-                        "VALUES ('cat_expense_entertainment', NULL, 'Giải trí', 'EXPENSE', 'ic_entertainment', " + now + ", " + now + ")",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
-                        "VALUES ('cat_expense_bills', NULL, 'Hóa đơn', 'EXPENSE', 'ic_bills', " + now + ", " + now + ")",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
-                        "VALUES ('cat_expense_health', NULL, 'Sức khỏe', 'EXPENSE', 'ic_health', " + now + ", " + now + ")",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
-                        "VALUES ('cat_expense_education', NULL, 'Giáo dục', 'EXPENSE', 'ic_education', " + now + ", " + now + ")",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
-                        "VALUES ('cat_expense_other', NULL, 'Khác', 'EXPENSE', 'ic_other', " + now + ", " + now + ")"
-        };
-
-        // Danh mục thu nhập mặc định
-        String[] incomeCategories = {
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
-                        "VALUES ('cat_income_salary', NULL, 'Lương', 'INCOME', 'ic_salary', " + now + ", " + now + ")",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
-                        "VALUES ('cat_income_bonus', NULL, 'Thưởng', 'INCOME', 'ic_bonus', " + now + ", " + now + ")",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
-                        "VALUES ('cat_income_investment', NULL, 'Đầu tư', 'INCOME', 'ic_investment', " + now + ", " + now + ")",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
-                        "VALUES ('cat_income_gift', NULL, 'Quà tặng', 'INCOME', 'ic_gift', " + now + ", " + now + ")",
-                "INSERT INTO " + CategoryEntry.TABLE_NAME + " (id, user_id, name, type, icon_name, created_at, updated_at) " +
-                        "VALUES ('cat_income_other', NULL, 'Khác', 'INCOME', 'ic_other', " + now + ", " + now + ")"
-        };
-
-        // Execute các lệnh insert
-        for (String sql : expenseCategories) {
-            db.execSQL(sql);
-        }
-        for (String sql : incomeCategories) {
-            db.execSQL(sql);
-        }
-
-        Log.d(TAG, "Default categories inserted");
-    }
 
     /**
      * Lấy database có thể ghi.

@@ -41,6 +41,7 @@ public class ReportFragment extends Fragment {
     private ReportAdapter adapter;
     private PieChartView pieChart;
     private View btnExpenseCard, btnIncomeCard;
+    private TextView tvReportTitle;
 
     private TransactionType currentReportType = TransactionType.EXPENSE;
 
@@ -107,6 +108,8 @@ public class ReportFragment extends Fragment {
                 bottomSheet.show(getChildFragmentManager(), SelectWalletBottomSheet.TAG);
             });
         }
+
+        tvReportTitle = view.findViewById(R.id.tvReportTitle);
 
         tabPrevMonth = view.findViewById(R.id.tabPrevMonth);
         tabCurrentMonth = view.findViewById(R.id.tabCurrentMonth);
@@ -199,9 +202,15 @@ public class ReportFragment extends Fragment {
         if (currentReportType == TransactionType.EXPENSE) {
             btnExpenseCard.setBackgroundResource(R.drawable.bg_summary_card_expense_active);
             btnIncomeCard.setBackgroundResource(R.drawable.bg_summary_card);
+            if (tvReportTitle != null) {
+                tvReportTitle.setText("Danh sách chi tiết khoản chi");
+            }
         } else {
             btnExpenseCard.setBackgroundResource(R.drawable.bg_summary_card);
             btnIncomeCard.setBackgroundResource(R.drawable.bg_summary_card_income_active);
+            if (tvReportTitle != null) {
+                tvReportTitle.setText("Danh sách chi tiết khoản thu");
+            }
         }
     }
 

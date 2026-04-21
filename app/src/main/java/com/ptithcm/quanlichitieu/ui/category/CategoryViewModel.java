@@ -12,6 +12,7 @@ import com.ptithcm.quanlichitieu.data.model.TransactionType;
 import com.ptithcm.quanlichitieu.data.repository.CategoryRepository;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class CategoryViewModel extends AndroidViewModel {
 
@@ -28,6 +29,7 @@ public class CategoryViewModel extends AndroidViewModel {
     }
 
     private final MutableLiveData<SortOrder> sortOrder = new MutableLiveData<>(SortOrder.A_TO_Z);
+    private final AtomicInteger loadGeneration = new AtomicInteger(0);
 
     public CategoryViewModel(@NonNull Application application) {
         super(application);
@@ -78,19 +80,31 @@ public class CategoryViewModel extends AndroidViewModel {
         deleteResult.setValue(null);
     }
 
+    public void syncCategories(String userId, Runnable onSuccess) {
+        repository.syncCategories(userId, onSuccess);
+    }
+
+    public void refreshFromServer(String userId) {
+        final int generation = loadGeneration.incrementAndGet();
+        repository.syncCategories(userId, () -> postCategoriesForManagement(userId, generation));
+    }
+
     public void loadCategoriesForManagement(String userId) {
+        final int generation = loadGeneration.incrementAndGet();
         new Thread(() -> {
             List<Category> list = repository.getAllCategoriesForManagement(userId);
-            categories.postValue(list);
+            postCategoriesIfLatest(list, generation);
         }).start();
+        refreshFromServer(userId);
     }
 
     public void loadCategories(String userId) {
-        // Run on background thread if needed, currently DAO might be sync
+        final int generation = loadGeneration.incrementAndGet();
         new Thread(() -> {
             List<Category> list = repository.getUserCategories(userId);
-            categories.postValue(list);
+            postCategoriesIfLatest(list, generation);
         }).start();
+        refreshFromServer(userId);
     }
 
     public void addCategory(String userId, String name, TransactionType type) {
@@ -141,5 +155,18 @@ public class CategoryViewModel extends AndroidViewModel {
                 loadCategoriesForManagement(userId);
             }
         }).start();
+    }
+
+    private void postCategoriesForManagement(String userId, int generation) {
+        new Thread(() -> {
+            List<Category> list = repository.getAllCategoriesForManagement(userId);
+            postCategoriesIfLatest(list, generation);
+        }).start();
+    }
+
+    private void postCategoriesIfLatest(List<Category> list, int generation) {
+        if (generation == loadGeneration.get()) {
+            categories.postValue(list);
+        }
     }
 }
