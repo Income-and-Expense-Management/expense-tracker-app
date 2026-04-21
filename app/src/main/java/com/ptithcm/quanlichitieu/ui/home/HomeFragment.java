@@ -74,7 +74,6 @@ public class HomeFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
-        // Sử dụng Activity scope để dùng chung dữ liệu ví với WalletFragment
         walletViewModel = new ViewModelProvider(requireActivity()).get(WalletViewModel.class);
 
         initViews(view);
@@ -88,29 +87,22 @@ public class HomeFragment extends Fragment {
                 ? getArguments().getString(ARG_USERNAME, "Duy") : "Duy";
         homeViewModel.setUsername(username);
         
-        // Tải ví đang hoạt động
         walletViewModel.loadActiveWallet();
-        homeViewModel.loadTopExpenses();
     }
 
     private void observeEvents() {
-        // Lắng nghe event khi có thay đổi transaction (thêm/sửa/xoá) để refresh dashboard ngay.
-        // Không phụ thuộc vào onResume vì MainActivity dùng hide/show cho bottom tabs.
         EventBus.getInstance().getBudgetUpdateEvent().observe(getViewLifecycleOwner(), event -> {
             if (event == null) return;
-
             handleTransactionChanged(event);
             EventBus.getInstance().clearBudgetUpdateEvent();
         });
     }
 
     private void handleTransactionChanged(@NonNull BudgetUpdateEvent event) {
-        // Chỉ refresh nếu event liên quan đến ví hiện tại (nếu có).
         com.ptithcm.quanlichitieu.data.model.Wallet currentWallet = walletViewModel.getSelectedWallet().getValue();
         if (currentWallet != null && event.getWalletId() != null && !event.getWalletId().equals(currentWallet.getId())) {
             return;
         }
-
         homeViewModel.refreshDashboard();
     }
 
@@ -136,7 +128,6 @@ public class HomeFragment extends Fragment {
         togglePeriod = view.findViewById(R.id.togglePeriod);
         lineChart = view.findViewById(R.id.lineChart);
 
-        // Mở màn hình tìm kiếm với walletId hiện tại
         imgSearch.setOnClickListener(v -> openSearch());
 
         View tabExpense = view.findViewById(R.id.tabExpense);
@@ -167,16 +158,10 @@ public class HomeFragment extends Fragment {
         swipeRefreshLayout.setColorSchemeResources(R.color.home_expense_red, R.color.home_accent_green);
         updateSyncTime();
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            // Re-load data when swiped
-            walletViewModel.loadActiveWallet();
+            // FIX: Gọi refreshFromServer để thực sự kéo dữ liệu từ server về (xử lý đồng bộ xóa)
+            walletViewModel.refreshFromServer();
             homeViewModel.loadTopExpenses();
             homeViewModel.loadReportData();
-
-            // Simulation of network delay or just stop instantly since local DB
-            swipeRefreshLayout.postDelayed(() -> {
-                swipeRefreshLayout.setRefreshing(false);
-                updateSyncTime();
-            }, 800);
         });
     }
 
@@ -245,9 +230,17 @@ public class HomeFragment extends Fragment {
             if (tvHomeTitle != null) tvHomeTitle.setText("Hello " + username + "!");
         });
 
-        // Quan sát ví đang được chọn từ WalletViewModel (Shared)
+        walletViewModel.getIsRefreshing().observe(getViewLifecycleOwner(), refreshing -> {
+            if (swipeRefreshLayout != null) {
+                swipeRefreshLayout.setRefreshing(refreshing != null && refreshing);
+                if (refreshing != null && !refreshing) {
+                    updateSyncTime();
+                }
+            }
+        });
+
         walletViewModel.getSelectedWallet().observe(getViewLifecycleOwner(), wallet -> {
-            homeViewModel.setWallet(wallet); // Add this line
+            homeViewModel.setWallet(wallet);
 
             if (wallet != null) {
                 homeViewModel.calculateCurrentBalance(wallet);

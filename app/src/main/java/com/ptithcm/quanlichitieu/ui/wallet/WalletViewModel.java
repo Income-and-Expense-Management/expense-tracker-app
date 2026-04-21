@@ -1,6 +1,7 @@
 package com.ptithcm.quanlichitieu.ui.wallet;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -87,8 +88,8 @@ public class WalletViewModel extends AndroidViewModel {
     public void refreshFromServer() {
         isRefreshing.postValue(true);
         walletRepository.fetchFromServer(() -> {
-            List<Wallet> list = getWalletsForCurrentUserOrLegacyFallback();
-            wallets.postValue(list);
+            // Sau khi pull xong, re-validate ví hiện tại ngay lập tức
+            loadActiveWallet();
             isRefreshing.postValue(false);
         });
     }
@@ -103,6 +104,10 @@ public class WalletViewModel extends AndroidViewModel {
     public void loadActiveWallet() {
         new Thread(() -> {
             List<Wallet> walletList = getWalletsForCurrentUserOrLegacyFallback();
+            
+            // Cập nhật danh sách ví trước
+            wallets.postValue(walletList);
+
             if (walletList == null || walletList.isEmpty()) {
                 selectedWallet.postValue(null);
                 return;
@@ -123,13 +128,14 @@ public class WalletViewModel extends AndroidViewModel {
             }
 
             if (active == null) {
-                active = walletList.get(0);
-                final Wallet finalActive = active;
+                // Ví đang chọn bị xóa hoặc chưa chọn -> lấy ví đầu tiên
+                Wallet first = walletList.get(0);
                 android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-                mainHandler.post(() -> selectWallet(finalActive));
+                mainHandler.post(() -> selectWallet(first));
             } else {
+                // FIX: Ngay cả khi ví tồn tại, ta vẫn postValue lại ví mới nhất từ DB 
+                // để cập nhật các thông tin thay đổi (như tên ví) lên giao diện Home.
                 selectedWallet.postValue(active);
-                wallets.postValue(walletList);
             }
         }).start();
     }
