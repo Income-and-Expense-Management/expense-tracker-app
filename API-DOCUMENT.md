@@ -55,85 +55,85 @@ Gửi các dữ liệu được tạo/thay đổi/xoá MỚI NHẤT ở local DB
 
 ### 1. Authentication (Xác thực)
 1. **Đăng ký (Register)**
-   - `POST /api/v1/auth/register`
-   - **Body:** `{ "email": "abc@gmail.com", "password": "...", "full_name": "Nguyen A", "avatar_url": "..." }`
+    - `POST /api/v1/auth/register`
+    - **Body:** `{ "email": "abc@gmail.com", "password": "...", "full_name": "Nguyen A", "avatar_url": "..." }`
 2. **Đăng nhập (Login)**
-   - `POST /api/v1/auth/login`
-   - **Body:** `{ "email": "abc@gmail.com", "password": "..." }`
-   - **Response Data:** `{ "token": "jwt...", "user": { "id", "email", "full_name"... } }`
+    - `POST /api/v1/auth/login`
+    - **Body:** `{ "email": "abc@gmail.com", "password": "..." }`
+    - **Response Data:** `{ "token": "jwt...", "user": { "id", "email", "full_name"... } }`
 3. **Đăng nhập Google**
-   - `POST /api/v1/auth/google`
-   - **Body:** `{ "id_token": "google_token_here", "email": "...", "full_name": "..." }`
+    - `POST /api/v1/auth/google`
+    - **Body:** `{ "id_token": "google_token_here", "email": "...", "full_name": "..." }`
 4. **Lấy Profile**
-   - `GET /api/v1/auth/profile`
+    - `GET /api/v1/auth/profile`
 5. **Cập nhật Profile**
-   - `PATCH /api/v1/auth/profile`
-   - **Body:** `{ "full_name": "...", "avatar_url": "..." }`
+    - `PATCH /api/v1/auth/profile`
+    - **Body:** `{ "full_name": "...", "avatar_url": "..." }`
 6. **Đổi mật khẩu**
-   - `PATCH /api/v1/auth/change-password`
-   - **Body:** `{ "oldPassword": "...", "newPassword": "..." }`
+    - `PATCH /api/v1/auth/change-password`
+    - **Body:** `{ "oldPassword": "...", "newPassword": "..." }`
 
 ### 2. Wallets (Ví)
 1. **Tạo Ví**
-   - `POST /api/v1/wallets/`
-   - **Body:** `{ "id": "uuid-optional", "name": "Ngân hàng", "initial_balance": 1000000, "currency": "VND", "icon_id": "bank_icon" }`
-   - **Lưu ý:** Trường `id` là tuỳ chọn. Nếu thiết bị (như Android App) đang offline, có thể tạo sẵn UUID v4 dưới local và gửi lên khi có mạng để sử dụng chính ID đó.
+    - `POST /api/v1/wallets/`
+    - **Body:** `{ "id": "uuid-optional", "name": "Ngân hàng", "initial_balance": 1000000, "currency": "VND", "icon_id": "bank_icon" }`
+    - **Lưu ý:** Trường `id` là tuỳ chọn. Nếu thiết bị (như Android App) đang offline, có thể tạo sẵn UUID v4 dưới local và gửi lên khi có mạng để sử dụng chính ID đó.
 2. **Lấy Danh Sách Ví**
-   - `GET /api/v1/wallets/`
+    - `GET /api/v1/wallets/`
 3. **Lấy Thông Tin Ví (Bao gồm số dư hiện tại `current_balance`)**
-   - `GET /api/v1/wallets/:walletId`
+    - `GET /api/v1/wallets/:walletId`
 4. **Cập nhật Ví**
-   - `PATCH /api/v1/wallets/:walletId`
-   - **Body:** `{ "name": "...", "initial_balance": 1000000, "icon_id": "...", "currency": "VND" }`
+    - `PATCH /api/v1/wallets/:walletId`
+    - **Body:** `{ "name": "...", "initial_balance": 1000000, "icon_id": "...", "currency": "VND" }`
 5. **Xoá Ví**
-   - `DELETE /api/v1/wallets/:walletId`
-   - **Lưu ý:** API trả về trạng thái HTTP `204 No Content`. (Đây là thao tác soft-delete phía server).
+    - `DELETE /api/v1/wallets/:walletId`
+    - **Lưu ý:** API trả về trạng thái HTTP `204 No Content`. (Đây là thao tác soft-delete phía server).
 
 ### 3. Categories (Danh mục)
 1. **Tạo Danh Mục**
-   - `POST /api/v1/categories/`
-   - **Body:** `{ "name": "Ăn uống", "type": "expense", "icon_name": "food_icon" }`
-   - **Lưu ý Type:** `type` chỉ cho phép là `"income"` hoặc `"expense"`.
+    - `POST /api/v1/categories/`
+    - **Body:** `{ "name": "Ăn uống", "type": "expense", "icon_name": "food_icon" }`
+    - **Lưu ý Type:** `type` chỉ cho phép là `"income"` hoặc `"expense"`.
 2. **Lấy Danh Sách Danh Mục**
-   - `GET /api/v1/categories/`
+    - `GET /api/v1/categories/`
 3. **Lấy Danh Mục Chi Tiết**
-   - `GET /api/v1/categories/:categoryId`
+    - `GET /api/v1/categories/:categoryId`
 4. **Cập nhật Danh Mục**
-   - `PATCH /api/v1/categories/:categoryId`
-   - **Body:** (Giống nội dung POST nhưng tuỳ chọn)
+    - `PATCH /api/v1/categories/:categoryId`
+    - **Body:** (Giống nội dung POST nhưng tuỳ chọn)
 5. **Xoá (Soft Delete/Ẩn) Danh mục**
-   - `DELETE /api/v1/categories/:categoryId`
+    - `DELETE /api/v1/categories/:categoryId`
 
 ### 4. Transactions (Giao dịch)
 Giao dịch có thể trỏ thẳng vào root của transactions hoặc nested theo walletId.
 
 1. **Lấy Danh Sách Tất Cả Giao Dịch**
-   - `GET /api/v1/transactions/`
+    - `GET /api/v1/transactions/`
 2. **Lấy Giao Dịch Của Một Ví Cụ Thể**
-   - `GET /api/v1/wallets/:walletId/transactions/`
+    - `GET /api/v1/wallets/:walletId/transactions/`
 3. **Tạo Giao Dịch Mới**
-   - `POST /api/v1/transactions/`
-   - `POST /api/v1/wallets/:walletId/transactions/` (Hai dạng url này đều hợp lệ tuỳ use model của FE / nested routing) 
-   - **Body:** `{ "wallet_id": "uuid", "category_id": "uuid", "amount": 50000, "transaction_date": "2026-04-18T12:00:00Z", "note": "Ăn trưa" }`
+    - `POST /api/v1/transactions/`
+    - `POST /api/v1/wallets/:walletId/transactions/` (Hai dạng url này đều hợp lệ tuỳ use model của FE / nested routing)
+    - **Body:** `{ "wallet_id": "uuid", "category_id": "uuid", "amount": 50000, "transaction_date": "2026-04-18T12:00:00Z", "note": "Ăn trưa" }`
 4. **Cập nhật Giao Dịch**
-   - `PATCH /api/v1/transactions/:transactionId`
+    - `PATCH /api/v1/transactions/:transactionId`
 5. **Xóa Giao Dịch**
-   - `DELETE /api/v1/transactions/:transactionId`
+    - `DELETE /api/v1/transactions/:transactionId`
 6. **Thống Kê Giao Dịch 1 Ví**
-   - `GET /api/v1/wallets/:walletId/transactions/statistics`
+    - `GET /api/v1/wallets/:walletId/transactions/statistics`
 
 ### 5. Budgets (Ngân sách)
 1. **Tạo Ngân Sách**
-   - `POST /api/v1/budgets/`
-   - **Body:** `{ "wallet_id": "uuid", "category_id": "uuid", "target_amount": 2000000, "start_date": "2026-04-01T00:00:00.000Z", "end_date": "2026-04-30T00:00:00.000Z" }`
+    - `POST /api/v1/budgets/`
+    - **Body:** `{ "wallet_id": "uuid", "category_id": "uuid", "target_amount": 2000000, "start_date": "2026-04-01T00:00:00.000Z", "end_date": "2026-04-30T00:00:00.000Z" }`
 2. **Lấy Danh Sách Ngân Sách**
-   - `GET /api/v1/budgets/`
+    - `GET /api/v1/budgets/`
 3. **Chi Tiết Ngân Sách**
-   - `GET /api/v1/budgets/:budgetId`
+    - `GET /api/v1/budgets/:budgetId`
 4. **Cập Nhật Ngân Sách**
-   - `PATCH /api/v1/budgets/:budgetId`
+    - `PATCH /api/v1/budgets/:budgetId`
 5. **Xoá Ngân Sách**
-   - `DELETE /api/v1/budgets/:budgetId`
+    - `DELETE /api/v1/budgets/:budgetId`
 
 ### Mô hình JSON Response Chuẩn (Chuẩn Trả Về Frontend Cần Xử Lý)
 Thành công (200 OK / 201 Created):

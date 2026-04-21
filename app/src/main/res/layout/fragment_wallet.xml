@@ -6,8 +6,7 @@
     android:layout_height="match_parent"
     android:background="#121212"
     tools:context=".ui.wallet.WalletFragment"
-    android:fitsSystemWindows="true"
-    >
+    android:fitsSystemWindows="true">
 
     <!-- Header Bar -->
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -44,19 +43,27 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- List of Wallets -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvWallets"
+    <!-- Pull to Refresh -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:clipToPadding="false"
-        android:paddingHorizontal="16dp"
-        android:paddingBottom="80dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/layoutHeader"
-        tools:listitem="@layout/item_wallet" />
+        app:layout_constraintTop_toBottomOf="@id/layoutHeader">
+
+        <!-- List of Wallets -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvWallets"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="80dp"
+            tools:listitem="@layout/item_wallet" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <!-- Empty State (Hidden by default) -->
     <LinearLayout
