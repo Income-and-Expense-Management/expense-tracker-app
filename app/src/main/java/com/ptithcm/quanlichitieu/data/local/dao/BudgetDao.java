@@ -27,6 +27,56 @@ public class BudgetDao {
     }
 
     @Nullable
+    public String insertFromServer(@NonNull Budget budget) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        if (budget.getId() == null) {
+            budget.setId(IdGenerator.generateUUID());
+        }
+
+        ContentValues values = new ContentValues();
+        values.put(BudgetEntry.COLUMN_ID, budget.getId());
+        values.put(BudgetEntry.COLUMN_WALLET_ID, budget.getWalletId());
+        values.put(BudgetEntry.COLUMN_CATEGORY_ID, budget.getCategoryId());
+        values.put(BudgetEntry.COLUMN_TARGET_AMOUNT, budget.getTargetAmount());
+        values.put(BudgetEntry.COLUMN_START_DATE, budget.getStartDate());
+        values.put(BudgetEntry.COLUMN_END_DATE, budget.getEndDate());
+        values.put(BudgetEntry.COLUMN_CREATED_AT, budget.getCreatedAt());
+        values.put(BudgetEntry.COLUMN_UPDATED_AT, budget.getUpdatedAt());
+        if (budget.getDeletedAt() != null) values.put(BudgetEntry.COLUMN_DELETED_AT, budget.getDeletedAt());
+        else values.putNull(BudgetEntry.COLUMN_DELETED_AT);
+
+        long result = db.insertWithOnConflict(BudgetEntry.TABLE_NAME, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+        if (result == -1) {
+            Log.w(TAG, "insertFromServer: Failed for budget id=" + budget.getId());
+            return null;
+        }
+        return budget.getId();
+    }
+
+    public int updateFromServer(@NonNull Budget budget) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(BudgetEntry.COLUMN_WALLET_ID, budget.getWalletId());
+        values.put(BudgetEntry.COLUMN_CATEGORY_ID, budget.getCategoryId());
+        values.put(BudgetEntry.COLUMN_TARGET_AMOUNT, budget.getTargetAmount());
+        values.put(BudgetEntry.COLUMN_START_DATE, budget.getStartDate());
+        values.put(BudgetEntry.COLUMN_END_DATE, budget.getEndDate());
+        values.put(BudgetEntry.COLUMN_CREATED_AT, budget.getCreatedAt());
+        values.put(BudgetEntry.COLUMN_UPDATED_AT, budget.getUpdatedAt());
+        if (budget.getDeletedAt() != null) values.put(BudgetEntry.COLUMN_DELETED_AT, budget.getDeletedAt());
+        else values.putNull(BudgetEntry.COLUMN_DELETED_AT);
+
+        return db.update(
+                BudgetEntry.TABLE_NAME,
+                values,
+                BudgetEntry.COLUMN_ID + " = ?",
+                new String[]{budget.getId()}
+        );
+    }
+
+    @Nullable
     public String insert(@NonNull Budget budget) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 

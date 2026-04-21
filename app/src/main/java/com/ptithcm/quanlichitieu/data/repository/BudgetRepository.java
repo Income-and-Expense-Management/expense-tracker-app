@@ -16,6 +16,10 @@ import com.ptithcm.quanlichitieu.data.model.TransactionType;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
 import com.ptithcm.quanlichitieu.ui.budget.model.BudgetItem;
 
+import com.ptithcm.quanlichitieu.data.remote.BudgetApiService;
+import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
+import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +29,7 @@ import java.util.List;
  * Vai trò:
  * - Abstraction layer giữa ViewModel và Data Sources (DAO)
  * - Kết hợp dữ liệu từ nhiều nguồn (Budget, Category, Transaction)
- * - Chuẩn bị sẵn cho việc tích hợp remote data source sau này
+ * - Tích hợp remote data source (BudgetApiService)
  * 
  * Tuân thủ Single Responsibility: Chỉ xử lý data access logic cho Budget
  */
@@ -38,6 +42,12 @@ public class BudgetRepository {
     private final TransactionDao transactionDao;
     private final WalletDao walletDao;
     private final DatabaseManager databaseManager;
+    private final BudgetApiService apiService;
+
+    public interface SyncCallback {
+        void onSuccess();
+        void onError(String error);
+    }
 
     private BudgetRepository(@NonNull Context context) {
         this.databaseManager = DatabaseManager.getInstance(context);
@@ -45,6 +55,8 @@ public class BudgetRepository {
         this.categoryDao = databaseManager.getCategoryDao();
         this.transactionDao = databaseManager.getTransactionDao();
         this.walletDao = databaseManager.getWalletDao();
+        TokenStorage tokenStorage = EncryptedTokenStorage.getInstance(context);
+        this.apiService = new BudgetApiService(context, tokenStorage);
     }
 
     public static BudgetRepository getInstance(@NonNull Context context) {
@@ -173,6 +185,54 @@ public class BudgetRepository {
      */
     public int deleteBudget(@NonNull String budgetId) {
         return budgetDao.delete(budgetId);
+    }
+    
+    // ==================== REMOTE OPERATIONS (fire-and-forget) ====================
+
+    public void pushCreate(@NonNull Budget budget, @Nullable SyncCallback callback) {
+        apiService.createBudget(
+                budget,
+                response -> {
+                    if (callback != null) callback.onSuccess();
+                },
+                error -> {
+                    String msg = error != null && error.getMessage() != null
+                            ? error.getMessage() : "Network error";
+                    if (callback != null) callback.onError(msg);
+                }
+        );
+    }
+
+    public void pushUpdate(@NonNull Budget budget, @Nullable SyncCallback callback) {
+        apiService.updateBudget(
+                budget,
+                response -> {
+                    if (callback != null) callback.onSuccess();
+                },
+                error -> {
+                    String msg = error != null && error.getMessage() != null
+                            ? error.getMessage() : "Network error";
+                    if (callback != null) callback.onError(msg);
+                }
+        );
+    }
+
+    public void pushDelete(@NonNull String budgetId, @Nullable SyncCallback callback) {
+        apiService.deleteBudget(
+                budgetId,
+                response -> {
+                    if (callback != null) callback.onSuccess();
+                },
+                error -> {
+                    String msg = error != null && error.getMessage() != null
+                            ? error.getMessage() : "Network error";
+                    if (callback != null) callback.onError(msg);
+                }
+        );
+    }
+
+    public void fetchFromServer(@Nullable Runnable onDone) {
+        apiService.fetchAndUpsertBudgets(budgetDao, onDone);
     }
 
     /**

@@ -11,7 +11,7 @@ public final class ApiConfig {
         // Prevent instantiation
     }
 
-    public static final String BASE_URL = "http://192.168.1.151:3000";
+    public static final String BASE_URL = "http://10.0.2.2:3000";
 
     // Auth endpoints
     public static final String LOGIN_URL = BASE_URL + "/api/v1/auth/login";
@@ -26,6 +26,10 @@ public final class ApiConfig {
     // Category endpoints
     public static final String CATEGORIES_URL = BASE_URL + "/api/v1/categories/";
     public static final String CATEGORY_URL   = BASE_URL + "/api/v1/categories/"; // append categoryId
+
+    // Budget endpoints
+    public static final String BUDGETS_URL = BASE_URL + "/api/v1/budgets/";
+    public static final String BUDGET_URL  = BASE_URL + "/api/v1/budgets/"; // append budgetId
 
     // Sync endpoints (batch sync — dùng cho pull/push toàn bộ dữ liệu)
     public static final String SYNC_PUSH_URL = BASE_URL + "/api/v1/sync/push";

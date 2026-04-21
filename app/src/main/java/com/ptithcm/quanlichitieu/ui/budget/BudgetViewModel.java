@@ -144,16 +144,23 @@ public class BudgetViewModel extends AndroidViewModel {
      * Load danh sách budget và tính toán summary.
      */
     public void loadBudgetsForWallet(@NonNull String walletId) {
-        isLoading.setValue(true);
+        isLoading.postValue(true);
 
-        // Load budget items
-        List<BudgetItem> items = repository.getBudgetItemsForWallet(walletId);
-        budgetItems.setValue(items);
+        new Thread(() -> {
+            List<BudgetItem> items = repository.getBudgetItemsForWallet(walletId);
+            budgetItems.postValue(items);
+            calculateBudgetSummary(walletId, items);
 
-        // Tính toán summary
-        calculateBudgetSummary(walletId, items);
-
-        isLoading.setValue(false);
+            // Fetch từ server
+            repository.fetchFromServer(() -> {
+                new Thread(() -> {
+                    List<BudgetItem> syncedItems = repository.getBudgetItemsForWallet(walletId);
+                    budgetItems.postValue(syncedItems);
+                    calculateBudgetSummary(walletId, syncedItems);
+                    isLoading.postValue(false);
+                }).start();
+            });
+        }).start();
     }
 
     /**
@@ -192,6 +199,8 @@ public class BudgetViewModel extends AndroidViewModel {
         String id = repository.insertBudget(budget);
         
         if (id != null) {
+            budget.setId(id);
+            repository.pushCreate(budget, null);
             operationResult.setValue(new OperationResult(Action.CREATE, true, "Tạo ngân sách thành công"));
             refresh();
         } else {
@@ -217,6 +226,7 @@ public class BudgetViewModel extends AndroidViewModel {
         int result = repository.updateBudget(budget);
         
         if (result > 0) {
+            repository.pushUpdate(budget, null);
             operationResult.setValue(new OperationResult(Action.UPDATE, true, "Cập nhật ngân sách thành công"));
             refresh();
         } else {
@@ -231,6 +241,7 @@ public class BudgetViewModel extends AndroidViewModel {
         int result = repository.deleteBudget(budgetId);
         
         if (result > 0) {
+            repository.pushDelete(budgetId, null);
             operationResult.setValue(new OperationResult(Action.DELETE, true, "Xóa ngân sách thành công"));
             refresh();
         } else {
@@ -280,7 +291,7 @@ public class BudgetViewModel extends AndroidViewModel {
                 daysRemaining,
                 progress
         );
-        budgetSummary.setValue(summary);
+        budgetSummary.postValue(summary);
     }
 
     /**
