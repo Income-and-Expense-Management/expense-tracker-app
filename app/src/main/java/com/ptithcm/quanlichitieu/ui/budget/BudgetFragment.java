@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.event.BudgetUpdateEvent;
@@ -47,8 +47,8 @@ public class BudgetFragment extends Fragment {
     private Button btnCreateBudget;
     private RecyclerView rvBudgetList;
     private LinearLayout llWalletSelector;
-    private ImageView ivMenu;
     private ImageView ivWalletIcon;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     private BudgetAdapter budgetAdapter;
     private BudgetViewModel viewModel;
@@ -87,7 +87,7 @@ public class BudgetFragment extends Fragment {
         btnCreateBudget = view.findViewById(R.id.btnCreateBudget);
         rvBudgetList = view.findViewById(R.id.rvBudgetList);
         llWalletSelector = view.findViewById(R.id.llWalletSelector);
-        ivMenu = view.findViewById(R.id.ivMenu);
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
     }
 
     private void setupRecyclerView() {
@@ -116,7 +116,10 @@ public class BudgetFragment extends Fragment {
     private void setupListeners() {
         btnCreateBudget.setOnClickListener(v -> showAddBudgetDialog());
         llWalletSelector.setOnClickListener(v -> showWalletSelector());
-        ivMenu.setOnClickListener(v -> showMainMenu(v));
+
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            viewModel.refresh();
+        });
     }
 
     private void observeViewModel() {
@@ -124,6 +127,7 @@ public class BudgetFragment extends Fragment {
             if (items != null) {
                 budgetAdapter.updateData(items);
             }
+            swipeRefreshLayout.setRefreshing(false);
         });
 
         viewModel.getSelectedWallet().observe(getViewLifecycleOwner(), wallet -> {
@@ -254,24 +258,6 @@ public class BudgetFragment extends Fragment {
         bottomSheet.show(getChildFragmentManager(), SelectWalletBottomSheet.TAG);
     }
 
-    private void showMainMenu(View anchor) {
-        PopupMenu popup = new PopupMenu(requireContext(), anchor);
-        popup.getMenu().add(0, 1, 0, "Làm mới");
-        popup.getMenu().add(0, 2, 1, "Xem tất cả ngân sách");
-
-        popup.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == 1) {
-                viewModel.refresh();
-                return true;
-            } else if (item.getItemId() == 2) {
-                Toast.makeText(requireContext(), "Xem tất cả ngân sách", Toast.LENGTH_SHORT).show();
-                return true;
-            }
-            return false;
-        });
-
-        popup.show();
-    }
 
     private String formatMoney(long amount) {
         if (amount >= 1000000) {

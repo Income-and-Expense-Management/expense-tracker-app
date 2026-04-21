@@ -9,49 +9,43 @@
     > <!-- Nền tổng thể màu xám đen rất tối -->
 
     <!-- Main Content -->
-    <androidx.core.widget.NestedScrollView
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true"
-        android:clipChildren="false"
-        android:clipToPadding="false">
+        android:layout_height="match_parent">
 
-        <LinearLayout
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
             android:clipChildren="false"
             android:clipToPadding="false">
-            <!-- ĐÃ XÓA: android:background="@drawable/bg_green_glow" ở đây -->
 
-            <!-- Header -->
-            <RelativeLayout
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="16dp">
+                android:orientation="vertical"
+                android:clipChildren="false"
+                android:clipToPadding="false">
+                <!-- ĐÃ XÓA: android:background="@drawable/bg_green_glow" ở đây -->
 
-                <TextView
-                    android:id="@+id/tvBudgetTitle"
-                    android:layout_width="wrap_content"
+                <!-- Header -->
+                <RelativeLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_centerInParent="true"
-                    android:text="Ngân sách"
-                    android:textColor="@android:color/white"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+                    android:padding="16dp">
 
-                <!-- Chỉnh lại icon 3 chấm dọc -->
-                <ImageView
-                    android:id="@+id/ivMenu"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:src="@drawable/ic_more_vert"
-                    app:tint="@android:color/white"
-                    tools:src="@android:drawable/ic_menu_more" />
+                    <TextView
+                        android:id="@+id/tvBudgetTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerInParent="true"
+                        android:text="Ngân sách"
+                        android:textColor="@android:color/white"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
 
-            </RelativeLayout>
+                </RelativeLayout>
 
             <!-- Wallet Selector -->
             <LinearLayout
@@ -308,5 +302,7 @@
         </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
