@@ -121,7 +121,6 @@ public class HomeFragment extends Fragment {
         imgWalletIcon = view.findViewById(R.id.imgWalletIcon);
         imgSearch = view.findViewById(R.id.imgSearch);
         cardWallet = view.findViewById(R.id.cardWallet);
-        tvSeeAllWallets = view.findViewById(R.id.tvSeeAllWallets);
         tvTotalSpentValue = view.findViewById(R.id.tvTotalSpentValue);
         tvTotalIncomeValue = view.findViewById(R.id.tvTotalIncomeValue);
         rvTopExpenses = view.findViewById(R.id.rvTopExpenses);
@@ -205,23 +204,22 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupWalletActions() {
-        if (tvSeeAllWallets != null) {
-            tvSeeAllWallets.setOnClickListener(v -> {
-                if (requireActivity() instanceof MainActivity) {
-                    ((MainActivity) requireActivity()).openWalletList();
+        if (cardWallet != null) {
+            cardWallet.setOnClickListener(v -> {
+                Wallet currentWallet = walletViewModel.getSelectedWallet().getValue();
+                if (currentWallet != null) {
+                    if (requireActivity() instanceof MainActivity) {
+                        ((MainActivity) requireActivity()).openWalletList();
+                    }
+                } else {
+                    requireActivity().getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.fragmentContainer,
+                                    new com.ptithcm.quanlichitieu.ui.wallet.AddWalletFragment())
+                            .addToBackStack(null)
+                            .commit();
                 }
             });
-        }
-
-        if (cardWallet != null) {
-            cardWallet.setOnClickListener(v ->
-                requireActivity().getSupportFragmentManager()
-                        .beginTransaction()
-                        .replace(R.id.fragmentContainer,
-                                new com.ptithcm.quanlichitieu.ui.wallet.AddWalletFragment())
-                        .addToBackStack(null)
-                        .commit()
-            );
         }
     }
 

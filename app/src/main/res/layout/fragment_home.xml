@@ -122,17 +122,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/tvBalanceValue" />
 
-            <TextView
-                android:id="@+id/tvSeeAllWallets"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="24dp"
-                android:text="@string/see_all"
-                android:textColor="@color/home_accent_green"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                app:layout_constraintBaseline_toBaselineOf="@+id/tvLabelWallet"
-                app:layout_constraintEnd_toEndOf="parent" />
+
 
             <!-- Wallet Card -->
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -198,17 +188,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/cardWallet" />
 
-            <TextView
-                android:id="@+id/tvSeeDetailsReport"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="24dp"
-                android:text="@string/see_details"
-                android:textColor="@color/home_accent_green"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                app:layout_constraintBaseline_toBaselineOf="@+id/tvLabelReport"
-                app:layout_constraintEnd_toEndOf="parent" />
+
 
             <!-- Report Card -->
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -331,17 +311,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/cardReport" />
 
-            <TextView
-                android:id="@+id/tvSeeAllExpenses"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="24dp"
-                android:text="@string/see_all"
-                android:textColor="@color/home_accent_green"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                app:layout_constraintBaseline_toBaselineOf="@+id/tvLabelTopExpenses"
-                app:layout_constraintEnd_toEndOf="parent" />
+
 
             <!-- Top Expenses List Card -->
             <androidx.constraintlayout.widget.ConstraintLayout
