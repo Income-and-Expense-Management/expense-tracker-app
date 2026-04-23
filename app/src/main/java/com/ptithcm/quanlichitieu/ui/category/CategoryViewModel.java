@@ -86,6 +86,10 @@ public class CategoryViewModel extends AndroidViewModel {
 
     public void refreshFromServer(String userId) {
         final int generation = loadGeneration.incrementAndGet();
+        refreshFromServerWithGeneration(userId, generation);
+    }
+
+    private void refreshFromServerWithGeneration(String userId, int generation) {
         repository.syncCategories(userId, () -> postCategoriesForManagement(userId, generation));
     }
 
@@ -94,8 +98,11 @@ public class CategoryViewModel extends AndroidViewModel {
         new Thread(() -> {
             List<Category> list = repository.getAllCategoriesForManagement(userId);
             postCategoriesIfLatest(list, generation);
+
+            // Call refresh from server with the SAME generation,
+            // so we don't discard the initial offline result if the server fails
+            refreshFromServerWithGeneration(userId, generation);
         }).start();
-        refreshFromServer(userId);
     }
 
     public void loadCategories(String userId) {
@@ -103,8 +110,10 @@ public class CategoryViewModel extends AndroidViewModel {
         new Thread(() -> {
             List<Category> list = repository.getUserCategories(userId);
             postCategoriesIfLatest(list, generation);
+
+            // Call refresh from server with the SAME generation
+            refreshFromServerWithGeneration(userId, generation);
         }).start();
-        refreshFromServer(userId);
     }
 
     public void addCategory(String userId, String name, TransactionType type) {
