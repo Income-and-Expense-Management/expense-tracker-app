@@ -62,12 +62,13 @@ public class PieChartView extends View {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         // Tăng pad để có đủ không gian vẽ text, icon và đường nối bên ngoài vòng tròn
-        float pad = strokeWidth / 2f + 250f; // increased padding
+        float pad = strokeWidth / 2f + 140f;
         float size = Math.min(w, h);
-        float centerX = w / 2f;
-        float centerY = h / 2f;
-        float radius = (size / 2f) - pad;
-        rectF.set(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
+        float left = (w - size) / 2f + pad;
+        float top = (h - size) / 2f + pad;
+        float right = left + size - 2 * pad;
+        float bottom = top + size - 2 * pad;
+        rectF.set(left, top, right, bottom);
     }
 
     @Override
@@ -94,28 +95,28 @@ public class PieChartView extends View {
         float cy = rectF.centerY();
         float radius = rectF.width() / 2f;
 
-        float currentAngle = -90f;
+        float startAngle = -90f;
         for (PieSlice slice : slices) {
             float sweepAngle = (slice.value / total) * 360f;
             paint.setColor(slice.color);
-            canvas.drawArc(rectF, currentAngle, sweepAngle, false, paint);
+            canvas.drawArc(rectF, startAngle, sweepAngle, false, paint);
 
             float percentage = (slice.value / total) * 100f;
             // Only draw text and icon if slice is large enough
-            if (percentage >= 1f) {
-                float midAngle = currentAngle + sweepAngle / 2f;
+            if (percentage >= 2f) {
+                float midAngle = startAngle + sweepAngle / 2f;
                 double rad = Math.toRadians(midAngle);
 
                 // Tính toán các điểm để vẽ đường nối
-                float startX = (float) (cx + (radius + strokeWidth / 2f) * Math.cos(rad));
-                float startY = (float) (cy + (radius + strokeWidth / 2f) * Math.sin(rad));
+                float startX = (float) (cx + radius * Math.cos(rad));
+                float startY = (float) (cy + radius * Math.sin(rad));
 
-                float extendRadius = radius + strokeWidth / 2f + 30f;
+                float extendRadius = radius + strokeWidth / 2f + 20f;
                 float extendX = (float) (cx + extendRadius * Math.cos(rad));
                 float extendY = (float) (cy + extendRadius * Math.sin(rad));
 
-                boolean isRight = extendX >= cx;
-                float horizontalLen = 60f;
+                boolean isRight = Math.cos(rad) >= 0;
+                float horizontalLen = 40f;
                 float endX = isRight ? extendX + horizontalLen : extendX - horizontalLen;
                 float endY = extendY;
 
@@ -123,33 +124,33 @@ public class PieChartView extends View {
                 canvas.drawLine(startX, startY, extendX, extendY, linePaint);
                 canvas.drawLine(extendX, extendY, endX, endY, linePaint);
 
+                textPaint.setTextAlign(isRight ? Paint.Align.LEFT : Paint.Align.RIGHT);
                 String pctStr = String.format(Locale.getDefault(), "%.1f%%", percentage);
 
-                float textOffset = 15f;
+                float textOffset = 10f;
                 float iconSize = 48f;
-
-                textPaint.setTextAlign(isRight ? Paint.Align.LEFT : Paint.Align.RIGHT);
 
                 // Vẽ icon và phần trăm
                 if (slice.iconResId != 0) {
                     Drawable drawable = ContextCompat.getDrawable(getContext(), slice.iconResId);
                     if (drawable != null) {
-                        float ix = isRight ? endX + textOffset : endX - textOffset - iconSize;
+                        float ix = isRight ? endX + textOffset + iconSize / 2f : endX - textOffset - iconSize / 2f;
                         float iy = endY;
 
-                        drawable.setBounds((int) ix, (int) (iy - iconSize / 2f), (int) (ix + iconSize), (int) (iy + iconSize / 2f));
+                        float halfSize = iconSize / 2f;
+                        drawable.setBounds((int) (ix - halfSize), (int) (iy - halfSize), (int) (ix + halfSize), (int) (iy + halfSize));
                         drawable.draw(canvas);
 
-                        float textX = isRight ? ix + iconSize + 10f : ix - 10f;
-                        canvas.drawText(pctStr, textX, endY - ((textPaint.descent() + textPaint.ascent()) / 2f), textPaint);
+                        float textX = isRight ? endX + textOffset + iconSize + 10f : endX - textOffset - iconSize - 10f;
+                        canvas.drawText(pctStr, textX, endY + textPaint.getTextSize() / 3f, textPaint);
                     }
                 } else {
                     float textX = isRight ? endX + textOffset : endX - textOffset;
-                    canvas.drawText(pctStr, textX, endY - ((textPaint.descent() + textPaint.ascent()) / 2f), textPaint);
+                    canvas.drawText(pctStr, textX, endY + textPaint.getTextSize() / 3f, textPaint);
                 }
             }
 
-            currentAngle += sweepAngle;
+            startAngle += sweepAngle;
         }
     }
 
