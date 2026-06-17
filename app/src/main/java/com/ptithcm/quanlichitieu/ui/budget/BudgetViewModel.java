@@ -294,31 +294,7 @@ public class BudgetViewModel extends AndroidViewModel {
         budgetSummary.postValue(summary);
     }
 
-    /**
-     * Lấy ngày đầu tháng hiện tại.
-     */
-    public long getStartOfMonth() {
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.DAY_OF_MONTH, 1);
-        cal.set(Calendar.HOUR_OF_DAY, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        return cal.getTimeInMillis();
-    }
 
-    /**
-     * Lấy ngày cuối tháng hiện tại.
-     */
-    public long getEndOfMonth() {
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
-        cal.set(Calendar.HOUR_OF_DAY, 23);
-        cal.set(Calendar.MINUTE, 59);
-        cal.set(Calendar.SECOND, 59);
-        cal.set(Calendar.MILLISECOND, 999);
-        return cal.getTimeInMillis();
-    }
 
     // ==================== INNER CLASSES ====================
 
@@ -387,13 +363,7 @@ public class BudgetViewModel extends AndroidViewModel {
             this.progress = progress;
         }
 
-        public long getTotalBudget() {
-            return totalBudget;
-        }
 
-        public long getTotalSpent() {
-            return totalSpent;
-        }
 
         public long getRemaining() {
             return remaining;
@@ -415,10 +385,7 @@ public class BudgetViewModel extends AndroidViewModel {
             return formatMoney(totalSpent);
         }
 
-        public String getFormattedRemaining() {
-            String prefix = remaining >= 0 ? "+ " : "- ";
-            return prefix + formatMoney(Math.abs(remaining));
-        }
+
 
         private String formatMoney(long amount) {
             if (amount >= 1000000) {

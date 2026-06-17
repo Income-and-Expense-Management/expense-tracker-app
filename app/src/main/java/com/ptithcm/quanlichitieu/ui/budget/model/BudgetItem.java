@@ -23,8 +23,7 @@ public class BudgetItem {
     private String walletName;      // Wallet name (optional)
     private String color;           // Màu hiển thị
 
-    public BudgetItem() {
-    }
+
 
     private BudgetItem(Builder builder) {
         this.id = builder.id;
@@ -41,12 +40,7 @@ public class BudgetItem {
     }
 
     // Legacy constructor for backward compatibility
-    public BudgetItem(String categoryName, double spent, double limit, String tags, String color) {
-        this.categoryName = categoryName;
-        this.spent = (long) spent;
-        this.limit = (long) limit;
-        this.color = color;
-    }
+
 
     // Builder Pattern
     public static class Builder {
@@ -176,21 +170,13 @@ public class BudgetItem {
         this.categoryId = categoryId;
     }
 
-    public void setCategoryName(String categoryName) {
-        this.categoryName = categoryName;
-    }
 
-    public void setCategoryIcon(String categoryIcon) {
-        this.categoryIcon = categoryIcon;
-    }
 
     public void setSpent(long spent) {
         this.spent = spent;
     }
 
-    public void setLimit(long limit) {
-        this.limit = limit;
-    }
+
 
     public void setStartDate(long startDate) {
         this.startDate = startDate;
@@ -204,9 +190,6 @@ public class BudgetItem {
         this.walletId = walletId;
     }
 
-    public void setWalletName(String walletName) {
-        this.walletName = walletName;
-    }
 
     public void setColor(String color) {
         this.color = color;
@@ -223,31 +206,18 @@ public class BudgetItem {
         return spent > limit;
     }
 
-    public long getRemainingAmount() {
-        return limit - spent;
-    }
 
     /**
      * Format số tiền theo định dạng VND với dấu chấm phân cách.
      * Ví dụ: 1000000 -> "1.000.000 đ"
      */
-    public String getFormattedSpent() {
-        return formatMoneyVND(spent);
-    }
 
-    public String getFormattedLimit() {
-        return formatMoneyVND(limit);
-    }
 
     public String getFormattedAmount() {
         return formatMoneyVND(spent) + "/ " + formatMoneyVND(limit);
     }
 
-    public String getFormattedRemaining() {
-        long remaining = getRemainingAmount();
-        String prefix = remaining >= 0 ? "+ " : "- ";
-        return prefix + formatMoneyVND(Math.abs(remaining));
-    }
+
 
     /**
      * Format tiền theo chuẩn Việt Nam với dấu chấm phân cách hàng nghìn.
