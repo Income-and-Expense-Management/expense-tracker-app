@@ -54,10 +54,7 @@ public class CategoryViewModel extends AndroidViewModel {
 
     public LiveData<SortOrder> getSortOrder() { return sortOrder; }
 
-    public void setSortOrder(SortOrder order) {
-        if (order == null) return;
-        sortOrder.setValue(order);
-    }
+
 
     public void toggleSortOrder() {
         SortOrder current = sortOrder.getValue();
@@ -105,20 +102,7 @@ public class CategoryViewModel extends AndroidViewModel {
         }).start();
     }
 
-    public void loadCategories(String userId) {
-        final int generation = loadGeneration.incrementAndGet();
-        new Thread(() -> {
-            List<Category> list = repository.getUserCategories(userId);
-            postCategoriesIfLatest(list, generation);
 
-            // Call refresh from server with the SAME generation
-            refreshFromServerWithGeneration(userId, generation);
-        }).start();
-    }
-
-    public void addCategory(String userId, String name, TransactionType type) {
-        addCategoryWithIcon(userId, name, type, "ic_item");
-    }
 
     public void addCategoryWithIcon(String userId, String name, TransactionType type, String iconName) {
         if (name == null || name.trim().isEmpty()) {
@@ -160,8 +144,12 @@ public class CategoryViewModel extends AndroidViewModel {
             boolean success = repository.deleteCategory(categoryId);
             deleteResult.postValue(success);
             if (success) {
-                // Dùng loadCategoriesForManagement để reload đồng nhất với CategoryFragment
-                loadCategoriesForManagement(userId);
+                // 2. QUAN TRỌNG: Lấy lại danh sách mới từ Local và post lên UI ngay lập tức
+                List<Category> updatedList = repository.getAllCategoriesForManagement(userId);
+                categories.postValue(updatedList);
+
+                // 3. Sau đó mới thực hiện sync với server ở background (nếu cần)
+                repository.syncCategories(userId, null);
             }
         }).start();
     }
