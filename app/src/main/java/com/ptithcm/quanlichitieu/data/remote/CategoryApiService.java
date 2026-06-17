@@ -163,7 +163,7 @@ public class CategoryApiService {
                                         continue;
                                     }
 
-                                    apiCategoryList.add(category);
+                                    apiCategoryList.add(apiCategoryList.size(), category);
                                 }
                                 successListener.onResponse(apiCategoryList);
                             } else {
@@ -290,10 +290,8 @@ public class CategoryApiService {
             Category category = new Category();
             category.setId(id);
 
+            // SỬA: Giữ nguyên user_id là null nếu server trả về null (danh mục hệ thống)
             String userId = categoryObj.isNull("user_id") ? null : categoryObj.optString("user_id", null);
-            if (userId == null || userId.isEmpty()) {
-                userId = fallbackUserId;
-            }
             category.setUserId(userId);
 
             category.setName(categoryObj.optString("name", ""));

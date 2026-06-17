@@ -9,7 +9,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.ptithcm.quanlichitieu.data.local.BudgetDatabaseHelper;
+import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.BudgetEntry;
 import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.CategoryEntry;
+import com.ptithcm.quanlichitieu.data.local.contract.DatabaseContract.TransactionEntry;
 import com.ptithcm.quanlichitieu.data.local.util.CursorUtils;
 import com.ptithcm.quanlichitieu.utils.IdGenerator;
 import com.ptithcm.quanlichitieu.data.model.Category;
@@ -20,53 +22,31 @@ import java.util.List;
 
 /**
  * CategoryDao - Data Access Object cho bảng categories.
- * 
- * Chịu trách nhiệm duy nhất: CRUD operations cho Category entity.
- * Tuân thủ Single Responsibility Principle (SRP).
- * 
- * Xử lý đặc biệt:
- * - TransactionType enum được lưu dạng String trong SQLite
- * - Hỗ trợ cả danh mục hệ thống (user_id = null) và danh mục người dùng
  */
 public class CategoryDao {
 
     private static final String TAG = "CategoryDao";
-
     private final BudgetDatabaseHelper dbHelper;
 
     public CategoryDao(@NonNull BudgetDatabaseHelper dbHelper) {
         this.dbHelper = dbHelper;
     }
 
-    // ==================== CREATE ====================
-
-    /**
-     * Thêm Category mới vào database.
-     * Chỉ dùng cho danh mục của user, không phải hệ thống.
-     * 
-     * @param category Category object cần thêm
-     * @return ID của category mới, hoặc null nếu thất bại
-     */
     public String insert(@NonNull Category category) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-
         if (category.getId() == null) {
             category.setId(IdGenerator.generateUUID());
         }
-
         long now = IdGenerator.getCurrentTimestamp();
-
         ContentValues values = new ContentValues();
         values.put(CategoryEntry.COLUMN_ID, category.getId());
         values.put(CategoryEntry.COLUMN_USER_ID, category.getUserId());
         values.put(CategoryEntry.COLUMN_NAME, category.getName());
-        // Enum -> String conversion
         if (category.getType() != null) {
             values.put(CategoryEntry.COLUMN_TYPE, category.getType().getValue());
         }
         values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
         values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
-        // Set created_at và updated_at cho schema mới (sync support)
         values.put(CategoryEntry.COLUMN_CREATED_AT, now);
         values.put(CategoryEntry.COLUMN_UPDATED_AT, now);
         if (category.getDeletedAt() != null) {
@@ -74,10 +54,8 @@ public class CategoryDao {
         } else {
             values.putNull(CategoryEntry.COLUMN_DELETED_AT);
         }
-
         try {
             long result = db.insertOrThrow(CategoryEntry.TABLE_NAME, null, values);
-            Log.d(TAG, "Inserted category with ID: " + category.getId());
             return category.getId();
         } catch (Exception e) {
             Log.e(TAG, "Failed to insert category", e);
@@ -85,20 +63,39 @@ public class CategoryDao {
         }
     }
 
-    /**
-     * Thêm Category từ server vào database, giữ nguyên timestamps của server.
-     */
     @Nullable
     public String insertFromServer(@NonNull Category category) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
-        if (category.getId() == null) {
-            category.setId(IdGenerator.generateUUID());
+        // Kiểm tra trùng lặp theo Name + Type + UserId để hợp nhất dữ liệu Seed và Server
+        String selection;
+        String[] selectionArgs;
+        if (category.getUserId() == null) {
+            selection = CategoryEntry.COLUMN_NAME + " = ? AND " + CategoryEntry.COLUMN_TYPE + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NULL";
+            selectionArgs = new String[]{category.getName(), category.getType().getValue()};
+        } else {
+            selection = CategoryEntry.COLUMN_NAME + " = ? AND " + CategoryEntry.COLUMN_TYPE + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " = ?";
+            selectionArgs = new String[]{category.getName(), category.getType().getValue(), category.getUserId()};
         }
 
-        long now = IdGenerator.getCurrentTimestamp();
-        long createdAt = category.getCreatedAt() > 0 ? category.getCreatedAt() : now;
-        long updatedAt = category.getUpdatedAt() > 0 ? category.getUpdatedAt() : createdAt;
+        Cursor cursor = db.query(CategoryEntry.TABLE_NAME, new String[]{CategoryEntry.COLUMN_ID}, selection, selectionArgs, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            String existingId = cursor.getString(0);
+            cursor.close();
+
+            // Nếu ID khác nhau (do Seed dùng ID cứng), cập nhật ID local sang ID server để đồng bộ
+            if (!existingId.equals(category.getId())) {
+                updateCategoryIdReferences(db, existingId, category.getId());
+                
+                ContentValues idUpdate = new ContentValues();
+                idUpdate.put(CategoryEntry.COLUMN_ID, category.getId());
+                db.update(CategoryEntry.TABLE_NAME, idUpdate, CategoryEntry.COLUMN_ID + " = ?", new String[]{existingId});
+            }
+            
+            updateFromServer(category);
+            return category.getId();
+        }
+        if (cursor != null) cursor.close();
 
         ContentValues values = new ContentValues();
         values.put(CategoryEntry.COLUMN_ID, category.getId());
@@ -109,8 +106,8 @@ public class CategoryDao {
         }
         values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
         values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
-        values.put(CategoryEntry.COLUMN_CREATED_AT, createdAt);
-        values.put(CategoryEntry.COLUMN_UPDATED_AT, updatedAt);
+        values.put(CategoryEntry.COLUMN_CREATED_AT, category.getCreatedAt());
+        values.put(CategoryEntry.COLUMN_UPDATED_AT, category.getUpdatedAt());
         if (category.getDeletedAt() != null) {
             values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt());
         } else {
@@ -118,405 +115,144 @@ public class CategoryDao {
         }
 
         long result = db.insert(CategoryEntry.TABLE_NAME, null, values);
-        if (result == -1) {
-            Log.w(TAG, "insertFromServer: Failed for category id=" + category.getId());
-            return null;
-        }
-        return category.getId();
+        return result != -1 ? category.getId() : null;
     }
 
-    // ==================== READ ====================
+    private void updateCategoryIdReferences(SQLiteDatabase db, String oldId, String newId) {
+        ContentValues values = new ContentValues();
+        values.put(TransactionEntry.COLUMN_CATEGORY_ID, newId);
+        db.update(TransactionEntry.TABLE_NAME, values, TransactionEntry.COLUMN_CATEGORY_ID + " = ?", new String[]{oldId});
 
-    /**
-     * Lấy Category theo ID.
-     * 
-     * @param categoryId ID của category cần tìm
-     * @return Category object, hoặc null nếu không tìm thấy
-     */
+        ContentValues budgetValues = new ContentValues();
+        budgetValues.put(BudgetEntry.COLUMN_CATEGORY_ID, newId);
+        db.update(BudgetEntry.TABLE_NAME, budgetValues, BudgetEntry.COLUMN_CATEGORY_ID + " = ?", new String[]{oldId});
+    }
+
     @Nullable
     public Category getById(@NonNull String categoryId) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Category category = null;
-
-        Cursor cursor = null;
-        try {
-            cursor = db.query(
-                    CategoryEntry.TABLE_NAME,
-                    null,
-                    CategoryEntry.COLUMN_ID + " = ?",
-                    new String[]{categoryId},
-                    null, null, null
-            );
-
-            if (cursor != null && cursor.moveToFirst()) {
-                category = cursorToCategory(cursor);
-            }
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+        Cursor cursor = db.query(CategoryEntry.TABLE_NAME, null, CategoryEntry.COLUMN_ID + " = ?", new String[]{categoryId}, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            category = cursorToCategory(cursor);
         }
-
+        if (cursor != null) cursor.close();
         return category;
     }
 
-    /**
-     * Lấy tất cả Category theo loại (INCOME/EXPENSE).
-     * Bao gồm cả danh mục hệ thống (user_id = null) và danh mục của user.
-     * 
-     * @param userId ID của user (có thể null)
-     * @param type Loại giao dịch (INCOME hoặc EXPENSE)
-     * @return Danh sách Category theo loại
-     */
     public List<Category> getByType(@Nullable String userId, @NonNull TransactionType type) {
         List<Category> categories = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-
         String selection;
         String[] selectionArgs;
-
         if (userId == null) {
             selection = CategoryEntry.COLUMN_TYPE + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ type.getValue() };
         } else {
-            selection = CategoryEntry.COLUMN_TYPE + " = ? AND (" +
-                    CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
-                    CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
+            selection = CategoryEntry.COLUMN_TYPE + " = ? AND (" + CategoryEntry.COLUMN_USER_ID + " IS NULL OR " + CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ type.getValue(), userId };
         }
-
-        Cursor cursor = null;
-        try {
-            cursor = db.query(
-                    CategoryEntry.TABLE_NAME,
-                    null,
-                    selection,
-                    selectionArgs,
-                    null, null,
-                    CategoryEntry.COLUMN_NAME + " ASC"
-            );
-
-            if (cursor != null && cursor.moveToFirst()) {
-                do {
-                    categories.add(cursorToCategory(cursor));
-                } while (cursor.moveToNext());
-            }
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+        Cursor cursor = db.query(CategoryEntry.TABLE_NAME, null, selection, selectionArgs, null, null, CategoryEntry.COLUMN_NAME + " ASC");
+        if (cursor != null && cursor.moveToFirst()) {
+            do { categories.add(cursorToCategory(cursor)); } while (cursor.moveToNext());
         }
-
+        if (cursor != null) cursor.close();
         return categories;
     }
 
-    /**
-     * Lấy tất cả danh mục hệ thống (user_id = null).
-     * 
-     * @return Danh sách danh mục hệ thống
-     */
-    public List<Category> getSystemCategories() {
-        List<Category> categories = new ArrayList<>();
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-
-        Cursor cursor = null;
-        try {
-            cursor = db.query(
-                    CategoryEntry.TABLE_NAME,
-                    null,
-                    CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL",
-                    null,
-                    null, null,
-                    CategoryEntry.COLUMN_TYPE + ", " + CategoryEntry.COLUMN_NAME + " ASC"
-            );
-
-            if (cursor != null && cursor.moveToFirst()) {
-                do {
-                    categories.add(cursorToCategory(cursor));
-                } while (cursor.moveToNext());
-            }
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-
-        return categories;
-    }
-
-    /**
-     * Lấy tất cả danh mục của user (không bao gồm hệ thống).
-     * 
-     * @param userId ID của user
-     * @return Danh sách danh mục của user
-     */
-    public List<Category> getUserCategories(@NonNull String userId) {
-        List<Category> categories = new ArrayList<>();
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-
-        if (userId == null) {
-            return categories; // Nếu userId null, trả về danh sách rỗng để tránh crash binding
-        }
-
-        Cursor cursor = null;
-        try {
-            cursor = db.query(
-                    CategoryEntry.TABLE_NAME,
-                    null,
-                    CategoryEntry.COLUMN_USER_ID + " = ? AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL",
-                    new String[]{userId},
-                    null, null,
-                    CategoryEntry.COLUMN_TYPE + ", " + CategoryEntry.COLUMN_NAME + " ASC"
-            );
-
-            if (cursor != null && cursor.moveToFirst()) {
-                do {
-                    categories.add(cursorToCategory(cursor));
-                } while (cursor.moveToNext());
-            }
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-
-        return categories;
-    }
-
-    /**
-     * Lấy tất cả Category (hệ thống + user).
-     * 
-     * @param userId ID của user
-     * @return Danh sách tất cả Category có thể sử dụng
-     */
     public List<Category> getAllAvailable(@Nullable String userId) {
         List<Category> categories = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-
         String selection;
         String[] selectionArgs;
-
         if (userId == null) {
             selection = CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_IS_ACTIVE + " = 1 AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = null;
         } else {
-            selection = "(" + CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
-                    CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_IS_ACTIVE + " = 1 AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
+            selection = "(" + CategoryEntry.COLUMN_USER_ID + " IS NULL OR " + CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_IS_ACTIVE + " = 1 AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ userId };
         }
-
-        Cursor cursor = null;
-        try {
-            cursor = db.query(
-                    CategoryEntry.TABLE_NAME,
-                    null,
-                    selection,
-                    selectionArgs,
-                    null, null,
-                    CategoryEntry.COLUMN_TYPE + ", " + CategoryEntry.COLUMN_NAME + " ASC"
-            );
-
-            if (cursor != null && cursor.moveToFirst()) {
-                do {
-                    categories.add(cursorToCategory(cursor));
-                } while (cursor.moveToNext());
-            }
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+        Cursor cursor = db.query(CategoryEntry.TABLE_NAME, null, selection, selectionArgs, null, null, CategoryEntry.COLUMN_TYPE + ", " + CategoryEntry.COLUMN_NAME + " ASC");
+        if (cursor != null && cursor.moveToFirst()) {
+            do { categories.add(cursorToCategory(cursor)); } while (cursor.moveToNext());
         }
-
+        if (cursor != null) cursor.close();
         return categories;
     }
 
-    /**
-     * Lấy tất cả Category (hệ thống + user), KHÔNG lọc trạng thái is_active.
-     * Dùng cho giao diện quản lý category (CategoryFragment).
-     *
-     * @param userId ID của user
-     * @return Danh sách tất cả Category
-     */
     public List<Category> getAllForManagement(@Nullable String userId) {
         List<Category> categories = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-
         String selection;
         String[] selectionArgs;
-
         if (userId == null) {
             selection = CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = null;
         } else {
-            selection = "(" + CategoryEntry.COLUMN_USER_ID + " IS NULL OR " +
-                    CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
+            selection = "(" + CategoryEntry.COLUMN_USER_ID + " IS NULL OR " + CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ userId };
         }
-
-        Cursor cursor = null;
-        try {
-            cursor = db.query(
-                    CategoryEntry.TABLE_NAME,
-                    null,
-                    selection,
-                    selectionArgs,
-                    null, null,
-                    CategoryEntry.COLUMN_TYPE + ", " + CategoryEntry.COLUMN_NAME + " ASC"
-            );
-
-            if (cursor != null && cursor.moveToFirst()) {
-                do {
-                    categories.add(cursorToCategory(cursor));
-                } while (cursor.moveToNext());
-            }
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+        Cursor cursor = db.query(CategoryEntry.TABLE_NAME, null, selection, selectionArgs, null, null, CategoryEntry.COLUMN_TYPE + ", " + CategoryEntry.COLUMN_NAME + " ASC");
+        if (cursor != null && cursor.moveToFirst()) {
+            do { categories.add(cursorToCategory(cursor)); } while (cursor.moveToNext());
         }
-
+        if (cursor != null) cursor.close();
         return categories;
     }
 
-    // ==================== UPDATE ====================
-
-    /**
-     * Cập nhật thông tin Category.
-     * Cho phép cập nhật trạng thái của danh mục hệ thống.
-     *
-     * @param category Category object với thông tin mới
-     * @return Số dòng bị ảnh hưởng
-     */
     public int update(@NonNull Category category) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-
         long now = IdGenerator.getCurrentTimestamp();
         ContentValues values = new ContentValues();
-
-        // Nếu là hệ thống thì chỉ cho update is_active và updated_at
         if (category.isSystemCategory()) {
             values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
             values.put(CategoryEntry.COLUMN_UPDATED_AT, now);
         } else {
             values.put(CategoryEntry.COLUMN_NAME, category.getName());
-            if (category.getType() != null) {
-                values.put(CategoryEntry.COLUMN_TYPE, category.getType().getValue());
-            }
+            if (category.getType() != null) values.put(CategoryEntry.COLUMN_TYPE, category.getType().getValue());
             values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
             values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
             values.put(CategoryEntry.COLUMN_UPDATED_AT, now);
-            if (category.getDeletedAt() != null) {
-                values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt());
-            } else {
-                values.putNull(CategoryEntry.COLUMN_DELETED_AT);
-            }
+            if (category.getDeletedAt() != null) values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt());
+            else values.putNull(CategoryEntry.COLUMN_DELETED_AT);
         }
-
-        return db.update(
-                CategoryEntry.TABLE_NAME,
-                values,
-                CategoryEntry.COLUMN_ID + " = ?",
-                new String[]{category.getId()}
-        );
+        return db.update(CategoryEntry.TABLE_NAME, values, CategoryEntry.COLUMN_ID + " = ?", new String[]{category.getId()});
     }
 
-    /**
-     * Cập nhật Category từ server, giữ nguyên timestamps của server.
-     */
     public int updateFromServer(@NonNull Category category) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-
         ContentValues values = new ContentValues();
         values.put(CategoryEntry.COLUMN_NAME, category.getName());
-        if (category.getType() != null) {
-            values.put(CategoryEntry.COLUMN_TYPE, category.getType().getValue());
-        }
+        if (category.getType() != null) values.put(CategoryEntry.COLUMN_TYPE, category.getType().getValue());
         values.put(CategoryEntry.COLUMN_ICON_NAME, category.getIconName());
         values.put(CategoryEntry.COLUMN_IS_ACTIVE, category.isActive() ? 1 : 0);
         values.put(CategoryEntry.COLUMN_UPDATED_AT, category.getUpdatedAt() > 0 ? category.getUpdatedAt() : IdGenerator.getCurrentTimestamp());
-        if (category.getDeletedAt() != null) {
-            values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt());
-        } else {
-            values.putNull(CategoryEntry.COLUMN_DELETED_AT);
-        }
-
-        int rows = db.update(
-                CategoryEntry.TABLE_NAME,
-                values,
-                CategoryEntry.COLUMN_ID + " = ?",
-                new String[]{category.getId()}
-        );
-        Log.d(TAG, "updateFromServer: Updated " + rows + " row(s) for category id=" + category.getId());
-        return rows;
+        if (category.getDeletedAt() != null) values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt());
+        else values.putNull(CategoryEntry.COLUMN_DELETED_AT);
+        return db.update(CategoryEntry.TABLE_NAME, values, CategoryEntry.COLUMN_ID + " = ?", new String[]{category.getId()});
     }
 
-    /**
-     * Lưu tombstone xóa mềm từ server vào local DB.
-     */
     public int softDeleteFromServer(@NonNull Category category) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-
         ContentValues values = new ContentValues();
         values.put(CategoryEntry.COLUMN_IS_ACTIVE, 0);
         values.put(CategoryEntry.COLUMN_UPDATED_AT, category.getUpdatedAt() > 0 ? category.getUpdatedAt() : IdGenerator.getCurrentTimestamp());
-        if (category.getDeletedAt() != null) {
-            values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt());
-        } else {
-            values.put(CategoryEntry.COLUMN_DELETED_AT, IdGenerator.getCurrentTimestamp());
-        }
-
-        int rows = db.update(
-                CategoryEntry.TABLE_NAME,
-                values,
-                CategoryEntry.COLUMN_ID + " = ?",
-                new String[]{category.getId()}
-        );
-        Log.d(TAG, "softDeleteFromServer: Updated " + rows + " row(s) for category id=" + category.getId());
-        return rows;
+        values.put(CategoryEntry.COLUMN_DELETED_AT, category.getDeletedAt() != null ? category.getDeletedAt() : IdGenerator.getCurrentTimestamp());
+        return db.update(CategoryEntry.TABLE_NAME, values, CategoryEntry.COLUMN_ID + " = ?", new String[]{category.getId()});
     }
 
-    // ==================== DELETE ====================
-
-    /**
-     * Xóa Category theo ID.
-     * Chỉ cho phép xóa danh mục của user, không phải hệ thống.
-     * Lưu ý: Transactions sử dụng category này sẽ có category_id = NULL (ON DELETE SET NULL).
-     * 
-     * @param categoryId ID của category cần xóa
-     * @return Số dòng bị xóa
-     */
     public int delete(@NonNull String categoryId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        // Soft delete: chỉ cập nhật deleted_at thay vì xóa vật lý
-        // Đảm bảo server nhận biết được bản ghi đã bị xóa khi sync
         ContentValues values = new ContentValues();
         values.put(CategoryEntry.COLUMN_DELETED_AT, IdGenerator.getCurrentTimestamp());
         values.put(CategoryEntry.COLUMN_UPDATED_AT, IdGenerator.getCurrentTimestamp());
-        return db.update(
-                CategoryEntry.TABLE_NAME,
-                values,
-                CategoryEntry.COLUMN_ID + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NOT NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL",
-                new String[]{categoryId}
-        );
+        return db.update(CategoryEntry.TABLE_NAME, values, CategoryEntry.COLUMN_ID + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NOT NULL", new String[]{categoryId});
     }
 
-    // ==================== CURSOR MAPPING ====================
-
-    /**
-     * Parse Cursor thành Category object.
-     * Xử lý String -> Enum conversion cho type.
-     */
     private Category cursorToCategory(Cursor cursor) {
-        // String -> Enum conversion
         String typeString = CursorUtils.getString(cursor, CategoryEntry.COLUMN_TYPE);
         TransactionType type = TransactionType.fromValue(typeString);
-
-        int isActiveInt = 1;
-        int activeColumnIndex = cursor.getColumnIndex(CategoryEntry.COLUMN_IS_ACTIVE);
-        if (activeColumnIndex != -1) {
-            isActiveInt = cursor.getInt(activeColumnIndex);
-        }
-
+        int isActiveInt = cursor.getInt(cursor.getColumnIndex(CategoryEntry.COLUMN_IS_ACTIVE));
         return new Category.Builder()
                 .setId(CursorUtils.getString(cursor, CategoryEntry.COLUMN_ID))
                 .setUserId(CursorUtils.getString(cursor, CategoryEntry.COLUMN_USER_ID))
@@ -524,10 +260,9 @@ public class CategoryDao {
                 .setType(type)
                 .setIconName(CursorUtils.getString(cursor, CategoryEntry.COLUMN_ICON_NAME))
                 .setIsActive(isActiveInt == 1)
-            .setCreatedAt(CursorUtils.getLong(cursor, CategoryEntry.COLUMN_CREATED_AT))
-            .setUpdatedAt(CursorUtils.getLong(cursor, CategoryEntry.COLUMN_UPDATED_AT))
+                .setCreatedAt(CursorUtils.getLong(cursor, CategoryEntry.COLUMN_CREATED_AT))
+                .setUpdatedAt(CursorUtils.getLong(cursor, CategoryEntry.COLUMN_UPDATED_AT))
                 .setDeletedAt(CursorUtils.getLong(cursor, CategoryEntry.COLUMN_DELETED_AT) == 0 ? null : CursorUtils.getLong(cursor, CategoryEntry.COLUMN_DELETED_AT))
                 .build();
     }
-
 }
