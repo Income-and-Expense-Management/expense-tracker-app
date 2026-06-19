@@ -72,8 +72,6 @@ public class TransactionDao {
         values.put(TransactionEntry.COLUMN_CATEGORY_ID, transaction.getCategoryId());
         values.put(TransactionEntry.COLUMN_AMOUNT, transaction.getAmount());
 
-        // TYPE AND ICON_ID REMOVED FROM TRANSACTION TABLE
-
         values.put(TransactionEntry.COLUMN_TRANSACTION_DATE, transaction.getTransactionDate());
         values.put(TransactionEntry.COLUMN_NOTE, transaction.getNote());
         values.put(TransactionEntry.COLUMN_CREATED_AT, transaction.getCreatedAt());
@@ -209,13 +207,6 @@ public class TransactionDao {
         return transactions;
     }
 
-    /**
-     * Tìm kiếm giao dịch theo từ khóa trong ghi chú hoặc tên danh mục.
-     *
-     * @param keyword  Từ khóa tìm kiếm (không phân biệt hoa/thường)
-     * @param walletId ID ví để lọc (null = tìm tất cả ví)
-     * @return Danh sách giao dịch khớp với từ khóa, sắp xếp theo ngày mới nhất
-     */
     public List<Transaction> searchWithKeyword(@NonNull String keyword, @Nullable String walletId) {
         List<Transaction> transactions = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
@@ -276,6 +267,13 @@ public class TransactionDao {
         ContentValues values = new ContentValues();
         values.put(TransactionEntry.COLUMN_DELETED_AT, IdGenerator.getCurrentTimestamp());
         return db.update(TransactionEntry.TABLE_NAME, values, TransactionEntry.COLUMN_ID + " = ?", new String[]{transactionId});
+    }
+
+    public int deleteByCategoryId(@NonNull String categoryId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(TransactionEntry.COLUMN_DELETED_AT, IdGenerator.getCurrentTimestamp());
+        return db.update(TransactionEntry.TABLE_NAME, values, TransactionEntry.COLUMN_CATEGORY_ID + " = ?", new String[]{categoryId});
     }
 
     public void insertFromServer(@NonNull Transaction transaction) {
@@ -388,6 +386,34 @@ public class TransactionDao {
             if (cursor != null) cursor.close();
         }
         return count;
+    }
+
+    public int countTransactionsByCategory(@NonNull String categoryId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        int count = 0;
+        String query = "SELECT COUNT(*) FROM " + TransactionEntry.TABLE_NAME + " WHERE " + TransactionEntry.COLUMN_CATEGORY_ID + " = ? AND " + TransactionEntry.COLUMN_DELETED_AT + " IS NULL";
+        Cursor cursor = null;
+        try {
+            cursor = db.rawQuery(query, new String[]{categoryId});
+            if (cursor != null && cursor.moveToFirst()) {
+                count = cursor.getInt(0);
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+        }
+        return count;
+    }
+
+    public void reassignTransactions(@NonNull String oldCategoryId, @Nullable String newCategoryId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        if (newCategoryId == null) {
+            values.putNull(TransactionEntry.COLUMN_CATEGORY_ID);
+        } else {
+            values.put(TransactionEntry.COLUMN_CATEGORY_ID, newCategoryId);
+        }
+        values.put(TransactionEntry.COLUMN_UPDATED_AT, IdGenerator.getCurrentTimestamp());
+        db.update(TransactionEntry.TABLE_NAME, values, TransactionEntry.COLUMN_CATEGORY_ID + " = ?", new String[]{oldCategoryId});
     }
 
     private Transaction cursorToTransactionWithDetails(Cursor cursor) {

@@ -9,6 +9,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.ptithcm.quanlichitieu.data.local.BudgetDatabaseHelper;
 import com.ptithcm.quanlichitieu.data.local.dao.CategoryDao;
+import com.ptithcm.quanlichitieu.data.local.dao.TransactionDao;
 import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
 import com.ptithcm.quanlichitieu.data.model.Category;
 import com.ptithcm.quanlichitieu.data.remote.CategoryApiService;
@@ -23,6 +24,7 @@ public class CategoryRepository {
     private static final String TAG = "CategoryRepository";
 
     private final CategoryDao categoryDao;
+    private final TransactionDao transactionDao;
     private final CategoryApiService categoryApiService;
     private final Context context;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -31,6 +33,7 @@ public class CategoryRepository {
         this.context = context;
         BudgetDatabaseHelper dbHelper = BudgetDatabaseHelper.getInstance(context);
         categoryDao = new CategoryDao(dbHelper);
+        transactionDao = new TransactionDao(dbHelper);
         TokenStorage tokenStorage = EncryptedTokenStorage.getInstance(context);
         categoryApiService = new CategoryApiService(context, tokenStorage);
     }
@@ -87,6 +90,14 @@ public class CategoryRepository {
         return categoryDao.getAllAvailable(userId);
     }
 
+    public int getTransactionCount(String categoryId) {
+        return transactionDao.countTransactionsByCategory(categoryId);
+    }
+
+    public void reassignTransactions(String oldCategoryId, String newCategoryId) {
+        transactionDao.reassignTransactions(oldCategoryId, newCategoryId);
+    }
+
     public boolean addCategory(Category category) {
         String id = categoryDao.insert(category);
         boolean success = id != null;
@@ -105,6 +116,19 @@ public class CategoryRepository {
     }
 
     public boolean deleteCategory(String categoryId) {
+        // Mặc định gán null cho transactions nếu không chuyển sang category khác
+        transactionDao.reassignTransactions(categoryId, null);
+        boolean success = categoryDao.delete(categoryId) > 0;
+        if (success) {
+            pushDelete(categoryId);
+        }
+        return success;
+    }
+
+    public boolean deleteCategoryAndTransactions(String categoryId) {
+        // Xóa tất cả transactions thuộc category này
+        transactionDao.deleteByCategoryId(categoryId);
+        // Sau đó xóa category
         boolean success = categoryDao.delete(categoryId) > 0;
         if (success) {
             pushDelete(categoryId);

@@ -1,169 +1,122 @@
 package com.ptithcm.quanlichitieu.ui.category;
 
 import android.app.Application;
-
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-
 import com.ptithcm.quanlichitieu.data.model.Category;
 import com.ptithcm.quanlichitieu.data.model.TransactionType;
 import com.ptithcm.quanlichitieu.data.repository.CategoryRepository;
-
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CategoryViewModel extends AndroidViewModel {
-
     private final CategoryRepository repository;
     private final MutableLiveData<List<Category>> categories = new MutableLiveData<>();
     private final MutableLiveData<Boolean> addResult = new MutableLiveData<>();
     private final MutableLiveData<Boolean> updateResult = new MutableLiveData<>();
     private final MutableLiveData<Boolean> deleteResult = new MutableLiveData<>();
-
-    // Sort order state exposed to UI
-    public enum SortOrder {
-        A_TO_Z,
-        Z_TO_A
-    }
-
+    private final MutableLiveData<UsageInfo> usageInfo = new MutableLiveData<>();
     private final MutableLiveData<SortOrder> sortOrder = new MutableLiveData<>(SortOrder.A_TO_Z);
     private final AtomicInteger loadGeneration = new AtomicInteger(0);
+
+    public static class UsageInfo {
+        public final String categoryId;
+        public final int transactionCount;
+        public UsageInfo(String categoryId, int transactionCount) {
+            this.categoryId = categoryId;
+            this.transactionCount = transactionCount;
+        }
+    }
+
+    public enum SortOrder { A_TO_Z, Z_TO_A }
 
     public CategoryViewModel(@NonNull Application application) {
         super(application);
         repository = new CategoryRepository(application);
     }
 
-    public LiveData<List<Category>> getCategories() {
-        return categories;
-    }
-
-    public LiveData<Boolean> getAddResult() {
-        return addResult;
-    }
-
-    public LiveData<Boolean> getUpdateResult() {
-        return updateResult;
-    }
-
-    public LiveData<Boolean> getDeleteResult() {
-        return deleteResult;
-    }
-
+    public LiveData<List<Category>> getCategories() { return categories; }
+    public LiveData<Boolean> getAddResult() { return addResult; }
+    public LiveData<Boolean> getUpdateResult() { return updateResult; }
+    public LiveData<Boolean> getDeleteResult() { return deleteResult; }
+    public LiveData<UsageInfo> getUsageInfo() { return usageInfo; }
     public LiveData<SortOrder> getSortOrder() { return sortOrder; }
-
-
 
     public void toggleSortOrder() {
         SortOrder current = sortOrder.getValue();
-        if (current == SortOrder.Z_TO_A) {
-            sortOrder.setValue(SortOrder.A_TO_Z);
-        } else {
-            sortOrder.setValue(SortOrder.Z_TO_A);
-        }
+        sortOrder.setValue(current == SortOrder.Z_TO_A ? SortOrder.A_TO_Z : SortOrder.Z_TO_A);
     }
 
-    public void resetAddResult() {
-        addResult.setValue(null);
+    public void resetResults() {
+        addResult.setValue(null); updateResult.setValue(null);
+        deleteResult.setValue(null); usageInfo.setValue(null);
     }
 
-    public void resetUpdateResult() {
-        updateResult.setValue(null);
-    }
+    public void resetAddResult() { addResult.setValue(null); }
+    public void resetUpdateResult() { updateResult.setValue(null); }
+    public void resetDeleteResult() { deleteResult.setValue(null); }
 
-    public void resetDeleteResult() {
-        deleteResult.setValue(null);
-    }
-
-    public void syncCategories(String userId, Runnable onSuccess) {
-        repository.syncCategories(userId, onSuccess);
+    public void loadCategoriesForManagement(String userId) {
+        final int gen = loadGeneration.incrementAndGet();
+        new Thread(() -> {
+            List<Category> list = repository.getAllCategoriesForManagement(userId);
+            if (gen == loadGeneration.get()) categories.postValue(list);
+            repository.syncCategories(userId, () -> {
+                new Thread(() -> {
+                    List<Category> updated = repository.getAllCategoriesForManagement(userId);
+                    if (gen == loadGeneration.get()) categories.postValue(updated);
+                }).start();
+            });
+        }).start();
     }
 
     public void refreshFromServer(String userId) {
-        final int generation = loadGeneration.incrementAndGet();
-        refreshFromServerWithGeneration(userId, generation);
+        if (userId == null) return;
+        repository.syncCategories(userId, () -> new Thread(() ->
+                categories.postValue(repository.getAllCategoriesForManagement(userId))).start());
     }
 
-    private void refreshFromServerWithGeneration(String userId, int generation) {
-        repository.syncCategories(userId, () -> postCategoriesForManagement(userId, generation));
-    }
-
-    public void loadCategoriesForManagement(String userId) {
-        final int generation = loadGeneration.incrementAndGet();
+    public void addCategoryWithIcon(String userId, String name, TransactionType type, String icon) {
         new Thread(() -> {
-            List<Category> list = repository.getAllCategoriesForManagement(userId);
-            postCategoriesIfLatest(list, generation);
-
-            // Call refresh from server with the SAME generation,
-            // so we don't discard the initial offline result if the server fails
-            refreshFromServerWithGeneration(userId, generation);
-        }).start();
-    }
-
-
-
-    public void addCategoryWithIcon(String userId, String name, TransactionType type, String iconName) {
-        if (name == null || name.trim().isEmpty()) {
-            addResult.postValue(false);
-            return;
-        }
-
-        Category category = new Category.Builder()
-                .setUserId(userId)
-                .setName(name)
-                .setType(type)
-                .setIconName(iconName)
-                .build();
-
-        new Thread(() -> {
-            boolean success = repository.addCategory(category);
+            Category c = new Category.Builder().setUserId(userId).setName(name).setType(type).setIconName(icon).build();
+            boolean success = repository.addCategory(c);
             addResult.postValue(success);
-            if (success) {
-                // Dùng loadCategoriesForManagement để reload đồng nhất với CategoryFragment:
-                // bao gồm cả system categories + user categories
-                loadCategoriesForManagement(userId);
-            }
+            if (success) loadCategoriesForManagement(userId);
         }).start();
     }
 
-    public void updateCategory(String userId, Category category) {
+    public void updateCategory(String userId, Category c) {
         new Thread(() -> {
-            boolean success = repository.updateCategory(category);
+            boolean success = repository.updateCategory(c);
             updateResult.postValue(success);
-            if (success) {
-                // Dùng loadCategoriesForManagement để reload đồng nhất với CategoryFragment
-                loadCategoriesForManagement(userId);
-            }
+            if (success) loadCategoriesForManagement(userId);
         }).start();
     }
 
-    public void deleteCategory(String userId, String categoryId) {
+    public void checkCategoryUsage(String userId, String categoryId) {
         new Thread(() -> {
-            boolean success = repository.deleteCategory(categoryId);
-            deleteResult.postValue(success);
-            if (success) {
-                // 2. QUAN TRỌNG: Lấy lại danh sách mới từ Local và post lên UI ngay lập tức
-                List<Category> updatedList = repository.getAllCategoriesForManagement(userId);
-                categories.postValue(updatedList);
-
-                // 3. Sau đó mới thực hiện sync với server ở background (nếu cần)
-                repository.syncCategories(userId, null);
-            }
+            int count = repository.getTransactionCount(categoryId);
+            if (count > 0) usageInfo.postValue(new UsageInfo(categoryId, count));
+            else performDelete(userId, categoryId, false);
         }).start();
     }
 
-    private void postCategoriesForManagement(String userId, int generation) {
+    public void reassignAndDelete(String userId, String oldId, String newId) {
         new Thread(() -> {
-            List<Category> list = repository.getAllCategoriesForManagement(userId);
-            postCategoriesIfLatest(list, generation);
+            repository.reassignTransactions(oldId, newId);
+            performDelete(userId, oldId, false);
         }).start();
     }
 
-    private void postCategoriesIfLatest(List<Category> list, int generation) {
-        if (generation == loadGeneration.get()) {
-            categories.postValue(list);
-        }
+    public void deleteCategoryAndTransactions(String userId, String categoryId) {
+        new Thread(() -> performDelete(userId, categoryId, true)).start();
+    }
+
+    private void performDelete(String userId, String categoryId, boolean deleteTransactions) {
+        boolean success = deleteTransactions ? repository.deleteCategoryAndTransactions(categoryId) : repository.deleteCategory(categoryId);
+        deleteResult.postValue(success);
+        if (success) loadCategoriesForManagement(userId);
     }
 }
