@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
 import com.ptithcm.quanlichitieu.R;
@@ -112,16 +113,31 @@ public class TransactionDetailFragment extends Fragment {
 
         btnDelete.setOnClickListener(v -> {
             if (transactionId != null) {
-                int rows = transactionRepository.deleteLocal(transactionId);
-                if (rows > 0) {
-                    transactionRepository.pushDelete(transactionId, null);
-                    Toast.makeText(requireContext(), "Đã xoá giao dịch", Toast.LENGTH_SHORT).show();
-                    requireActivity().getSupportFragmentManager().popBackStack();
-                } else {
-                    Toast.makeText(requireContext(), "Lỗi khi xoá", Toast.LENGTH_SHORT).show();
-                }
+                showDeleteConfirmationDialog();
             }
         });
+    }
+
+    private void showDeleteConfirmationDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Xác nhận xóa")
+                .setMessage("Bạn có chắc chắn muốn xóa giao dịch này không?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    performDelete();
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void performDelete() {
+        int rows = transactionRepository.deleteLocal(transactionId);
+        if (rows > 0) {
+            transactionRepository.pushDelete(transactionId, null);
+            Toast.makeText(requireContext(), "Đã xoá giao dịch", Toast.LENGTH_SHORT).show();
+            requireActivity().getSupportFragmentManager().popBackStack();
+        } else {
+            Toast.makeText(requireContext(), "Lỗi khi xoá", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void loadTransactionDetails() {
