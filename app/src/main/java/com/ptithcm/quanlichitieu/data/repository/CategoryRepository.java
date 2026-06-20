@@ -8,10 +8,14 @@ import android.util.Log;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.ptithcm.quanlichitieu.data.local.BudgetDatabaseHelper;
+import com.ptithcm.quanlichitieu.data.local.DatabaseManager;
 import com.ptithcm.quanlichitieu.data.local.dao.CategoryDao;
+import com.ptithcm.quanlichitieu.data.local.dao.TransactionDao;
 import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
 import com.ptithcm.quanlichitieu.data.model.Category;
+import com.ptithcm.quanlichitieu.data.model.Transaction;
 import com.ptithcm.quanlichitieu.data.remote.CategoryApiService;
+import com.ptithcm.quanlichitieu.data.remote.TransactionApiService;
 import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
 
 import java.util.List;
@@ -23,16 +27,21 @@ public class CategoryRepository {
     private static final String TAG = "CategoryRepository";
 
     private final CategoryDao categoryDao;
+    private final TransactionDao transactionDao;
     private final CategoryApiService categoryApiService;
+    private final TransactionApiService transactionApiService;
+    private final DatabaseManager databaseManager;
     private final Context context;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     public CategoryRepository(Context context) {
         this.context = context;
-        BudgetDatabaseHelper dbHelper = BudgetDatabaseHelper.getInstance(context);
-        categoryDao = new CategoryDao(dbHelper);
+        this.databaseManager = DatabaseManager.getInstance(context);
+        this.categoryDao = databaseManager.getCategoryDao();
+        this.transactionDao = databaseManager.getTransactionDao();
         TokenStorage tokenStorage = EncryptedTokenStorage.getInstance(context);
-        categoryApiService = new CategoryApiService(context, tokenStorage);
+        this.categoryApiService = new CategoryApiService(context, tokenStorage);
+        this.transactionApiService = new TransactionApiService(context, tokenStorage);
     }
 
     public void syncCategories(String userId, Runnable onSuccess) {
@@ -57,25 +66,14 @@ public class CategoryRepository {
                                 }
                             }
                         }
-                        Log.d(TAG, "Categories synced successfully.");
-                        if(onSuccess != null) {
-                            onSuccess.run();
-                        }
+                        if(onSuccess != null) onSuccess.run();
                     }).start();
                 } else {
-                    if (onSuccess != null) {
-                        onSuccess.run();
-                    }
+                    if (onSuccess != null) onSuccess.run();
                 }
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.e(TAG, "Error syncing categories", error);
-                if (onSuccess != null) {
-                    onSuccess.run();
-                }
-            }
+        }, error -> {
+            if (onSuccess != null) onSuccess.run();
         });
     }
 
@@ -83,56 +81,78 @@ public class CategoryRepository {
         return categoryDao.getAllForManagement(userId);
     }
 
-    public List<Category> getUserCategories(String userId) {
-        return categoryDao.getAllAvailable(userId);
-    }
-
     public boolean addCategory(Category category) {
         String id = categoryDao.insert(category);
-        boolean success = id != null;
-        if (success) {
+        if (id != null) {
             pushCreate(category);
+            return true;
         }
-        return success;
+        return false;
     }
 
     public boolean updateCategory(Category category) {
         boolean success = categoryDao.update(category) > 0;
-        if (success) {
-            pushUpdate(category);
-        }
+        if (success) pushUpdate(category);
         return success;
+    }
+
+    public int getTransactionCount(String categoryId) {
+        return getTransactionCount(null, categoryId);
+    }
+
+    public int getTransactionCount(String userId, String categoryId) {
+        if (categoryId == null) return 0;
+        return transactionDao.countByCategoryId(userId, categoryId);
     }
 
     public boolean deleteCategory(String categoryId) {
         boolean success = categoryDao.delete(categoryId) > 0;
+        if (success) pushDelete(categoryId);
+        return success;
+    }
+
+    public boolean deleteCategoryWithTransactions(String categoryId) {
+        return deleteCategoryWithTransactions(null, categoryId);
+    }
+
+    public boolean deleteCategoryWithTransactions(String userId, String categoryId) {
+        if (categoryId == null) return false;
+
+        // 1. Lấy danh sách giao dịch để xóa trên server sau này
+        List<Transaction> transactionsToDelete = transactionDao.getByCategoryIdSimple(userId, categoryId);
+
+        // 2. Thực hiện xóa ở Local trong một Transaction
+        boolean success = databaseManager.executeInTransaction(() -> {
+            transactionDao.deleteByCategoryId(userId, categoryId);
+            categoryDao.delete(categoryId);
+        });
+
         if (success) {
+            // 3. Đẩy lệnh xóa danh mục lên server
             pushDelete(categoryId);
+            
+            // 4. Đẩy lệnh xóa từng giao dịch lên server
+            if (!transactionsToDelete.isEmpty()) {
+                new Thread(() -> {
+                    for (Transaction t : transactionsToDelete) {
+                        transactionApiService.deleteTransaction(t.getId(), null, null);
+                    }
+                }).start();
+            }
         }
+
         return success;
     }
 
     private void pushCreate(Category category) {
-        mainHandler.post(() -> categoryApiService.createCategory(
-                category,
-                response -> Log.d(TAG, "pushCreate: Server confirmed category creation"),
-                error -> Log.e(TAG, "pushCreate: Server error", error)
-        ));
+        mainHandler.post(() -> categoryApiService.createCategory(category, null, null));
     }
 
     private void pushUpdate(Category category) {
-        mainHandler.post(() -> categoryApiService.updateCategory(
-                category,
-                response -> Log.d(TAG, "pushUpdate: Server confirmed category update"),
-                error -> Log.e(TAG, "pushUpdate: Server error", error)
-        ));
+        mainHandler.post(() -> categoryApiService.updateCategory(category, null, null));
     }
 
     private void pushDelete(String categoryId) {
-        mainHandler.post(() -> categoryApiService.deleteCategory(
-                categoryId,
-                response -> Log.d(TAG, "pushDelete: Server confirmed category deletion"),
-                error -> Log.e(TAG, "pushDelete: Server error", error)
-        ));
+        mainHandler.post(() -> categoryApiService.deleteCategory(categoryId, null, null));
     }
 }

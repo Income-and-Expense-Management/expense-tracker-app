@@ -8,6 +8,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.ptithcm.quanlichitieu.data.model.Category;
+import com.ptithcm.quanlichitieu.data.model.Transaction;
 import com.ptithcm.quanlichitieu.data.model.TransactionType;
 import com.ptithcm.quanlichitieu.data.repository.CategoryRepository;
 
@@ -21,6 +22,7 @@ public class CategoryViewModel extends AndroidViewModel {
     private final MutableLiveData<Boolean> addResult = new MutableLiveData<>();
     private final MutableLiveData<Boolean> updateResult = new MutableLiveData<>();
     private final MutableLiveData<Boolean> deleteResult = new MutableLiveData<>();
+    private final MutableLiveData<Integer> transactionCount = new MutableLiveData<>();
 
     // Sort order state exposed to UI
     public enum SortOrder {
@@ -54,7 +56,9 @@ public class CategoryViewModel extends AndroidViewModel {
 
     public LiveData<SortOrder> getSortOrder() { return sortOrder; }
 
-
+    public LiveData<Integer> getTransactionCountResult() {
+        return transactionCount;
+    }
 
     public void toggleSortOrder() {
         SortOrder current = sortOrder.getValue();
@@ -95,14 +99,9 @@ public class CategoryViewModel extends AndroidViewModel {
         new Thread(() -> {
             List<Category> list = repository.getAllCategoriesForManagement(userId);
             postCategoriesIfLatest(list, generation);
-
-            // Call refresh from server with the SAME generation,
-            // so we don't discard the initial offline result if the server fails
             refreshFromServerWithGeneration(userId, generation);
         }).start();
     }
-
-
 
     public void addCategoryWithIcon(String userId, String name, TransactionType type, String iconName) {
         if (name == null || name.trim().isEmpty()) {
@@ -121,8 +120,6 @@ public class CategoryViewModel extends AndroidViewModel {
             boolean success = repository.addCategory(category);
             addResult.postValue(success);
             if (success) {
-                // Dùng loadCategoriesForManagement để reload đồng nhất với CategoryFragment:
-                // bao gồm cả system categories + user categories
                 loadCategoriesForManagement(userId);
             }
         }).start();
@@ -133,9 +130,16 @@ public class CategoryViewModel extends AndroidViewModel {
             boolean success = repository.updateCategory(category);
             updateResult.postValue(success);
             if (success) {
-                // Dùng loadCategoriesForManagement để reload đồng nhất với CategoryFragment
                 loadCategoriesForManagement(userId);
             }
+        }).start();
+    }
+
+    public void checkTransactionCount(String userId, String categoryId) {
+        transactionCount.postValue(null); // Reset count before checking
+        new Thread(() -> {
+            int count = repository.getTransactionCount(userId, categoryId);
+            transactionCount.postValue(count);
         }).start();
     }
 
@@ -144,11 +148,20 @@ public class CategoryViewModel extends AndroidViewModel {
             boolean success = repository.deleteCategory(categoryId);
             deleteResult.postValue(success);
             if (success) {
-                // 2. QUAN TRỌNG: Lấy lại danh sách mới từ Local và post lên UI ngay lập tức
                 List<Category> updatedList = repository.getAllCategoriesForManagement(userId);
                 categories.postValue(updatedList);
+                repository.syncCategories(userId, null);
+            }
+        }).start();
+    }
 
-                // 3. Sau đó mới thực hiện sync với server ở background (nếu cần)
+    public void deleteCategoryWithTransactions(String userId, String categoryId) {
+        new Thread(() -> {
+            boolean success = repository.deleteCategoryWithTransactions(userId, categoryId);
+            deleteResult.postValue(success);
+            if (success) {
+                List<Category> updatedList = repository.getAllCategoriesForManagement(userId);
+                categories.postValue(updatedList);
                 repository.syncCategories(userId, null);
             }
         }).start();

@@ -22,22 +22,6 @@ import java.util.Map;
 
 /**
  * TransactionRepositoryImpl - Implementation thực của TransactionRepository.
- * 
- * Chịu trách nhiệm:
- * - Lấy dữ liệu giao dịch từ SQLite database thông qua TransactionDao
- * - Nhóm giao dịch theo ngày với format tiếng Việt
- * - Tính toán các tổng số (thu nhập, chi tiêu)
- * - Filter dữ liệu theo ví và khoảng thời gian
- * 
- * Tuân thủ SOLID principles:
- * - Single Responsibility: Chỉ xử lý logic nghiệp vụ cho transaction
- * - Open/Closed: Có thể mở rộng thêm logic mà không sửa code hiện tại
- * - Dependency Inversion: Phụ thuộc vào TransactionDao interface
- * 
- * Extensibility cho tương lai:
- * - Dễ dàng thêm caching layer
- * - Có thể tích hợp với remote API khi cần đồng bộ
- * - Có thể thêm offline-first sync logic
  */
 public class TransactionRepositoryImpl implements TransactionRepository {
 
@@ -46,58 +30,32 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     private final TransactionDao transactionDao;
     private final TransactionApiService apiService;
 
-    /**
-     * Constructor nhận Context để khởi tạo DatabaseManager.
-     * 
-     * @param context Application context
-     */
     public TransactionRepositoryImpl(@NonNull Context context, @NonNull TokenStorage tokenStorage) {
         DatabaseManager dbManager = DatabaseManager.getInstance(context);
         this.transactionDao = dbManager.getTransactionDao();
         this.apiService = new TransactionApiService(context, tokenStorage);
     }
 
-    /**
-     * Constructor cho testing - có thể inject TransactionDao mock.
-     * 
-     * @param transactionDao TransactionDao instance (có thể là mock)
-     */
     public TransactionRepositoryImpl(@NonNull TransactionDao transactionDao) {
         this.transactionDao = transactionDao;
         this.apiService = null;
     }
 
-    // ==================== PUBLIC METHODS ====================
-
     @Override
     public List<TransactionGroup> getTransactionsByMonth(int monthOffset) {
-        // Legacy method - delegate to new method without wallet filter
         return getTransactionsByWalletAndMonth(null, monthOffset);
     }
 
     @Override
     public List<TransactionGroup> getTransactionsByWalletAndMonth(@Nullable String walletId, int monthOffset) {
-        // Tính toán khoảng thời gian của tháng
         long startDate = DateUtils.getMonthStartTimestamp(monthOffset);
         long endDate = DateUtils.getMonthEndTimestamp(monthOffset);
-
-        Log.d(TAG, "Fetching transactions for wallet: " + walletId + 
-                   ", monthOffset: " + monthOffset + 
-                   ", startDate: " + startDate + 
-                   ", endDate: " + endDate);
-
-        // Lấy danh sách giao dịch từ database, filter trực tiếp qua DB query params
         List<Transaction> transactions = transactionDao.getByDateRangeWithDetails(walletId, startDate, endDate);
-
-        Log.d(TAG, "Fetched " + transactions.size() + " transactions from database");
-
-        // Nhóm giao dịch theo ngày
         return groupTransactionsByDate(transactions);
     }
 
     @Override
     public long getTotalExpense() {
-        // Legacy method - trả về 0 hoặc implement logic lấy tất cả
         return 0L;
     }
 
@@ -106,24 +64,13 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         if (walletId == null) {
             return 0L;
         }
-
         long startDate = DateUtils.getMonthStartTimestamp(monthOffset);
         long endDate = DateUtils.getMonthEndTimestamp(monthOffset);
-
-        long total = transactionDao.getTotalAmountByType(
-                walletId, 
-                TransactionType.EXPENSE, 
-                startDate, 
-                endDate
-        );
-
-        Log.d(TAG, "Total expense for wallet " + walletId + ": " + total);
-        return total;
+        return transactionDao.getTotalAmountByType(walletId, TransactionType.EXPENSE, startDate, endDate);
     }
 
     @Override
     public long getTotalIncome() {
-        // Legacy method - trả về 0 hoặc implement logic lấy tất cả
         return 0L;
     }
 
@@ -132,25 +79,13 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         if (walletId == null) {
             return 0L;
         }
-
         long startDate = DateUtils.getMonthStartTimestamp(monthOffset);
         long endDate = DateUtils.getMonthEndTimestamp(monthOffset);
-
-        long total = transactionDao.getTotalAmountByType(
-                walletId, 
-                TransactionType.INCOME, 
-                startDate, 
-                endDate
-        );
-
-        Log.d(TAG, "Total income for wallet " + walletId + ": " + total);
-        return total;
+        return transactionDao.getTotalAmountByType(walletId, TransactionType.INCOME, startDate, endDate);
     }
 
     @Override
     public long getTotalBalance() {
-        // Legacy method - trả về 0
-        // Balance được tính từ wallet.initialBalance + income - expense
         return 0L;
     }
 
@@ -158,21 +93,8 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     public long getCurrentBalance(@NonNull String walletId, long initialBalance) {
         long startDate = 0L;
         long endDate = Long.MAX_VALUE;
-
-        long allIncome = transactionDao.getTotalAmountByType(
-                walletId,
-                TransactionType.INCOME,
-                startDate,
-                endDate
-        );
-
-        long allExpense = transactionDao.getTotalAmountByType(
-                walletId,
-                TransactionType.EXPENSE,
-                startDate,
-                endDate
-        );
-
+        long allIncome = transactionDao.getTotalAmountByType(walletId, TransactionType.INCOME, startDate, endDate);
+        long allExpense = transactionDao.getTotalAmountByType(walletId, TransactionType.EXPENSE, startDate, endDate);
         return initialBalance + allIncome - allExpense;
     }
 
@@ -182,94 +104,42 @@ public class TransactionRepositoryImpl implements TransactionRepository {
             return new ArrayList<>();
         }
         List<Transaction> results = transactionDao.searchWithKeyword(keyword.trim(), walletId);
-        Log.d(TAG, "Search '" + keyword + "' found " + results.size() + " transactions");
         return groupTransactionsByDate(results);
     }
 
-
-
-    /**
-     * Nhóm các giao dịch theo ngày.
-     * 
-     * Thuật toán:
-     * 1. Dùng LinkedHashMap để giữ thứ tự insertion (các ngày gần nhất trước)
-     * 2. Key là dateKey (yyyyMMdd), value là list các transaction trong ngày
-     * 3. Với mỗi nhóm, tính tổng tiền trong ngày
-     * 4. Format thứ và ngày bằng tiếng Việt
-     * 
-     * @param transactions Danh sách transaction đã sort theo date DESC
-     * @return Danh sách TransactionGroup đã nhóm
-     */
     private List<TransactionGroup> groupTransactionsByDate(List<Transaction> transactions) {
-        // Sử dụng LinkedHashMap để giữ thứ tự
         Map<String, List<Transaction>> groupedMap = new LinkedHashMap<>();
-
-        // Nhóm transactions theo dateKey
         for (Transaction transaction : transactions) {
             String dateKey = DateUtils.getDateKey(transaction.getTransactionDate());
-            
             if (!groupedMap.containsKey(dateKey)) {
                 groupedMap.put(dateKey, new ArrayList<>());
             }
-            
             groupedMap.get(dateKey).add(transaction);
         }
-
-        // Convert map thành list TransactionGroup
         List<TransactionGroup> groups = new ArrayList<>();
-        
         for (Map.Entry<String, List<Transaction>> entry : groupedMap.entrySet()) {
             List<Transaction> dayTransactions = entry.getValue();
-            
-            // Lấy transaction đầu tiên để lấy timestamp (tất cả cùng ngày)
-            if (dayTransactions.isEmpty()) {
-                continue;
-            }
-            
+            if (dayTransactions.isEmpty()) continue;
             long timestamp = dayTransactions.get(0).getTransactionDate();
-            
-            // Format thứ và ngày
             String dayOfWeek = DateUtils.formatDayOfWeek(timestamp);
             String date = DateUtils.formatDate(timestamp);
-            
-            // Tính tổng tiền trong ngày (income - expense)
             long dayTotal = calculateDayTotal(dayTransactions);
-            
-            // Tạo TransactionGroup
-            TransactionGroup group = new TransactionGroup(dayOfWeek, date, dayTotal, dayTransactions);
-            groups.add(group);
+            groups.add(new TransactionGroup(dayOfWeek, date, dayTotal, dayTransactions));
         }
-
-        Log.d(TAG, "Grouped into " + groups.size() + " transaction groups");
         return groups;
     }
 
-    /**
-     * Tính tổng tiền trong ngày.
-     * Công thức: Tổng INCOME - Tổng EXPENSE
-     * 
-     * @param transactions Danh sách transaction trong ngày
-     * @return Tổng tiền (dương = thu nhiều hơn chi, âm = chi nhiều hơn thu)
-     */
     private long calculateDayTotal(List<Transaction> transactions) {
         long total = 0L;
-        
         for (Transaction transaction : transactions) {
             if (transaction.getType() == TransactionType.INCOME) {
                 total += transaction.getAmount();
             } else if (transaction.getType() == TransactionType.EXPENSE) {
                 total -= transaction.getAmount();
             }
-            // LOAN type không tính vào day total (hoặc có thể customize tùy yêu cầu)
         }
-        
         return total;
     }
-
-    /**
-     * Helper method đã bị xóa do sử dụng DB filtering.
-     * private List<Transaction> filterByDateRange(...) {}
-     */
 
     @Override
     @Nullable
@@ -277,97 +147,63 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         return transactionDao.getById(transactionId);
     }
 
-    // ==================== LOCAL OPERATIONS ====================
-
     @Override
     @Nullable
     public String insertLocal(@NonNull Transaction transaction) {
-        String id = transactionDao.insert(transaction);
-        if (id != null) {
-            Log.d(TAG, "insertLocal: Transaction saved locally with id=" + id);
-        } else {
-            Log.e(TAG, "insertLocal: Failed to save transaction locally");
-        }
-        return id;
+        return transactionDao.insert(transaction);
     }
 
     @Override
     public int updateLocal(@NonNull Transaction transaction) {
-        int rows = transactionDao.update(transaction);
-        Log.d(TAG, "updateLocal: Updated " + rows + " row(s) for transaction id=" + transaction.getId());
-        return rows;
+        return transactionDao.update(transaction);
     }
 
     @Override
     public int deleteLocal(@NonNull String transactionId) {
-        int rows = transactionDao.delete(transactionId);
-        Log.d(TAG, "deleteLocal: Soft-deleted " + rows + " row(s) for transaction id=" + transactionId);
-        return rows;
+        return transactionDao.delete(transactionId);
     }
 
-    // ==================== REMOTE OPERATIONS ====================
+    @Override
+    public int countByCategoryId(@NonNull String categoryId) {
+        return transactionDao.countByCategoryId(categoryId);
+    }
+
+    @Override
+    public int countByCategoryId(@Nullable String userId, @NonNull String categoryId) {
+        return transactionDao.countByCategoryId(userId, categoryId);
+    }
+
+    @Override
+    public int deleteByCategoryId(@NonNull String categoryId) {
+        return transactionDao.deleteByCategoryId(categoryId);
+    }
+
+    @Override
+    public int deleteByCategoryId(@Nullable String userId, @NonNull String categoryId) {
+        return transactionDao.deleteByCategoryId(userId, categoryId);
+    }
 
     @Override
     public void pushCreate(@NonNull Transaction transaction, @Nullable SyncCallback callback) {
         if (apiService == null) return;
-        Log.d(TAG, "pushCreate: Pushing transaction id=" + transaction.getId() + " to server");
-        apiService.createTransaction(
-                transaction,
-                response -> {
-                    Log.d(TAG, "pushCreate: Server confirmed transaction creation");
-                    if (callback != null) callback.onSuccess();
-                },
-                error -> {
-                    String msg = error != null && error.getMessage() != null ? error.getMessage() : "Network error";
-                    Log.e(TAG, "pushCreate: Server error — " + msg);
-                    if (callback != null) callback.onError(msg);
-                }
-        );
+        apiService.createTransaction(transaction, response -> { if (callback != null) callback.onSuccess(); }, error -> { if (callback != null) callback.onError(error.getMessage()); });
     }
 
     @Override
     public void pushUpdate(@NonNull Transaction transaction, @Nullable SyncCallback callback) {
         if (apiService == null) return;
-        Log.d(TAG, "pushUpdate: Pushing update for transaction id=" + transaction.getId());
-        apiService.updateTransaction(
-                transaction,
-                response -> {
-                    Log.d(TAG, "pushUpdate: Server confirmed transaction update");
-                    if (callback != null) callback.onSuccess();
-                },
-                error -> {
-                    String msg = error != null && error.getMessage() != null ? error.getMessage() : "Network error";
-                    Log.e(TAG, "pushUpdate: Server error — " + msg);
-                    if (callback != null) callback.onError(msg);
-                }
-        );
+        apiService.updateTransaction(transaction, response -> { if (callback != null) callback.onSuccess(); }, error -> { if (callback != null) callback.onError(error.getMessage()); });
     }
 
     @Override
     public void pushDelete(@NonNull String transactionId, @Nullable SyncCallback callback) {
         if (apiService == null) return;
-        Log.d(TAG, "pushDelete: Pushing delete for transaction id=" + transactionId);
-        apiService.deleteTransaction(
-                transactionId,
-                response -> {
-                    Log.d(TAG, "pushDelete: Server confirmed transaction deletion (204)");
-                    if (callback != null) callback.onSuccess();
-                },
-                error -> {
-                    String msg = error != null && error.getMessage() != null ? error.getMessage() : "Network error";
-                    Log.e(TAG, "pushDelete: Server error — " + msg);
-                    if (callback != null) callback.onError(msg);
-                }
-        );
+        apiService.deleteTransaction(transactionId, response -> { if (callback != null) callback.onSuccess(); }, error -> { if (callback != null) callback.onError(error.getMessage()); });
     }
 
     @Override
     public void fetchFromServer(@Nullable Runnable onDone) {
-        if (apiService == null) {
-            if (onDone != null) onDone.run();
-            return;
-        }
-        Log.d(TAG, "fetchFromServer: Pulling transactions from server");
+        if (apiService == null) { if (onDone != null) onDone.run(); return; }
         apiService.fetchAndUpsertTransactions(transactionDao, onDone);
     }
 }

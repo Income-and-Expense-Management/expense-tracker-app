@@ -1,12 +1,14 @@
 package com.ptithcm.quanlichitieu.ui.category;
 
 import android.app.AlertDialog;
+import android.content.res.TypedArray;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
@@ -15,25 +17,19 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.GridLayoutManager;
 
+import com.google.android.material.tabs.TabLayout;
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.data.model.Category;
 import com.ptithcm.quanlichitieu.data.model.TransactionType;
 import com.ptithcm.quanlichitieu.ui.login.AuthViewModel;
-import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.graphics.Color;
-import android.widget.GridLayout;
-import android.content.res.TypedArray;
 
 /**
  * CategoryFragment: Quản lý danh mục (Categories).
@@ -47,6 +43,7 @@ public class CategoryFragment extends Fragment {
     private List<Category> allCategories = new ArrayList<>();
     private TransactionType currentType = TransactionType.EXPENSE;
     private String selectedIcon = "ic_food";
+    private Category currentDeletingCategory;
 
     @Nullable
     @Override
@@ -59,7 +56,6 @@ public class CategoryFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Ẩn thanh bottom navigation và fab chung của MainActivity khi vào màn hình này
         toggleBottomNavigation(false);
 
         authViewModel = new ViewModelProvider(requireActivity()).get(AuthViewModel.class);
@@ -90,7 +86,6 @@ public class CategoryFragment extends Fragment {
         });
 
         categoryViewModel.getSortOrder().observe(getViewLifecycleOwner(), order -> {
-            // Update UI tint of sort button to indicate order and re-filter
             View root = getView();
             if (root == null) return;
             ImageView btnFilter = root.findViewById(R.id.btnFilter);
@@ -107,11 +102,7 @@ public class CategoryFragment extends Fragment {
         categoryViewModel.getAddResult().observe(getViewLifecycleOwner(), success -> {
             if (success != null) {
                 if (getContext() != null) {
-                    if (success) {
-                        Toast.makeText(getContext(), "Thêm danh mục thành công", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(getContext(), "Thêm danh mục thất bại", Toast.LENGTH_SHORT).show();
-                    }
+                    Toast.makeText(getContext(), success ? "Thêm danh mục thành công" : "Thêm danh mục thất bại", Toast.LENGTH_SHORT).show();
                 }
                 categoryViewModel.resetAddResult();
             }
@@ -120,11 +111,7 @@ public class CategoryFragment extends Fragment {
         categoryViewModel.getUpdateResult().observe(getViewLifecycleOwner(), success -> {
             if (success != null) {
                 if (getContext() != null) {
-                    if (success) {
-                        Toast.makeText(getContext(), "Cập nhật danh mục thành công", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(getContext(), "Cập nhật danh mục thất bại", Toast.LENGTH_SHORT).show();
-                    }
+                    Toast.makeText(getContext(), success ? "Cập nhật danh mục thành công" : "Cập nhật danh mục thất bại", Toast.LENGTH_SHORT).show();
                 }
                 categoryViewModel.resetUpdateResult();
             }
@@ -133,19 +120,20 @@ public class CategoryFragment extends Fragment {
         categoryViewModel.getDeleteResult().observe(getViewLifecycleOwner(), success -> {
             if (success != null) {
                 if (getContext() != null) {
-                    if (success) {
-                        Toast.makeText(getContext(), "Xoá danh mục thành công", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(getContext(), "Xoá danh mục thất bại", Toast.LENGTH_SHORT).show();
-                    }
+                    Toast.makeText(getContext(), success ? "Xoá danh mục thành công" : "Xoá danh mục thất bại", Toast.LENGTH_SHORT).show();
                 }
                 categoryViewModel.resetDeleteResult();
+            }
+        });
+
+        categoryViewModel.getTransactionCountResult().observe(getViewLifecycleOwner(), count -> {
+            if (currentDeletingCategory != null && count != null) {
+                showFinalDeleteDialog(currentDeletingCategory, count);
             }
         });
     }
 
     private void setupViews(View view) {
-        // Nút back
         View btnBack = view.findViewById(R.id.btnBack);
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> requireActivity().getOnBackPressedDispatcher().onBackPressed());
@@ -161,17 +149,7 @@ public class CategoryFragment extends Fragment {
             tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
                 @Override
                 public void onTabSelected(TabLayout.Tab tab) {
-                    switch (tab.getPosition()) {
-                        case 0:
-                            currentType = TransactionType.EXPENSE;
-                            break;
-                        case 1:
-                            currentType = TransactionType.INCOME;
-                            break;
-                        default:
-                            currentType = TransactionType.EXPENSE;
-                            break;
-                    }
+                    currentType = tab.getPosition() == 1 ? TransactionType.INCOME : TransactionType.EXPENSE;
                     filterCategories();
                 }
 
@@ -183,18 +161,17 @@ public class CategoryFragment extends Fragment {
             });
         }
 
-        // Khởi tạo danh sách Category
         RecyclerView rvCategories = view.findViewById(R.id.rvCategories);
         if (rvCategories != null) {
             rvCategories.setLayoutManager(new LinearLayoutManager(requireContext()));
             adapter = new CategoryAdapter(new CategoryAdapter.OnCategoryClickListener() {
                 @Override
-                public void onCategoryClick(com.ptithcm.quanlichitieu.data.model.Category category) {
+                public void onCategoryClick(Category category) {
                     showEditCategoryDialog(category);
                 }
 
                 @Override
-                public void onCategoryLongClick(com.ptithcm.quanlichitieu.data.model.Category category) {
+                public void onCategoryLongClick(Category category) {
                     showDeleteConfirmDialog(category);
                 }
 
@@ -209,7 +186,6 @@ public class CategoryFragment extends Fragment {
             rvCategories.setAdapter(adapter);
         }
 
-        // Nút thêm danh mục mới
         View btnAddNewCategory = view.findViewById(R.id.btnAddNewCategory);
         if (btnAddNewCategory != null) {
             btnAddNewCategory.setOnClickListener(v -> showAddCategoryDialog());
@@ -225,7 +201,6 @@ public class CategoryFragment extends Fragment {
                 }
             }
 
-            // Apply alphabetical sort based on ViewModel's sortOrder
             CategoryViewModel.SortOrder order = categoryViewModel.getSortOrder().getValue();
             if (order == CategoryViewModel.SortOrder.Z_TO_A) {
                 Collections.sort(filteredList, (a, b) -> b.getName().compareToIgnoreCase(a.getName()));
@@ -263,12 +238,7 @@ public class CategoryFragment extends Fragment {
                 return;
             }
 
-            TransactionType type = TransactionType.EXPENSE;
-            int checkedId = rgType.getCheckedRadioButtonId();
-            if (checkedId == R.id.rbIncome) {
-                type = TransactionType.INCOME;
-            }
-
+            TransactionType type = rgType.getCheckedRadioButtonId() == R.id.rbIncome ? TransactionType.INCOME : TransactionType.EXPENSE;
             categoryViewModel.addCategoryWithIcon(authViewModel.getUserId(), name, type, selectedIcon);
             dialog.dismiss();
         });
@@ -276,17 +246,16 @@ public class CategoryFragment extends Fragment {
         dialog.show();
     }
 
-    private void showEditCategoryDialog(com.ptithcm.quanlichitieu.data.model.Category category) {
+    private void showEditCategoryDialog(Category category) {
         if (category.isSystemCategory()) {
             Toast.makeText(getContext(), "Không thể sửa danh mục hệ thống", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_edit_category, null);
-        builder.setView(dialogView);
-
-        AlertDialog dialog = builder.create();
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .create();
 
         EditText etCategoryName = dialogView.findViewById(R.id.etCategoryName);
         RadioGroup rgCategoryType = dialogView.findViewById(R.id.rgCategoryType);
@@ -296,7 +265,6 @@ public class CategoryFragment extends Fragment {
         Button btnSave = dialogView.findViewById(R.id.btnSave);
         Button btnCancel = dialogView.findViewById(R.id.btnCancel);
 
-        // Set current values
         etCategoryName.setText(category.getName());
         if (category.getType() == TransactionType.INCOME) {
             rbIncome.setChecked(true);
@@ -318,18 +286,12 @@ public class CategoryFragment extends Fragment {
                 return;
             }
 
-            TransactionType type = TransactionType.EXPENSE;
-            int checkedId = rgCategoryType.getCheckedRadioButtonId();
-            if (checkedId == R.id.rbIncome) {
-                type = TransactionType.INCOME;
-            }
-
+            TransactionType type = rgCategoryType.getCheckedRadioButtonId() == R.id.rbIncome ? TransactionType.INCOME : TransactionType.EXPENSE;
             category.setName(name);
             category.setType(type);
             category.setIconName(selectedIcon);
 
-            String userId = authViewModel.getUserId();
-            categoryViewModel.updateCategory(userId, category);
+            categoryViewModel.updateCategory(authViewModel.getUserId(), category);
             dialog.dismiss();
         });
 
@@ -358,8 +320,9 @@ public class CategoryFragment extends Fragment {
         RecyclerView recyclerView = dialogView.findViewById(R.id.rvIcons);
         recyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 4));
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        AlertDialog dialog = builder.setView(dialogView).create();
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .create();
 
         IconPickerAdapter rvAdapter = new IconPickerAdapter(iconList, iconName -> {
             selectedIcon = iconName;
@@ -371,26 +334,41 @@ public class CategoryFragment extends Fragment {
         dialog.show();
     }
 
-    private void showDeleteConfirmDialog(com.ptithcm.quanlichitieu.data.model.Category category) {
+    private void showDeleteConfirmDialog(Category category) {
         if (category.isSystemCategory()) {
             Toast.makeText(getContext(), "Không thể xoá danh mục hệ thống", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Xoá danh mục")
-                .setMessage("Bạn có chắc chắn muốn xoá danh mục '" + category.getName() + "' không?")
-                .setPositiveButton("Xoá", (dialog, which) -> {
-                    String userId = authViewModel.getUserId();
-                    categoryViewModel.deleteCategory(userId, category.getId());
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
+        currentDeletingCategory = category;
+        categoryViewModel.checkTransactionCount(authViewModel.getUserId(), category.getId());
+    }
+
+    private void showFinalDeleteDialog(Category category, int transactionCount) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("Xoá danh mục");
+
+        if (transactionCount > 0) {
+            builder.setMessage("Danh mục '" + category.getName() + "' hiện có " + transactionCount + " giao dịch liên quan. Bạn có chắc chắn muốn xoá toàn bộ danh mục và các giao dịch liên quan không?");
+            builder.setPositiveButton("Xoá toàn bộ", (dialog, which) -> {
+                categoryViewModel.deleteCategoryWithTransactions(authViewModel.getUserId(), category.getId());
+                currentDeletingCategory = null;
+            });
+        } else {
+            builder.setMessage("Danh mục '" + category.getName() + "' hiện có 0 giao dịch liên quan. Bạn có chắc chắn muốn xoá danh mục này không?");
+            builder.setPositiveButton("Xoá", (dialog, which) -> {
+                categoryViewModel.deleteCategory(authViewModel.getUserId(), category.getId());
+                currentDeletingCategory = null;
+            });
+        }
+
+        builder.setNegativeButton("Hủy", (dialog, which) -> currentDeletingCategory = null);
+        builder.setOnDismissListener(dialog -> currentDeletingCategory = null);
+        builder.show();
     }
 
     @Override
     public void onDestroyView() {
-        // Hiện lại thanh bottom navigation khi thoát
         toggleBottomNavigation(true);
         super.onDestroyView();
     }
