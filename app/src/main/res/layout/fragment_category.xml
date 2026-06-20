@@ -108,14 +108,21 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Danh sách categories -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvCategories"
+    <!-- Danh sách categories (Pull-to-refresh) -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btnAddNewCategory"
-        tools:listitem="@layout/item_category" />
+        app:layout_constraintTop_toBottomOf="@id/btnAddNewCategory">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvCategories"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:listitem="@layout/item_category" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

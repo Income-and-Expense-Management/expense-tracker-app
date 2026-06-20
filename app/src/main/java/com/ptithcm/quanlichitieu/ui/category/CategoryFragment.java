@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.google.android.material.tabs.TabLayout;
 import com.ptithcm.quanlichitieu.R;
 import com.ptithcm.quanlichitieu.data.model.Category;
@@ -44,6 +45,7 @@ public class CategoryFragment extends Fragment {
     private TransactionType currentType = TransactionType.EXPENSE;
     private String selectedIcon = "ic_food";
     private Category currentDeletingCategory;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     @Nullable
     @Override
@@ -83,6 +85,9 @@ public class CategoryFragment extends Fragment {
                 allCategories.addAll(categories);
             }
             filterCategories();
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
         });
 
         categoryViewModel.getSortOrder().observe(getViewLifecycleOwner(), order -> {
@@ -158,6 +163,16 @@ public class CategoryFragment extends Fragment {
 
                 @Override
                 public void onTabReselected(TabLayout.Tab tab) {}
+            });
+        }
+
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeResources(R.color.home_expense_red, R.color.home_accent_green);
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                if (authViewModel != null && categoryViewModel != null) {
+                    categoryViewModel.refreshFromServer(authViewModel.getUserId());
+                }
             });
         }
 
