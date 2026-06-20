@@ -77,14 +77,6 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
             switchCategory.setOnCheckedChangeListener(null);
             switchCategory.setChecked(category.isActive());
 
-            // Highlight switch: xanh khi on, xám khi off
-            if (category.isActive()) {
-                switchCategory.getThumbDrawable().setTint(itemView.getContext().getResources().getColor(R.color.switch_thumb_on, null));
-                switchCategory.getTrackDrawable().setTint(itemView.getContext().getResources().getColor(R.color.switch_track_on, null));
-            } else {
-                switchCategory.getThumbDrawable().setTint(itemView.getContext().getResources().getColor(R.color.switch_thumb_off, null));
-                switchCategory.getTrackDrawable().setTint(itemView.getContext().getResources().getColor(R.color.switch_track_off, null));
-            }
 
             if (category.getIconName() != null && !category.getIconName().isEmpty()) {
                 int resId = itemView.getContext().getResources().getIdentifier(

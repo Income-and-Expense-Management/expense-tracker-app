@@ -46,8 +46,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:checked="true"
-        app:thumbTint="@color/white"
-        app:trackTint="#4CAF50" />
+        app:thumbTint="@color/switch_thumb_selector"
+        app:trackTint="@color/switch_track_selector" />
 
 <!--    &lt;!&ndash; Bạn có thể thêm một icon mũi tên đi tiếp ở đây nếu muốn (tùy chọn) &ndash;&gt;-->
 <!--        <ImageView-->
