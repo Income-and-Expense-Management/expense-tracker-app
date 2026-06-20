@@ -146,10 +146,10 @@ public class CategoryDao {
         String selection;
         String[] selectionArgs;
         if (userId == null) {
-            selection = CategoryEntry.COLUMN_TYPE + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
+            selection = CategoryEntry.COLUMN_TYPE + " = ? AND " + CategoryEntry.COLUMN_USER_ID + " IS NULL AND " + CategoryEntry.COLUMN_IS_ACTIVE + " = 1 AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ type.getValue() };
         } else {
-            selection = CategoryEntry.COLUMN_TYPE + " = ? AND (" + CategoryEntry.COLUMN_USER_ID + " IS NULL OR " + CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
+            selection = CategoryEntry.COLUMN_TYPE + " = ? AND (" + CategoryEntry.COLUMN_USER_ID + " IS NULL OR " + CategoryEntry.COLUMN_USER_ID + " = ?) AND " + CategoryEntry.COLUMN_IS_ACTIVE + " = 1 AND " + CategoryEntry.COLUMN_DELETED_AT + " IS NULL";
             selectionArgs = new String[]{ type.getValue(), userId };
         }
         Cursor cursor = db.query(CategoryEntry.TABLE_NAME, null, selection, selectionArgs, null, null, CategoryEntry.COLUMN_NAME + " ASC");
