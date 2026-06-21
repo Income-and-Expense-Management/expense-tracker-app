@@ -104,11 +104,21 @@ public class BudgetViewModel extends AndroidViewModel {
     /**
      * Load danh sách ví của user.
      */
+    /**
+     * Load danh sách ví của user.
+     */
     public void loadWallets() {
-        List<Wallet> walletList = repository.getWalletsForUser(currentUserId);
-        wallets.setValue(walletList);
+        new Thread(() -> {
+            List<Wallet> walletList = repository.getWalletsForUser(currentUserId);
+            wallets.postValue(walletList);
 
-        if (selectedWallet.getValue() == null && walletList != null && !walletList.isEmpty()) {
+            if (walletList == null || walletList.isEmpty()) {
+                selectedWallet.postValue(null);
+                budgetItems.postValue(new java.util.ArrayList<>());
+                budgetSummary.postValue(new BudgetSummary(0, 0, 0, 0, 0));
+                return;
+            }
+
             SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
             // Chuẩn hóa key nhất quán với WalletViewModel và AddTransactionViewModel:
             // "active_wallet_id_" + userId (hoặc "default" khi chưa đăng nhập)
@@ -124,11 +134,15 @@ public class BudgetViewModel extends AndroidViewModel {
                     }
                 }
             }
+
             if (activeWallet == null) {
                 activeWallet = walletList.get(0);
+                prefs.edit().putString("active_wallet_id_" + userKey, activeWallet.getId()).apply();
             }
-            selectWallet(activeWallet);
-        }
+
+            selectedWallet.postValue(activeWallet);
+            loadBudgetsForWallet(activeWallet.getId());
+        }).start();
     }
 
 
@@ -136,6 +150,10 @@ public class BudgetViewModel extends AndroidViewModel {
      * Chọn ví và load dữ liệu budget.
      */
     public void selectWallet(@NonNull Wallet wallet) {
+        SharedPreferences prefs = getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
+        String userKey = (currentUserId != null && !currentUserId.trim().isEmpty()) ? currentUserId : "default";
+        prefs.edit().putString("active_wallet_id_" + userKey, wallet.getId()).apply();
+
         selectedWallet.setValue(wallet);
         loadBudgetsForWallet(wallet.getId());
     }
@@ -167,10 +185,7 @@ public class BudgetViewModel extends AndroidViewModel {
      * Refresh data - gọi khi cần reload từ database.
      */
     public void refresh() {
-        Wallet wallet = selectedWallet.getValue();
-        if (wallet != null) {
-            loadBudgetsForWallet(wallet.getId());
-        }
+        loadWallets();
     }
 
     /**

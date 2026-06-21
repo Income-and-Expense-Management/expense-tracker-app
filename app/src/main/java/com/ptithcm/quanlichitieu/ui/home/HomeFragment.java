@@ -310,4 +310,14 @@ public class HomeFragment extends Fragment {
         homeViewModel.loadReportData();
         homeViewModel.calculateCurrentBalance(walletViewModel.getSelectedWallet().getValue());
     }
+
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        if (!hidden) {
+            walletViewModel.loadActiveWallet();
+            homeViewModel.loadReportData();
+            homeViewModel.calculateCurrentBalance(walletViewModel.getSelectedWallet().getValue());
+        }
+    }
 }

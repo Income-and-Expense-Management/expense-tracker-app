@@ -145,6 +145,9 @@ public class BudgetFragment extends Fragment {
                 } else {
                     ivWalletIcon.setImageResource(R.drawable.ic_wallet);
                 }
+            } else {
+                tvWalletName.setText("Chọn ví");
+                ivWalletIcon.setImageResource(R.drawable.ic_wallet);
             }
         });
 
@@ -254,6 +257,9 @@ public class BudgetFragment extends Fragment {
 
     private void showWalletSelector() {
         SelectWalletBottomSheet bottomSheet = SelectWalletBottomSheet.newInstance();
+        if (viewModel.getSelectedWallet().getValue() != null) {
+            bottomSheet.setSelectedWalletId(viewModel.getSelectedWallet().getValue().getId());
+        }
         bottomSheet.setOnWalletSelectedListener(wallet -> viewModel.selectWallet(wallet));
         bottomSheet.show(getChildFragmentManager(), SelectWalletBottomSheet.TAG);
     }
@@ -276,5 +282,13 @@ public class BudgetFragment extends Fragment {
     public void onResume() {
         super.onResume();
         viewModel.refresh();
+    }
+
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        if (!hidden) {
+            viewModel.refresh();
+        }
     }
 }

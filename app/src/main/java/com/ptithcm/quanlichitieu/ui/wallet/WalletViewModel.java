@@ -267,17 +267,21 @@ public class WalletViewModel extends AndroidViewModel {
                 budgetDao.deleteByWalletId(walletId);
                 walletRepository.deleteLocal(walletId);
 
+                List<Wallet> updatedList = getWalletsForCurrentUserOrLegacyFallback();
+                wallets.postValue(updatedList);
+
                 saveResult.postValue(new SaveResult(true, "Xóa ví thành công"));
-                loadAllWallets();
 
                 Wallet currentActive = selectedWallet.getValue();
                 if (currentActive != null && currentActive.getId().equals(walletId)) {
                     android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
                     h.post(() -> {
-                        List<Wallet> currentList = wallets.getValue();
-                        if (currentList != null && !currentList.isEmpty()) {
-                            selectWallet(currentList.get(0));
+                        if (updatedList != null && !updatedList.isEmpty()) {
+                            selectWallet(updatedList.get(0));
                         } else {
+                            android.content.SharedPreferences prefs =
+                                    getApplication().getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
+                            prefs.edit().remove("active_wallet_id_" + getUserIdForKey()).apply();
                             selectedWallet.setValue(null);
                         }
                     });
