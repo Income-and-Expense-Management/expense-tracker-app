@@ -277,6 +277,14 @@ public class BudgetDao {
         return db.update(BudgetEntry.TABLE_NAME, values, BudgetEntry.COLUMN_WALLET_ID + " = ?", new String[]{walletId});
     }
 
+    public int deleteByCategoryId(@NonNull String categoryId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(BudgetEntry.COLUMN_DELETED_AT, IdGenerator.getCurrentTimestamp());
+        values.put(BudgetEntry.COLUMN_UPDATED_AT, IdGenerator.getCurrentTimestamp());
+        return db.update(BudgetEntry.TABLE_NAME, values, BudgetEntry.COLUMN_CATEGORY_ID + " = ?", new String[]{categoryId});
+    }
+
     private Budget cursorToBudget(Cursor cursor) {
         return new Budget.Builder()
                 .setId(CursorUtils.getString(cursor, BudgetEntry.COLUMN_ID))

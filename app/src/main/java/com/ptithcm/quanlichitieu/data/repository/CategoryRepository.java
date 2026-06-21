@@ -11,6 +11,7 @@ import com.ptithcm.quanlichitieu.data.local.BudgetDatabaseHelper;
 import com.ptithcm.quanlichitieu.data.local.DatabaseManager;
 import com.ptithcm.quanlichitieu.data.local.dao.CategoryDao;
 import com.ptithcm.quanlichitieu.data.local.dao.TransactionDao;
+import com.ptithcm.quanlichitieu.data.local.dao.BudgetDao;
 import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
 import com.ptithcm.quanlichitieu.data.model.Category;
 import com.ptithcm.quanlichitieu.data.model.Transaction;
@@ -28,6 +29,7 @@ public class CategoryRepository {
 
     private final CategoryDao categoryDao;
     private final TransactionDao transactionDao;
+    private final BudgetDao budgetDao;
     private final CategoryApiService categoryApiService;
     private final TransactionApiService transactionApiService;
     private final DatabaseManager databaseManager;
@@ -39,6 +41,7 @@ public class CategoryRepository {
         this.databaseManager = DatabaseManager.getInstance(context);
         this.categoryDao = databaseManager.getCategoryDao();
         this.transactionDao = databaseManager.getTransactionDao();
+        this.budgetDao = databaseManager.getBudgetDao();
         TokenStorage tokenStorage = EncryptedTokenStorage.getInstance(context);
         this.categoryApiService = new CategoryApiService(context, tokenStorage);
         this.transactionApiService = new TransactionApiService(context, tokenStorage);
@@ -106,7 +109,11 @@ public class CategoryRepository {
     }
 
     public boolean deleteCategory(String categoryId) {
-        boolean success = categoryDao.delete(categoryId) > 0;
+        if (categoryId == null) return false;
+        boolean success = databaseManager.executeInTransaction(() -> {
+            budgetDao.deleteByCategoryId(categoryId);
+            categoryDao.delete(categoryId);
+        });
         if (success) pushDelete(categoryId);
         return success;
     }
@@ -124,6 +131,7 @@ public class CategoryRepository {
         // 2. Thực hiện xóa ở Local trong một Transaction
         boolean success = databaseManager.executeInTransaction(() -> {
             transactionDao.deleteByCategoryId(userId, categoryId);
+            budgetDao.deleteByCategoryId(categoryId);
             categoryDao.delete(categoryId);
         });
 
