@@ -19,6 +19,7 @@ import com.ptithcm.quanlichitieu.ui.budget.model.BudgetItem;
 import com.ptithcm.quanlichitieu.data.remote.BudgetApiService;
 import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
 import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
+import com.ptithcm.quanlichitieu.data.repository.SyncRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +44,7 @@ public class BudgetRepository {
     private final WalletDao walletDao;
     private final DatabaseManager databaseManager;
     private final BudgetApiService apiService;
+    private final Context context;
 
     public interface SyncCallback {
         void onSuccess();
@@ -50,6 +52,7 @@ public class BudgetRepository {
     }
 
     private BudgetRepository(@NonNull Context context) {
+        this.context = context.getApplicationContext();
         this.databaseManager = DatabaseManager.getInstance(context);
         this.budgetDao = databaseManager.getBudgetDao();
         this.categoryDao = databaseManager.getCategoryDao();
@@ -232,7 +235,9 @@ public class BudgetRepository {
     }
 
     public void fetchFromServer(@Nullable Runnable onDone) {
-        apiService.fetchAndUpsertBudgets(budgetDao, onDone);
+        TokenStorage tokenStorage = EncryptedTokenStorage.getInstance(context);
+        String userId = tokenStorage.getUserId();
+        SyncRepository.getInstance(context).syncAll(userId, onDone);
     }
 
     /**

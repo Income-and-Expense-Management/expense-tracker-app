@@ -11,6 +11,7 @@ import com.ptithcm.quanlichitieu.data.model.Category;
 import com.ptithcm.quanlichitieu.data.model.Transaction;
 import com.ptithcm.quanlichitieu.data.model.TransactionType;
 import com.ptithcm.quanlichitieu.data.repository.CategoryRepository;
+import com.ptithcm.quanlichitieu.data.repository.SyncRepository;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -91,7 +92,7 @@ public class CategoryViewModel extends AndroidViewModel {
     }
 
     private void refreshFromServerWithGeneration(String userId, int generation) {
-        repository.syncCategories(userId, () -> postCategoriesForManagement(userId, generation));
+        SyncRepository.getInstance(getApplication()).syncAll(userId, () -> postCategoriesForManagement(userId, generation));
     }
 
     public void loadCategoriesForManagement(String userId) {

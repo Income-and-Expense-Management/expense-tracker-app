@@ -13,6 +13,7 @@ import com.ptithcm.quanlichitieu.data.repository.TransactionRepository;
 import com.ptithcm.quanlichitieu.data.repository.TransactionRepositoryImpl;
 import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
 import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
+import com.ptithcm.quanlichitieu.data.repository.SyncRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +54,9 @@ public class TransactionViewModel extends AndroidViewModel {
 
     public void refreshFromServer() {
         isRefreshing.setValue(true);
-        transactionRepository.fetchFromServer(() -> {
+        TokenStorage tokenStorage = EncryptedTokenStorage.getInstance(getApplication());
+        String userId = tokenStorage.getUserId();
+        SyncRepository.getInstance(getApplication()).syncAll(userId, () -> {
             android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
             handler.post(() -> {
                 if (currentWallet != null) {

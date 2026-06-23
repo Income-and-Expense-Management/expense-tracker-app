@@ -16,6 +16,7 @@ import com.ptithcm.quanlichitieu.data.local.dao.WalletDao;
 import com.ptithcm.quanlichitieu.data.local.token.EncryptedTokenStorage;
 import com.ptithcm.quanlichitieu.data.local.token.TokenStorage;
 import com.ptithcm.quanlichitieu.data.model.Wallet;
+import com.ptithcm.quanlichitieu.data.repository.SyncRepository;
 import com.ptithcm.quanlichitieu.data.repository.WalletRepository;
 import com.ptithcm.quanlichitieu.data.repository.WalletRepositoryImpl;
 
@@ -87,7 +88,7 @@ public class WalletViewModel extends AndroidViewModel {
 
     public void refreshFromServer() {
         isRefreshing.postValue(true);
-        walletRepository.fetchFromServer(() -> {
+        SyncRepository.getInstance(getApplication()).syncAll(currentUserId, () -> {
             // Sau khi pull xong, re-validate ví hiện tại ngay lập tức
             loadActiveWallet();
             isRefreshing.postValue(false);
